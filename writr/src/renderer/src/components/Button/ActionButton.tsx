@@ -1,6 +1,8 @@
 import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+export type ActionButtonProps = ComponentProps<'button'>
+
 export const ActionButton = ({ className, children, ...props }: ComponentProps<'button'>) => {
   return (
     <button
