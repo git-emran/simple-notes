@@ -1,10 +1,10 @@
 import { ActionButton, ActionButtonProps } from '@/components'
-import { LuSignature } from 'react-icons/lu'
+import { PiNotePencilDuotone } from 'react-icons/pi'
 
 export const NewNoteButton = ({ ...props }: ActionButtonProps) => {
   return (
     <ActionButton {...props}>
-      <LuSignature className="w-4 h-4 text-zinc-300" />
+      <PiNotePencilDuotone className="w-5 h-5  text-gray-800 dark:text-zinc-300" />
     </ActionButton>
   )
 }
