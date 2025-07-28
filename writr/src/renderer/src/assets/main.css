@@ -20,3 +20,15 @@ header {
 button {
   -webkit-app-region: no-drag;
 }
+
+::-webkit-scrollbar {
+  @apply w-1;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-[#555] rounded-md;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
