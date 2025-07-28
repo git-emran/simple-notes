@@ -9,7 +9,13 @@ import {
   FloatingNoteTitle
 } from './components'
 
+import { useRef } from 'react'
+
 const App = () => {
+  const contentContainerRef = useRef<HTMLDivElement>(null)
+  const reactScroll = () => {
+    contentContainerRef.current?.scrollTo(0, 0)
+  }
   return (
     <>
       <DraggableTopBar />
