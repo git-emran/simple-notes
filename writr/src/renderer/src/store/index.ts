@@ -1,5 +1,5 @@
 import { atom } from 'jotai'
-import { NoteInfo } from '@renderer/shared/models'
+import { NoteInfo } from '@shared/models'
 import { notesMock } from './mocks'
 
 export const notesAtom = atom<NoteInfo[]>(notesMock)
