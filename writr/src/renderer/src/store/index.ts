@@ -1,12 +1,14 @@
 import { atom } from 'jotai'
-import { NoteInfo } from '@shared/models'
+import { NoteContent, NoteInfo } from '@shared/models'
 import { unwrap } from 'jotai/utils'
 
 const loadNotes = async () => {
   const notes = await window.context.getNotes()
 
+  // sort them by most recently edited
   return notes.sort((a, b) => b.lastEditTime - a.lastEditTime)
 }
+
 const notesAtomAsync = atom<NoteInfo[] | Promise<NoteInfo[]>>(loadNotes())
 
 export const notesAtom = unwrap(notesAtomAsync, (prev) => prev)
@@ -35,6 +37,29 @@ export const selectedNoteAtom = unwrap(
       lastEditTime: Date.now()
     }
 )
+
+export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent) => {
+  const notes = get(notesAtom)
+  const selectedNote = get(selectedNoteAtom)
+
+  if (!selectedNote || !notes) return
+  await window.context.writeNote(selectedNote.title, newContent)
+
+  set(
+    notesAtom,
+    notes.map((note) => {
+      //This is the note we want to update
+
+      if (note.title === selectedNote.title) {
+        return {
+          ...note,
+          lastEditTime: Date.now()
+        }
+      }
+      return note
+    })
+  )
+})
 
 export const createEmptyNoteAtom = atom(null, (get, set) => {
   const notes = get(notesAtom)

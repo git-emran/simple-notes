@@ -1,10 +1,18 @@
 import clsx, { ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { GetNotes, ReadNote, WriteNote, CreateNote, DeleteNote } from '@shared/types'
+
+export {}
 
 declare global {
   interface Window {
     context: {
       locale: string
+      getNotes: GetNotes
+      readNotes: ReadNote
+      writeNote: WriteNote
+      createNote: CreateNote
+      deleteNote: DeleteNote
     }
   }
 }
