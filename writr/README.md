@@ -1,34 +1,12 @@
-# writr
+# Writr
 
-An Electron application with React and TypeScript
+Welcome to my Simple notes series. My First project of this series is WritR.
 
-## Recommended IDE Setup
+# What is WritR
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+WritR is a Desktop markdown application. Currently available only on macOS. It has the basic markdown feature.
 
-## Project Setup
+# Tech Stack
 
-### Install
-
-```bash
-$ npm install
-```
-
-### Development
-
-```bash
-$ npm run dev
-```
-
-### Build
-
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
-```
+WritR is a very memory efficient Electron and Typescript based desktop app. Styled with Tailwind, state management with Jotai.
+#typescript #electron #react
