@@ -5,6 +5,8 @@ if (!process.contextIsolated) {
   throw new Error('contextIsolation must be enabled in the BrowserWindow')
 }
 
+//Contextbridge Parameters
+
 try {
   contextBridge.exposeInMainWorld('context', {
     locale: navigator.language,
