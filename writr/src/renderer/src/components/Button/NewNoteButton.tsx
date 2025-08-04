@@ -6,8 +6,8 @@ import { PiNotePencilDuotone } from 'react-icons/pi'
 export const NewNoteButton = ({ ...props }: ActionButtonProps) => {
   const createEmptyNote = useSetAtom(createEmptyNoteAtom)
 
-  const handleCreation = () => {
-    createEmptyNote()
+  const handleCreation = async () => {
+    await createEmptyNote()
   }
   return (
     <ActionButton onClick={handleCreation} {...props}>
