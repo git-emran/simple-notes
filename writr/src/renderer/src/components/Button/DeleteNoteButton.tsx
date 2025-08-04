@@ -6,8 +6,8 @@ import { deleteNoteAtom } from '@renderer/store'
 export const DeleteNoteButton = ({ ...props }: ActionButtonProps) => {
   const deleteNote = useSetAtom(deleteNoteAtom)
 
-  const handleDelete = () => {
-    deleteNote()
+  const handleDelete = async () => {
+    await deleteNote()
   }
   return (
     <ActionButton onClick={handleDelete} {...props}>
