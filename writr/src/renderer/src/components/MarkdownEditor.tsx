@@ -4,15 +4,15 @@ import {
   MDXEditor,
   headingsPlugin,
   listsPlugin,
-  markdownShortcutPlugin,
   thematicBreakPlugin,
   quotePlugin,
-  linkPlugin
+  markdownShortcutPlugin,
+  linkPlugin,
 } from '@mdxeditor/editor'
 import { useMarkdownEditor } from '@renderer/hooks/useMarkdownEditor'
 
 export const MarkdownEditor = () => {
-  const { editorRef, selectedNote, handleAutoSave } = useMarkdownEditor()
+  const { editorRef, selectedNote, handleAutoSave, handleBlur } = useMarkdownEditor()
   if (!selectedNote) return null
 
   return (
@@ -20,6 +20,7 @@ export const MarkdownEditor = () => {
       ref={editorRef}
       onChange={handleAutoSave}
       key={selectedNote.title}
+      onBlur={handleBlur}
       markdown={selectedNote.content}
       plugins={[
         headingsPlugin(),
