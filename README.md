@@ -1,10 +1,13 @@
 # Writr
+#electron #typescript #react #desktop-app
 Welcome to my Simple notes series. My First project of this series is WritR.
 [⬇️ Download macOS App](https://drive.google.com/file/d/11q032M3B5Fau89CpwVr5GYT8vxMg-cWW/view?usp=drive_link)
 
+<img width="4096" height="2777" alt="Writr Post image" src="https://github.com/user-attachments/assets/90655033-5aa6-4afa-845f-6576815b3d57" />
 
 <img width="3016" height="1710" alt="Writr" src="https://github.com/user-attachments/assets/14ba49e4-c202-4a60-b7f1-1bb85872023d" />
 
+----------- 
 
 # What is WritR
 
