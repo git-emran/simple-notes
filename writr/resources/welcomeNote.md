@@ -1,8 +1,8 @@
-## Welcome to Writr 👋🏻
+## Welcome to Writer 👋🏻
 
-Writr is a simple **note-taking app** that uses **Markdown** syntax to format your notes.
+Writer is a simple Mark down **note-taking app** that uses **Markdown** syntax to format your notes.
 
-You can create your first note by clicking on the top-left icon on the sidebar, or delete one by clicking on top right icon.
+You can create your first note by clicking on the top-left icon on the sidebar, or delete one by clicking on top right icon. Its design is minimal and structured in a way to fit in my workflow. Feel free to use it. I will be adding more features incrementally.
 
 Following there's a quick overview of the currently supported Markdown syntax.
 
@@ -13,7 +13,7 @@ This is an _italic_ text.
 
 ## Headings
 
-Here are all the heading formats currently supported by **_NoteMark_**:
+Here are all the heading formats currently supported by **_Writer_**:
 
 # Heading 1
 

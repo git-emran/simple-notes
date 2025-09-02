@@ -57,7 +57,8 @@ export const MarkdownEditor = () => {
       caret-yellow-500
       prose-p:my-6 prose-p:leading-tight
       prose dark:prose-invert
-      prose-blockquote:my-4
+      prose-blockquote:my-4 prose-blockquote:bg-purple-500/10 prose-blockquote:text-sm prose-blockquote:font-medium
+
       prose-ul:my-2 prose-li:my-0
       prose-code:px-1 prose-code:text-tomatoDark-9
       prose-code:before:content-[''] prose-code:after:content-['']
