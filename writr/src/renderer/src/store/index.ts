@@ -50,20 +50,19 @@ export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent)
   // save on disk
   await window.context.writeNote(selectedNote.title, newContent)
 
-  // update the saved note's last edit time
+  // update the saved note's content in place to avoid remount
+  set(selectedNoteAtom, {
+    ...selectedNote,
+    content: newContent,
+    lastEditTime: Date.now() // optional: update lastEditTime here too
+  })
+
+  // update the saved note's last edit time in notesAtom
   set(
     notesAtom,
-    notes.map((note) => {
-      // this is the note that we want to update
-      if (note.title === selectedNote.title) {
-        return {
-          ...note,
-          lastEditTime: Date.now()
-        }
-      }
-
-      return note
-    })
+    notes.map((note) =>
+      note.title === selectedNote.title ? { ...note, lastEditTime: Date.now() } : note
+    )
   )
 })
 

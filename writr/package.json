@@ -19,11 +19,20 @@
     "build:linux": "electron-vite build && electron-builder --linux --config"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-markdown": "^6.3.4",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/lint": "^6.8.5",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.2",
+    "@ddietr/codemirror-themes": "^1.5.2",
     "@electron-toolkit/preload": "^2.0.0",
     "@electron-toolkit/utils": "^2.0.0",
-    "@mdxeditor/editor": "^1.14.3",
+    "@replit/codemirror-vim": "^6.3.0",
     "fs-extra": "^11.2.0",
-    "jotai": "^2.6.1"
+    "jotai": "^2.13.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^1.0.1",
@@ -37,8 +46,8 @@
     "@vitejs/plugin-react": "^4.0.4",
     "autoprefixer": "^10.4.16",
     "clsx": "^2.1.0",
-    "electron-builder": "^24.6.3",
     "electron": "^25.6.0",
+    "electron-builder": "^24.6.3",
     "electron-vite": "^1.0.27",
     "eslint": "^8.47.0",
     "eslint-plugin-react": "^7.33.2",
