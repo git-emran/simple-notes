@@ -28,6 +28,7 @@
     "@ddietr/codemirror-themes": "^1.5.2",
     "@electron-toolkit/preload": "^2.0.0",
     "@electron-toolkit/utils": "^2.0.0",
+    "@lezer/highlight": "^1.2.1",
     "@replit/codemirror-vim": "^6.3.0",
     "fs-extra": "^11.2.0",
     "jotai": "^2.13.1",

@@ -9,7 +9,8 @@ import { throttle } from 'lodash'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { selectedNoteAtom, saveNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
-import { solarizedDark } from '@ddietr/codemirror-themes/solarized-dark'
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags } from '@lezer/highlight'
 
 
 export const MarkdownEditor = () => {
@@ -17,6 +18,52 @@ export const MarkdownEditor = () => {
   const saveNote = useSetAtom(saveNoteAtom)
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+
+
+  // Define your custom markdown highlight style
+  const markdownHighlighting = HighlightStyle.define([
+    {
+      tag: tags.heading1,
+      fontSize: '2em', // Or any size you want
+      fontWeight: 'bold',
+      color: '#e44c2a', // Example color for headings
+    },
+    {
+      tag: tags.heading2,
+      fontSize: '1.5em',
+      fontWeight: 'bold',
+      color: '#ffc83c',
+    },
+    {
+      tag: tags.emphasis,
+      fontStyle: 'italic',
+      color: '#8ce294', // A green color
+    },
+    {
+      tag: tags.strong,
+      fontWeight: 'bold',
+      color: '#ff5c5c', // A reddish color
+    },
+    {
+      tag: tags.link,
+      color: '#5b91ff',
+      textDecoration: 'underline',
+    },
+    {
+      tag: tags.quote,
+      fontStyle: 'italic',
+      color: '#888',
+    },
+    {
+      tag: tags.blockComment,
+      fontFamily: 'monospace',
+      backgroundColor: 'rgba(128, 128, 128, 0.1)',
+      borderRadius: '4px',
+      padding: '0 4px',
+    },
+    // You can style many more markdown elements
+    // tags.url, tags.lineSeparator, etc.
+  ]);
 
   // Throttled auto-save
   const handleAutoSave = useMemo(
@@ -54,8 +101,10 @@ export const MarkdownEditor = () => {
   const baseExtensions = useMemo(
     () => [
       keymap.of(defaultKeymap),
+      vim(),
       markdown(),
       EditorView.lineWrapping,
+      syntaxHighlighting(markdownHighlighting),
 
     ],
     []
