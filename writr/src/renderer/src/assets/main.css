@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,13 +16,13 @@
 }
 
 .cm-editor {
-  font-family: 'Fira Code', monospace; /* any font you like */
-  font-size: 13px; /* adjust size */
-  line-height: 1;
+  font-family: 'JetBrains Mono', monospace !important; /* any font you like */
+  font-size: 12px; /* adjust size */
+  line-height: 1.5;
 }
 
-.prose {
-  font-family: 'JetBrains Mono';
+cm-mygutter {
+  background-color: '#010100';
 }
 
 header {

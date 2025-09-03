@@ -2,6 +2,8 @@ import { NoteContent, NoteInfo } from '@shared/models'
 import { atom } from 'jotai'
 import { unwrap } from 'jotai/utils'
 
+export const isDarkModeAtom = atom(false)
+
 const loadNotes = async () => {
   const notes = await window.context.getNotes()
 

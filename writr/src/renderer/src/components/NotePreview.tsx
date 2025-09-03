@@ -30,7 +30,7 @@ export const NotePreview = ({
       )}
       {...props}
     >
-      <h2 className="mb-1 text-gray-700 dark:text-gray-50 font-semibold truncate">{title}</h2>
+      <p className="mb-1 text-gray-700 dark:text-gray-50 font-semibold truncate">{title}</p>
       <span className="inline-block w-full dark:text-gray-50 mb-2 text-xs font-light text-left text-gray-600 ">{date}</span>
     </div>
   )

@@ -14,11 +14,6 @@ Welcome to my Simple notes series. My First project of this series is WritR.
 
 WritR is a Desktop markdown application. Currently available only on macOS. It has the basic markdown feature.
 
-# Tech Stack
-
-WritR is a very memory efficient Electron and Typescript based desktop app. Styled with Tailwind, state management with Jotai.
-#typescript #electron #react
-
 ---
 
 Writr is a simple **note-taking app** that uses **Markdown** syntax to format your notes.
