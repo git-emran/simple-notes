@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { EditorState } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { defaultKeymap } from '@codemirror/commands'
@@ -9,8 +9,7 @@ import { throttle } from 'lodash'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { selectedNoteAtom, saveNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -18,18 +17,17 @@ export const MarkdownEditor = () => {
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
 
-  const [isPreview, setIsPreview] = useState(false)
-  const [content, setContent] = useState(selectedNote?.content || '')
+
+
 
   // Throttled auto-save
   const handleAutoSave = useMemo(
     () =>
       throttle(
-        async (text: string) => {
+        async (content: string) => {
           if (!selectedNote) return
           try {
-            await saveNote(text)
-            setContent(text)
+            await saveNote(content)
             console.info('Auto saved:', selectedNote.title)
           } catch (error) {
             console.error('Auto-save failed:', error)
@@ -46,9 +44,8 @@ export const MarkdownEditor = () => {
     if (!selectedNote || !viewRef.current) return
     handleAutoSave.cancel()
     try {
-      const text = viewRef.current.state.doc.toString()
-      await saveNote(text)
-      setContent(text)
+      const content = viewRef.current.state.doc.toString()
+      await saveNote(content)
       console.info('Manual save:', selectedNote.title)
     } catch (error) {
       console.error('Manual save failed:', error)
@@ -63,13 +60,14 @@ export const MarkdownEditor = () => {
       lineNumbers(),
       markdown(),
       EditorView.lineWrapping,
+
     ],
     []
   )
 
   // Create editor when switching notes
   useEffect(() => {
-    if (!selectedNote || !editorRef.current || isPreview) return
+    if (!selectedNote || !editorRef.current) return
 
     const state = EditorState.create({
       doc: selectedNote.content,
@@ -104,7 +102,7 @@ export const MarkdownEditor = () => {
       viewRef.current = null
       handleAutoSave.cancel()
     }
-  }, [selectedNote, baseExtensions, handleAutoSave, handleImmediateSave, isPreview])
+  }, [selectedNote, baseExtensions, handleAutoSave, handleImmediateSave])
 
   // Sync external content changes without recreating the editor
   useEffect(() => {
@@ -115,7 +113,6 @@ export const MarkdownEditor = () => {
         changes: { from: 0, to: currentDoc.length, insert: selectedNote.content },
       })
     }
-    setContent(selectedNote.content)
   }, [selectedNote?.content])
 
   // Cancel auto-save on unmount
@@ -126,31 +123,10 @@ export const MarkdownEditor = () => {
   }, [handleAutoSave])
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toggle button */}
-      <div className="flex justify-end mb-2">
-        <button
-          className="py-1 px-3 rounded bg-gray-200 dark:bg-gray-500 text-sm"
-          onClick={() => setIsPreview((prev) => !prev)}
-        >
-          {isPreview ? '🖋️' : '📖'}
-        </button>
-      </div>
-
-      {/* Editor or Preview */}
-      {isPreview ? (
-        <div className="prose dark:prose-invert max-w-none p-3 overflow-auto rounded-sm border min-h-[60vh]">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {content}
-          </ReactMarkdown>
-        </div>
-      ) : (
-        <div
-          ref={editorRef}
-          className="rounded-sm overflow-hidden min-h-[60vh]"
-        />
-      )}
-    </div>
+    <div
+      ref={editorRef}
+      className="rounded-sm overflow-hidden min-h-[60vh]"
+    />
   )
 }
 
