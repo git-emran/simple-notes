@@ -2,7 +2,7 @@
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import { EditorState } from '@codemirror/state'
 import { EditorView, gutter, keymap } from '@codemirror/view'
-import { defaultKeymap } from '@codemirror/commands'
+import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { vim } from '@replit/codemirror-vim'
 import { throttle } from 'lodash'
@@ -39,9 +39,12 @@ export const MarkdownEditor = () => {
   // Memoized extensions
   const baseExtensions = useMemo(
     () => [
-      keymap.of(defaultKeymap),
+      history(),
+      keymap.of([
+        ...defaultKeymap,
+        ...historyKeymap, // Add this - provides Ctrl+Z/Ctrl+Y keybindings
+      ]),
       vim(),
-      // lineNumbers(),
       javascript(),
       gutterTheme,
       markdown(),
@@ -229,7 +232,7 @@ export const MarkdownEditor = () => {
   return (
     <div className="flex flex-col h-full w-full">
       {/* Header with toggle */}
-      <div className="flex items-center justify-between p-2 my-2 border-b bg-transparent relative z-10">
+      <div className="flex items-center justify-between p-2 my-2 border-b border-gray-400/30 dark:border-gray-500 bg-transparent relative z-10">
         <h2 className="text-sm font-medium text-gray-700 dark:text-white truncate">
           {selectedNote.title}
         </h2>
