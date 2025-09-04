@@ -16,6 +16,7 @@ I have introduced some new updates to my notes.
 
 - Transitioned from MDX to Codemirror 6
 - Vim keyBindigs. Since I use vim for everything, I decided to add vim keybindings by defualt.
+- Relative Line numbers.
 - Native preview mode
 - Transparent Background
 - Colorscheme update. Currently the editor has transparent mode enabled by default.
