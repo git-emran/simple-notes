@@ -8,7 +8,11 @@ Welcome to **Writer**. This is a markdown writing application.
 
 
 <img width="4940" height="3056" alt="Screenshot 2025-09-04 at 10 33 13 AM" src="https://github.com/user-attachments/assets/68455c5b-c4aa-4a3e-8572-4b46a241d431" />
-![writer](https://github.com/user-attachments/assets/3fead641-37de-4ac9-b708-878e87f78549)
+
+
+https://github.com/user-attachments/assets/c029184a-8402-4c69-b381-6b5540569188
+
+
 
 
 
