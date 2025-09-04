@@ -55,9 +55,8 @@ Here are all the heading formats currently supported by **_NoteMark_**:
 
 ### Heading 3
 
+Write warnings
 :> [!WARNING]
-
->
 
 #### Heading 4
 
@@ -83,10 +82,10 @@ Here we have a numbered list:
 
 ### Code blocks
 
-Only `inline code` is currently supported!
+Inline code is written as double `
 
-Code block snippets using the following syntax _\`\`\`js\`\`\`_ are **_not supported_** yet!
+Code block snippets using the following syntax \_\`\`\`js\`\`\`
 
 ### Links
 
-Links are **_not supported_** yet!
+Links are written as `[name](u.r.l)`
