@@ -24,7 +24,7 @@ const App = () => {
           <ActionButtonsRow className="flex justify-between mt-1 " />
           <NotePreviewList className="mt-3 space-y-1" onSelect={resetScroll} />
         </Sidebar>
-        <Content ref={contentContainerRef} className="border-l bg-zinc-300/20 border-l-white/20">
+        <Content ref={contentContainerRef} className="border-l bg-zinc-300/20 border-l-black/20 dark:border-l-white/20">
           <MarkdownEditor />
         </Content>
       </RootLayout>

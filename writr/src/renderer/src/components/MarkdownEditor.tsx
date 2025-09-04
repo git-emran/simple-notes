@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import { EditorState } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers } from '@codemirror/view'
+import { EditorView, gutter, keymap } from '@codemirror/view'
 import { defaultKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { vim } from '@replit/codemirror-vim'
@@ -11,12 +11,20 @@ import { selectedNoteAtom, saveNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
 import { javascript } from '@codemirror/lang-javascript'
 import ReactMarkdown from 'react-markdown'
+import { relativeLineNumbers } from './code-mirror-ui/relativeLineNumbers'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
   const saveNote = useSetAtom(saveNoteAtom)
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+
+  const gutterTheme = EditorView.theme({
+    ".cm-gutters": {
+      backgroundColor: "#E5E4E2",
+      padding: "2px",
+    }
+  });
 
   // Track the current note title to prevent cross-note saves
   const currentNoteTitleRef = useRef<string>('')
@@ -33,9 +41,11 @@ export const MarkdownEditor = () => {
     () => [
       keymap.of(defaultKeymap),
       vim(),
-      lineNumbers(),
+      // lineNumbers(),
       javascript(),
+      gutterTheme,
       markdown(),
+      relativeLineNumbers(),
       EditorView.lineWrapping,
       EditorView.theme({
         '&': { height: '100%' },
@@ -251,7 +261,7 @@ export const MarkdownEditor = () => {
                 components={{
                   // Obsidian-like styling
                   h1: ({ children }) => (
-                    <h1 className=" text-gray-800 dark:text-white text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-200">
+                    <h1 className=" text-gray-800 dark:text-white text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-400">
                       {children}
                     </h1>
                   ),
