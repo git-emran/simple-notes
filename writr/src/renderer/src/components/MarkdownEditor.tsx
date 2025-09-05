@@ -3,17 +3,18 @@ import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import { EditorState } from '@codemirror/state'
 import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
-import { markdown } from '@codemirror/lang-markdown'
 import { vim } from '@replit/codemirror-vim'
 import { throttle } from 'lodash'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { selectedNoteAtom, saveNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
-import { javascript } from '@codemirror/lang-javascript'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from './code-mirror-ui/relativeLineNumbers'
 import { AiOutlineRead } from "react-icons/ai";
 import { TbEdit } from "react-icons/tb";
+import { markdown } from '@codemirror/lang-markdown'
+import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -27,9 +28,135 @@ export const MarkdownEditor = () => {
       padding: "4px",
       textAlign: 'right',
       borderRight: '1px solid rgba(128, 128, 128, 0.5)'
-
     }
   });
+
+  // Markdown syntax highlighting theme
+  const markdownHighlightStyle = HighlightStyle.define([
+    // Headers
+    { tag: tags.heading1, color: '#2563eb', fontWeight: 'bold', fontSize: '1.5em' },
+    { tag: tags.heading2, color: '#1d4ed8', fontWeight: 'bold', fontSize: '1.3em' },
+    { tag: tags.heading3, color: '#1e40af', fontWeight: 'bold', fontSize: '1.2em' },
+    { tag: tags.heading4, color: '#1e3a8a', fontWeight: 'bold', fontSize: '1.1em' },
+    { tag: tags.heading5, color: '#1e3a8a', fontWeight: 'bold' },
+    { tag: tags.heading6, color: '#1e3a8a', fontWeight: 'bold' },
+
+    // Text formatting
+    { tag: tags.strong, fontWeight: 'bold', color: '#374151' },
+    { tag: tags.emphasis, fontStyle: 'italic', color: '#4b5563' },
+    { tag: tags.strikethrough, textDecoration: 'line-through', color: '#6b7280' },
+
+    // Code
+    {
+      tag: tags.monospace,
+      backgroundColor: '#f3f4f6',
+      color: '#dc2626',
+      fontFamily: 'JetBrains Mono',
+      padding: '2px 4px',
+      borderRadius: '3px'
+    },
+    {
+      tag: tags.special(tags.string),
+      backgroundColor: '#1f2937',
+      color: '#10b981',
+      padding: '8px 12px',
+      borderRadius: '6px'
+    },
+
+    // Links
+    { tag: tags.link, color: '#2563eb', textDecoration: 'underline' },
+    { tag: tags.url, color: '#2563eb', textDecoration: 'underline' },
+
+    // Lists
+    { tag: tags.list, color: '#374151' },
+    { tag: tags.operator, color: '#6366f1', fontWeight: 'bold' },
+
+    // Quotes
+    {
+      tag: tags.quote,
+      color: '#6b7280',
+      fontStyle: 'italic',
+      borderLeft: '4px solid #d1d5db',
+      paddingLeft: '12px'
+    },
+
+    // Markdown meta characters
+    { tag: tags.meta, color: '#9ca3af', opacity: '0.7' },
+
+    // Horizontal rules
+    { tag: tags.contentSeparator, color: '#d1d5db' },
+
+    // Default text
+    { tag: tags.content, color: '#374151', },
+
+    // Processing instructions (for things like front matter)
+    { tag: tags.processingInstruction, color: '#7c3aed', fontStyle: 'italic' }
+  ])
+
+  // Dark theme variant
+  const markdownHighlightStyleDark = HighlightStyle.define([
+    // Headers
+    { tag: tags.heading1, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.5em' },
+    { tag: tags.heading2, color: '#3b82f6', fontWeight: 'bold', fontSize: '1.3em' },
+    { tag: tags.heading3, color: '#2563eb', fontWeight: 'bold', fontSize: '1.2em' },
+    { tag: tags.heading4, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.1em' },
+    { tag: tags.heading5, color: '#60a5fa', fontWeight: 'bold' },
+    { tag: tags.heading6, color: '#60a5fa', fontWeight: 'bold' },
+
+    // Text formatting
+    { tag: tags.strong, fontWeight: 'bold', color: '#f9fafb' },
+    { tag: tags.emphasis, fontStyle: 'italic', color: '#e5e7eb' },
+    { tag: tags.strikethrough, textDecoration: 'line-through', color: '#9ca3af' },
+
+
+    // Code
+    {
+      tag: tags.special(tags.string),
+      backgroundColor: '',
+      color: '#34d399',
+      padding: '8px 12px',
+      borderRadius: '6px'
+    },
+    {
+      tag: tags.special(tags.monospace),
+      backgroundColor: '#f3f4f6',
+      color: '#dc2626',
+      fontFamily: 'JetBrains Mono',
+      padding: '2px 4px',
+      borderRadius: '3px'
+    },
+
+
+
+    // Links
+    { tag: tags.link, color: '#60a5fa', textDecoration: 'underline' },
+    { tag: tags.url, color: '#60a5fa', textDecoration: 'underline' },
+
+    // Lists
+    { tag: tags.list, color: '#f9fafb' },
+    { tag: tags.operator, color: '#8b5cf6', fontWeight: 'bold' },
+
+    // Quotes
+    {
+      tag: tags.quote,
+      color: '#9ca3af',
+      fontStyle: 'italic',
+      borderLeft: '4px solid #4b5563',
+      paddingLeft: '12px'
+    },
+
+    // Markdown meta characters
+    { tag: tags.meta, color: '#6b7280', opacity: '0.7' },
+
+    // Horizontal rules
+    { tag: tags.contentSeparator, color: '#4b5563' },
+
+    // Default text
+    { tag: tags.content, color: '#D6D6D6' },
+
+    // Processing instructions (for things like front matter)
+    { tag: tags.processingInstruction, color: '#a78bfa', fontStyle: 'italic' }
+  ])
 
   // Track the current note title to prevent cross-note saves
   const currentNoteTitleRef = useRef<string>('')
@@ -41,6 +168,69 @@ export const MarkdownEditor = () => {
   const [isPreview, setIsPreview] = useState(false)
   const [currentContent, setCurrentContent] = useState('')
 
+  // Detect dark mode
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark') ||
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
+    }
+
+    checkDarkMode()
+
+    // Listen for theme changes
+    const observer = new MutationObserver(checkDarkMode)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    mediaQuery.addEventListener('change', checkDarkMode)
+
+    return () => {
+      observer.disconnect()
+      mediaQuery.removeEventListener('change', checkDarkMode)
+    }
+  }, [])
+
+  // Additional theme for better markdown editing experience
+  const markdownEditorTheme = EditorView.theme({
+    '&': {
+      height: '100%',
+      fontSize: '14px',
+      lineHeight: '1.6'
+    },
+    '.cm-scroller': {
+      fontFamily: 'JetBrains Mono',
+      padding: '16px'
+    },
+    '.cm-focused': { outline: 'none' },
+    '.cm-editor': {
+      fontSize: '14px'
+    },
+    '.cm-content': {
+      minHeight: '100%',
+      padding: '0'
+    },
+    // Style for code blocks
+    '.cm-line': {
+      paddingLeft: '0',
+      paddingRight: '16px'
+    },
+    // Better spacing for headers
+    '.cm-line:has(.ͼ1)': { // heading1
+      marginTop: '1.5em',
+      marginBottom: '0.5em'
+    },
+    '.cm-line:has(.ͼ2)': { // heading2
+      marginTop: '1.2em',
+      marginBottom: '0.4em'
+    },
+    '.cm-line:has(.ͼ3)': { // heading3
+      marginTop: '1em',
+      marginBottom: '0.3em'
+    }
+  })
+
   // Memoized extensions
   const baseExtensions = useMemo(
     () => [
@@ -50,18 +240,14 @@ export const MarkdownEditor = () => {
         ...historyKeymap, // Add this - provides Ctrl+Z/Ctrl+Y keybindings
       ]),
       vim(),
-      javascript(),
       gutterTheme,
       markdown(),
+      syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
       relativeLineNumbers(),
       EditorView.lineWrapping,
-      EditorView.theme({
-        '&': { height: '100%' },
-        '.cm-scroller': { fontFamily: 'inherit' },
-        '.cm-focused': { outline: 'none' }
-      })
+      markdownEditorTheme
     ],
-    []
+    [isDarkMode]
   )
 
   // Safe auto-save with note tracking
