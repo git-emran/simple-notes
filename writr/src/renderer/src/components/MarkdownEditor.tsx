@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import { EditorState } from '@codemirror/state'
-import { EditorView, gutter, keymap } from '@codemirror/view'
+import { EditorView, keymap } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { vim } from '@replit/codemirror-vim'
@@ -12,6 +12,8 @@ import { autoSavingTime } from '@shared/constants'
 import { javascript } from '@codemirror/lang-javascript'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from './code-mirror-ui/relativeLineNumbers'
+import { AiOutlineRead } from "react-icons/ai";
+import { TbEdit } from "react-icons/tb";
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -21,8 +23,11 @@ export const MarkdownEditor = () => {
 
   const gutterTheme = EditorView.theme({
     ".cm-gutters": {
-      backgroundColor: "#E5E4E2",
-      padding: "2px",
+      backgroundColor: "transparent",
+      padding: "4px",
+      textAlign: 'right',
+      borderRight: '1px solid rgba(128, 128, 128, 0.5)'
+
     }
   });
 
@@ -233,7 +238,7 @@ export const MarkdownEditor = () => {
     <div className="flex flex-col h-full w-full">
       {/* Header with toggle */}
       <div className="flex items-center justify-between p-2 my-2 border-b border-gray-400/30 dark:border-gray-500 bg-transparent relative z-10">
-        <h2 className="text-sm font-medium text-gray-700 dark:text-white truncate">
+        <h2 className="text-sm font-sans font-medium text-gray-700 dark:text-white truncate">
           {selectedNote.title}
         </h2>
         <button
@@ -244,7 +249,7 @@ export const MarkdownEditor = () => {
             }`}
           type="button"
         >
-          {isPreview ? 'Edit' : 'Preview'}
+          {isPreview ? <TbEdit /> : <AiOutlineRead />}
         </button>
       </div>
 
@@ -264,7 +269,7 @@ export const MarkdownEditor = () => {
                 components={{
                   // Obsidian-like styling
                   h1: ({ children }) => (
-                    <h1 className=" text-gray-800 dark:text-white text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-400">
+                    <h1 className=" text-gray-800 dark:text-white font-sans text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-400">
                       {children}
                     </h1>
                   ),
@@ -278,28 +283,34 @@ export const MarkdownEditor = () => {
                       {children}
                     </h3>
                   ),
+                  h4: ({ children }) => (
+                    <h4 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      {children}
+                    </h4>
+                  ),
+
                   p: ({ children }) => (
-                    <p className="mb-4 leading-relaxed text-gray-800 dark:text-white">
+                    <p className="mb-4 text-sm font-sans text-gray-800 dark:text-white">
                       {children}
                     </p>
                   ),
                   ul: ({ children }) => (
-                    <ul className="mb-4 pl-6 space-y-1 text-gray-800 dark:text-white">
+                    <ul className="font-sans mb-4 pl-6 space-y-1 text-gray-800 dark:text-white">
                       {children}
                     </ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="mb-4 pl-6 space-y-1">
+                    <ol className="text-gray-800 dark:text-white font-sans mb-4 pl-6 space-y-1">
                       {children}
                     </ol>
                   ),
                   li: ({ children }) => (
-                    <li className="text-gray-800">
+                    <li className="font-sans text-sm text-gray-800 dark:text-white">
                       {children}
                     </li>
                   ),
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-blue-200 pl-4 py-2 mb-4 bg-blue-50 italic dark:text-white text-gray-700">
+                    <blockquote className="border-l-4 border-lime-200 pl-4 py-2 mb-4 bg-lime-300/20 italic dark:text-white text-gray-700">
                       {children}
                     </blockquote>
                   ),
