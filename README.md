@@ -4,7 +4,7 @@
 
 Welcome to **Writer**. This is a markdown writing application.
 
-[⬇️ Download latest macOS App](https://drive.google.com/file/d/13h4KfVSUvCX6PGhcCs48DulJ7OWMuDv9/view?usp=sharing)
+[⬇️ Download latest macOS App](https://drive.google.com/drive/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1?usp=drive_link)
 
 <img width="2464" height="2002" alt="writer 1 2" src="https://github.com/user-attachments/assets/2af98cac-780a-4aea-8ad4-57519d74d8b7" />
 
