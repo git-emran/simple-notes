@@ -6,29 +6,31 @@ Welcome to **Writer**. This is a markdown writing application.
 
 [⬇️ Download macOS App](https://drive.google.com/file/d/13h4KfVSUvCX6PGhcCs48DulJ7OWMuDv9/view?usp=sharing)
 
-<img width="4940" height="3056" alt="Screenshot 2025-09-04 at 10 33 13 AM" src="https://github.com/user-attachments/assets/68455c5b-c4aa-4a3e-8572-4b46a241d431" />
+<img width="2464" height="2002" alt="writer 1 2" src="https://github.com/user-attachments/assets/2af98cac-780a-4aea-8ad4-57519d74d8b7" />
 
-https://github.com/user-attachments/assets/c029184a-8402-4c69-b381-6b5540569188
+https://github.com/user-attachments/assets/cbf68680-57e6-4bd6-a820-2ce9f0b618a8
+
+## Version 1.0.2
+
+##### New Updates to Writer: 
+- Relative Line numbers.
+- Syntax Highlighting for 10+ Languages
+- Preview Mode update
+- Minor Bug fixes.
+
+---
 
 ### Version 1.0.1
 
 I have introduced some new updates to my notes.
 
 - Transitioned from MDX to Codemirror 6
-- Vim keyBindigs. Since I use vim for everything, I decided to add vim keybindings by defualt.
-- Relative Line numbers.
+- Vim keyBindigs. Since I use vim for everything, I decided to add vim keybindings by default. No other way to write lol. 
+- Relative Line numbers
 - Native preview mode
 - Transparent Background
 - Colorscheme update. Currently the editor has transparent mode enabled by default.
-
-#### What's coming:
-
-- Syntax Highlight in the editor and Preview
-- LSP for writing
-- Code completion
-- and more...
-
----
+- 
 
 # What is Writer
 
