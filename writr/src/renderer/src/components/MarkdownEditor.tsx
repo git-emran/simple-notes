@@ -29,6 +29,7 @@ import { cpp } from "@codemirror/lang-cpp"
 import { rust } from "@codemirror/lang-rust"
 import { go } from "@codemirror/lang-go"
 import { LanguageSupport } from '@codemirror/language'
+import SyntaxHighlighter from 'react-syntax-highlighter'
 
 // Import language data for comprehensive support
 import { languages } from '@codemirror/language-data'
@@ -619,7 +620,7 @@ export const MarkdownEditor = () => {
         {/* Preview - conditionally rendered */}
         {isPreview && (
           <div className="absolute inset-0 h-full overflow-auto p-6 bg-transparent dark:bg-transparent">
-            <div className="prose prose-sm max-w-none">
+            <div className="prose prose-sm max-w-fit">
               <ReactMarkdown
                 components={{
                   // Obsidian-like styling
@@ -644,6 +645,16 @@ export const MarkdownEditor = () => {
                     </h4>
                   ),
 
+                  h5: ({ children }) => (
+                    <h5 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      {children}
+                    </h5>
+                  ),
+                  h6: ({ children }) => (
+                    <h6 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      {children}
+                    </h6>
+                  ),
                   p: ({ children }) => (
                     <p className="mb-4 text-sm font-sans text-gray-800 dark:text-white">
                       {children}
@@ -669,20 +680,39 @@ export const MarkdownEditor = () => {
                       {children}
                     </blockquote>
                   ),
-                  code: ({ children, className }) => {
-                    const isInline = !className
+                  code: ({ children, className, node, ...rest }) => {
+                    const match = /language-(\w+)/.exec(className || '')
+                    const language = match ? match[1] : ''
+                    const isInline = !match
+
                     return isInline ? (
-                      <code className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-300 text-gray-800 rounded text-sm font-mono">
+                      <code
+                        className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-300 text-gray-800 rounded text-sm font-mono"
+                        {...rest}
+                      >
                         {children}
                       </code>
                     ) : (
-                      <code className="block p-3 bg-gray-900 text-green-300 rounded font-mono text-sm overflow-x-auto">
-                        {children}
-                      </code>
+                      <SyntaxHighlighter
+                        PreTag="div"
+                        children={String(children).replace(/\n$/, '')}
+                        language={language}
+                        customStyle={{
+                          margin: '1rem 0',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          lineHeight: '1.5',
+                        }}
+                        codeTagProps={{
+                          style: {
+                            fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
+                          }
+                        }}
+                      />
                     )
                   },
                   pre: ({ children }) => (
-                    <pre className="mb-4 overflow-hidden rounded">
+                    <pre className="mb-4 bg-transparent overflow-hidden rounded">
                       {children}
                     </pre>
                   ),
