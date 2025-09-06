@@ -49,10 +49,8 @@ Here we have a numbered list:
 
 ### Code blocks
 
-Only `inline code` is currently supported!
+You can write codeblocks ``` with this symbol. It works perfectly
 
-Code block snippets using the following syntax _\`\`\`js\`\`\`_ are **_not supported_** yet!
+# Links
 
-### Links
-
-Links are **_not supported_** yet!
+Inline links are also supported.

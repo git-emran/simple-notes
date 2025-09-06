@@ -23,8 +23,9 @@ I have introduced some new updates to my notes.
 
 #### What's coming:
 
-- New Folder system
-- Settings page for configuration
+- Syntax Highlight in the editor and Preview
+- LSP for writing
+- Code completion
 - and more...
 
 ---
