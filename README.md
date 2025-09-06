@@ -4,7 +4,7 @@
 
 Welcome to **Writer**. This is a markdown writing application.
 
-[⬇️ Download macOS App](https://drive.google.com/file/d/13h4KfVSUvCX6PGhcCs48DulJ7OWMuDv9/view?usp=sharing)
+[⬇️ Download latest macOS App](https://drive.google.com/file/d/13h4KfVSUvCX6PGhcCs48DulJ7OWMuDv9/view?usp=sharing)
 
 <img width="2464" height="2002" alt="writer 1 2" src="https://github.com/user-attachments/assets/2af98cac-780a-4aea-8ad4-57519d74d8b7" />
 
@@ -12,11 +12,12 @@ https://github.com/user-attachments/assets/cbf68680-57e6-4bd6-a820-2ce9f0b618a8
 
 ## Version 1.0.2
 
-##### New Updates to Writer: 
-- Relative Line numbers.
+##### New Updates to Writer:
+
+- Relative Line numbers only
 - Syntax Highlighting for 10+ Languages
 - Preview Mode update
-- Minor Bug fixes.
+- Race condition bug fixes.
 
 ---
 
@@ -25,16 +26,17 @@ https://github.com/user-attachments/assets/cbf68680-57e6-4bd6-a820-2ce9f0b618a8
 I have introduced some new updates to my notes.
 
 - Transitioned from MDX to Codemirror 6
-- Vim keyBindigs. Since I use vim for everything, I decided to add vim keybindings by default. No other way to write lol. 
-- Relative Line numbers
+- Vim keyBindigs. Since I use vim for everything, I decided to add vim keybindings by default. No other way to write lol.
+- Line numbers
 - Native preview mode
 - Transparent Background
 - Colorscheme update. Currently the editor has transparent mode enabled by default.
-- 
+
+---
 
 # What is Writer
 
-Writer is a Desktop markdown application. Currently available only on macOS. It has the basic markdown feature.
+Writer is a Desktop markdown application made for Vim enthusiasts. I use Vim constantly so I made an app that supports vim so that I can write in peace. Currently available only on macOS. It has the basic markdown feature.
 
 ---
 
