@@ -14,12 +14,12 @@
 }
 /* For the custom drawn selection (via drawSelection) */
 .cm-selectionBackground {
-  background-color: rgba(52, 151, 219, 0.3); /* Light blue tint; adjust opacity */
+  background-color: rgba(52, 151, 219, 0.1); /* Light blue tint; adjust opacity */
 }
 
 /* For native browser selection (as fallback when not focused) */
 .cm-editor ::selection {
-  background-color: rgba(52, 151, 219, 0.3);
+  background-color: rgba(52, 151, 219, 0.1);
 }
 .cm-editor {
   font-family: 'JetBrains Mono', monospace !important; /* any font you like */

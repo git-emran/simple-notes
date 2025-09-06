@@ -39,16 +39,17 @@ export const markdownEditorTheme = EditorView.theme({
     fontSize: '14px'
   },
   '&.cm-focused .cm-selectionBackground': {
-    backgroundColor: 'rgba(59, 130, 246, 0.5)' // Stronger blue for focused state
+    backgroundColor: 'rgba(59, 130, 246, 0.25)' // lighter
   },
   '.cm-selectionBackground': {
-    backgroundColor: 'rgba(20, 130, 246, 0.3)' // Lighter blue for non-focused state
+    backgroundColor: 'rgba(20, 130, 246, 0.15)' // lighter
   },
   '.cm-content ::selection': {
-    backgroundColor: 'rgba(59, 130, 246, 0.3)' // Native browser selection fallback
+    backgroundColor: 'rgba(59, 130, 246, 0.15)' // lighter fallback
   },
+
   '.cm-selectionBackground *': {
-    color: 'inherit' // Ensure text remains readable
+    color: 'transparent' // Ensure text remains readable
   },
   '.cm-line:has(.ͼ1)': {
     marginTop: '1.5em',
