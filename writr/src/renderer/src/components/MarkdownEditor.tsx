@@ -13,8 +13,25 @@ import { relativeLineNumbers } from './code-mirror-ui/relativeLineNumbers'
 import { AiOutlineRead } from "react-icons/ai";
 import { TbEdit } from "react-icons/tb";
 import { markdown } from '@codemirror/lang-markdown'
-import { syntaxHighlighting, HighlightStyle } from '@codemirror/language'
+import { syntaxHighlighting, HighlightStyle, LanguageDescription, StreamLanguage } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
+import { markdownLanguage } from "@codemirror/lang-markdown"
+import { javascript } from "@codemirror/lang-javascript"
+import { python } from "@codemirror/lang-python"
+import { html } from "@codemirror/lang-html"
+import { css } from "@codemirror/lang-css"
+import { json } from "@codemirror/lang-json"
+import { xml } from "@codemirror/lang-xml"
+import { sql } from "@codemirror/lang-sql"
+import { php } from "@codemirror/lang-php"
+import { java } from "@codemirror/lang-java"
+import { cpp } from "@codemirror/lang-cpp"
+import { rust } from "@codemirror/lang-rust"
+import { go } from "@codemirror/lang-go"
+import { LanguageSupport } from '@codemirror/language'
+
+// Import language data for comprehensive support
+import { languages } from '@codemirror/language-data'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -31,7 +48,147 @@ export const MarkdownEditor = () => {
     }
   });
 
-  // Markdown syntax highlighting theme
+  // Create a comprehensive language support system
+  const codeLanguages = useMemo(() => {
+    // Create our own language descriptions with immediate loading
+    const customLanguages = [
+      LanguageDescription.of({
+        name: "JavaScript",
+        alias: ["javascript", "js", "jsx", "node"],
+        extensions: ["js", "jsx", "mjs", "cjs"],
+        load() {
+          return Promise.resolve(javascript())
+        }
+      }),
+      LanguageDescription.of({
+        name: "TypeScript",
+        alias: ["typescript", "ts", "tsx"],
+        extensions: ["ts", "tsx"],
+        load() {
+          return Promise.resolve(javascript({ typescript: true }))
+        }
+      }),
+      LanguageDescription.of({
+        name: "Python",
+        alias: ["python", "py"],
+        extensions: ["py", "pyw"],
+        load() {
+          return Promise.resolve(python())
+        }
+      }),
+      LanguageDescription.of({
+        name: "HTML",
+        alias: ["html", "htm"],
+        extensions: ["html", "htm", "xhtml"],
+        load() {
+          return Promise.resolve(html())
+        }
+      }),
+      LanguageDescription.of({
+        name: "CSS",
+        alias: ["css"],
+        extensions: ["css"],
+        load() {
+          return Promise.resolve(css())
+        }
+      }),
+      LanguageDescription.of({
+        name: "JSON",
+        alias: ["json"],
+        extensions: ["json"],
+        load() {
+          return Promise.resolve(json())
+        }
+      }),
+      LanguageDescription.of({
+        name: "XML",
+        alias: ["xml"],
+        extensions: ["xml"],
+        load() {
+          return Promise.resolve(xml())
+        }
+      }),
+      LanguageDescription.of({
+        name: "SQL",
+        alias: ["sql"],
+        extensions: ["sql"],
+        load() {
+          return Promise.resolve(sql())
+        }
+      }),
+      LanguageDescription.of({
+        name: "PHP",
+        alias: ["php"],
+        extensions: ["php"],
+        load() {
+          return Promise.resolve(php())
+        }
+      }),
+      LanguageDescription.of({
+        name: "Java",
+        alias: ["java"],
+        extensions: ["java"],
+        load() {
+          return Promise.resolve(java())
+        }
+      }),
+      LanguageDescription.of({
+        name: "C++",
+        alias: ["cpp", "c++", "cxx", "cc", "c"],
+        extensions: ["cpp", "cxx", "cc", "c", "h"],
+        load() {
+          return Promise.resolve(cpp())
+        }
+      }),
+      LanguageDescription.of({
+        name: "Rust",
+        alias: ["rust", "rs"],
+        extensions: ["rs"],
+        load() {
+          return Promise.resolve(rust())
+        }
+      }),
+      LanguageDescription.of({
+        name: "Go",
+        alias: ["go", "golang"],
+        extensions: ["go"],
+        load() {
+          return Promise.resolve(go())
+        }
+      }),
+      LanguageDescription.of({
+        name: "Shell",
+        alias: ["bash", "sh", "shell", "zsh"],
+        extensions: ["sh", "bash"],
+        load() {
+          // Create a simple shell highlighting using StreamLanguage
+          const shellLang = StreamLanguage.define({
+            startState() { return {} },
+            token(stream) {
+              if (stream.match(/^#.*/)) return "comment"
+              if (stream.match(/^[a-zA-Z_][a-zA-Z0-9_]*/)) {
+                const word = stream.current()
+                if (['if', 'then', 'else', 'elif', 'fi', 'for', 'while', 'do', 'done', 'case', 'esac', 'function'].includes(word)) {
+                  return "keyword"
+                }
+                return "variableName"
+              }
+              if (stream.match(/^["'][^"']*["']/)) return "string"
+              if (stream.match(/^\$[a-zA-Z_][a-zA-Z0-9_]*/)) return "variableName"
+              stream.next()
+              return null
+            }
+          })
+          return Promise.resolve(new LanguageSupport(shellLang))
+        }
+      })
+    ]
+
+    // Combine with language-data languages for broader support
+    return [...customLanguages, ...languages]
+  }, [])
+
+  // Enhanced syntax highlighting for code blocks
   const markdownHighlightStyle = HighlightStyle.define([
     // Headers
     { tag: tags.heading1, color: '#2563eb', fontWeight: 'bold', fontSize: '1.5em' },
@@ -46,22 +203,33 @@ export const MarkdownEditor = () => {
     { tag: tags.emphasis, fontStyle: 'italic', color: '#4b5563' },
     { tag: tags.strikethrough, textDecoration: 'line-through', color: '#6b7280' },
 
-    // Code
-    {
-      tag: tags.monospace,
-      backgroundColor: '#f3f4f6',
-      color: '#dc2626',
-      fontFamily: 'JetBrains Mono',
-      padding: '2px 4px',
-      borderRadius: '3px'
-    },
-    {
-      tag: tags.special(tags.string),
-      backgroundColor: '#1f2937',
-      color: '#10b981',
-      padding: '8px 12px',
-      borderRadius: '6px'
-    },
+    // Inline code
+    { tag: tags.monospace, backgroundColor: '#f3f4f6', color: '#dc2626', fontFamily: 'JetBrains Mono', padding: '2px 4px', borderRadius: '3px' },
+
+    // Code block syntax highlighting
+    { tag: tags.keyword, color: '#7c3aed', fontWeight: 'bold' },
+    { tag: tags.string, color: '#059669', fontStyle: 'normal' },
+    { tag: tags.comment, color: '#6b7280', fontStyle: 'italic' },
+    { tag: tags.number, color: '#dc2626' },
+    { tag: tags.operator, color: '#dc2626' },
+    { tag: tags.punctuation, color: '#374151' },
+    { tag: tags.bracket, color: '#374151' },
+    { tag: tags.variableName, color: '#1f2937' },
+    { tag: tags.function(tags.variableName), color: '#2563eb', fontWeight: 'bold' },
+    { tag: tags.definition(tags.variableName), color: '#7c2d12' },
+    { tag: tags.typeName, color: '#0891b2' },
+    { tag: tags.className, color: '#0891b2' },
+    { tag: tags.propertyName, color: '#dc2626' },
+    { tag: tags.literal, color: '#059669' },
+    { tag: tags.bool, color: '#7c3aed' },
+    { tag: tags.null, color: '#7c3aed' },
+    { tag: tags.atom, color: '#dc2626' },
+    { tag: tags.unit, color: '#dc2626' },
+    { tag: tags.modifier, color: '#7c3aed' },
+    { tag: tags.namespace, color: '#0891b2' },
+    { tag: tags.escape, color: '#dc2626' },
+    { tag: tags.special(tags.string), color: '#059669' },
+    { tag: tags.regexp, color: '#dc2626' },
 
     // Links
     { tag: tags.link, color: '#2563eb', textDecoration: 'underline' },
@@ -69,16 +237,9 @@ export const MarkdownEditor = () => {
 
     // Lists
     { tag: tags.list, color: '#374151' },
-    { tag: tags.operator, color: '#6366f1', fontWeight: 'bold' },
 
     // Quotes
-    {
-      tag: tags.quote,
-      color: '#6b7280',
-      fontStyle: 'italic',
-      borderLeft: '4px solid #d1d5db',
-      paddingLeft: '12px'
-    },
+    { tag: tags.quote, color: '#6b7280', fontStyle: 'italic', borderLeft: '4px solid #d1d5db', paddingLeft: '12px' },
 
     // Markdown meta characters
     { tag: tags.meta, color: '#9ca3af', opacity: '0.7' },
@@ -86,19 +247,16 @@ export const MarkdownEditor = () => {
     // Horizontal rules
     { tag: tags.contentSeparator, color: '#d1d5db' },
 
-    // Default text
-    { tag: tags.content, color: '#374151', },
-
     // Processing instructions (for things like front matter)
     { tag: tags.processingInstruction, color: '#7c3aed', fontStyle: 'italic' }
   ])
 
-  // Dark theme variant
+  // Dark theme variant with comprehensive code highlighting
   const markdownHighlightStyleDark = HighlightStyle.define([
     // Headers
     { tag: tags.heading1, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.5em' },
     { tag: tags.heading2, color: '#3b82f6', fontWeight: 'bold', fontSize: '1.3em' },
-    { tag: tags.heading3, color: '#2563eb', fontWeight: 'bold', fontSize: '1.2em' },
+    { tag: tags.heading3, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.2em' },
     { tag: tags.heading4, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.1em' },
     { tag: tags.heading5, color: '#60a5fa', fontWeight: 'bold' },
     { tag: tags.heading6, color: '#60a5fa', fontWeight: 'bold' },
@@ -108,25 +266,33 @@ export const MarkdownEditor = () => {
     { tag: tags.emphasis, fontStyle: 'italic', color: '#e5e7eb' },
     { tag: tags.strikethrough, textDecoration: 'line-through', color: '#9ca3af' },
 
+    // Inline code
+    { tag: tags.monospace, backgroundColor: '#374151', color: '#fbbf24', fontFamily: 'JetBrains Mono', padding: '2px 4px', borderRadius: '3px' },
 
-    // Code
-    {
-      tag: tags.special(tags.string),
-      backgroundColor: '',
-      color: '#34d399',
-      padding: '8px 12px',
-      borderRadius: '6px'
-    },
-    {
-      tag: tags.special(tags.monospace),
-      backgroundColor: '#f3f4f6',
-      color: '#dc2626',
-      fontFamily: 'JetBrains Mono',
-      padding: '2px 4px',
-      borderRadius: '3px'
-    },
-
-
+    // Code block syntax highlighting - dark theme
+    { tag: tags.keyword, color: '#c084fc', fontWeight: 'bold' },
+    { tag: tags.string, color: '#6ee7b7', fontStyle: 'normal' },
+    { tag: tags.comment, color: '#9ca3af', fontStyle: 'italic' },
+    { tag: tags.number, color: '#fbbf24' },
+    { tag: tags.operator, color: '#f87171' },
+    { tag: tags.punctuation, color: '#d1d5db' },
+    { tag: tags.bracket, color: '#d1d5db' },
+    { tag: tags.variableName, color: '#f9fafb' },
+    { tag: tags.function(tags.variableName), color: '#60a5fa', fontWeight: 'bold' },
+    { tag: tags.definition(tags.variableName), color: '#fbbf24' },
+    { tag: tags.typeName, color: '#67e8f9' },
+    { tag: tags.className, color: '#67e8f9' },
+    { tag: tags.propertyName, color: '#f87171' },
+    { tag: tags.literal, color: '#6ee7b7' },
+    { tag: tags.bool, color: '#c084fc' },
+    { tag: tags.null, color: '#c084fc' },
+    { tag: tags.atom, color: '#fbbf24' },
+    { tag: tags.unit, color: '#fbbf24' },
+    { tag: tags.modifier, color: '#c084fc' },
+    { tag: tags.namespace, color: '#67e8f9' },
+    { tag: tags.escape, color: '#f87171' },
+    { tag: tags.special(tags.string), color: '#6ee7b7' },
+    { tag: tags.regexp, color: '#f87171' },
 
     // Links
     { tag: tags.link, color: '#60a5fa', textDecoration: 'underline' },
@@ -134,16 +300,9 @@ export const MarkdownEditor = () => {
 
     // Lists
     { tag: tags.list, color: '#f9fafb' },
-    { tag: tags.operator, color: '#8b5cf6', fontWeight: 'bold' },
 
     // Quotes
-    {
-      tag: tags.quote,
-      color: '#9ca3af',
-      fontStyle: 'italic',
-      borderLeft: '4px solid #4b5563',
-      paddingLeft: '12px'
-    },
+    { tag: tags.quote, color: '#9ca3af', fontStyle: 'italic', borderLeft: '4px solid #4b5563', paddingLeft: '12px' },
 
     // Markdown meta characters
     { tag: tags.meta, color: '#6b7280', opacity: '0.7' },
@@ -211,10 +370,16 @@ export const MarkdownEditor = () => {
       minHeight: '100%',
       padding: '0'
     },
-    // Style for code blocks
     '.cm-line': {
       paddingLeft: '0',
       paddingRight: '16px'
+    },
+    // Code block background
+    '.cm-foldGutter .cm-gutterElement': {
+      fontSize: '14px'
+    },
+    '&.cm-focused .cm-selectionBackground': {
+      backgroundColor: '#3b82f620'
     },
     // Better spacing for headers
     '.cm-line:has(.ͼ1)': { // heading1
@@ -237,17 +402,21 @@ export const MarkdownEditor = () => {
       history(),
       keymap.of([
         ...defaultKeymap,
-        ...historyKeymap, // Add this - provides Ctrl+Z/Ctrl+Y keybindings
+        ...historyKeymap,
       ]),
       vim(),
       gutterTheme,
-      markdown(),
+      markdown({
+        base: markdownLanguage,
+        addKeymap: true,
+        codeLanguages: codeLanguages // Use the comprehensive language list
+      }),
       syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
       relativeLineNumbers(),
       EditorView.lineWrapping,
       markdownEditorTheme
     ],
-    [isDarkMode]
+    [isDarkMode, codeLanguages]
   )
 
   // Safe auto-save with note tracking
@@ -503,7 +672,7 @@ export const MarkdownEditor = () => {
                   code: ({ children, className }) => {
                     const isInline = !className
                     return isInline ? (
-                      <code className="px-1.5 py-0.5 bg-emerald-50/50 dark:text-white text-gray-800 rounded text-sm ">
+                      <code className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-300 text-gray-800 rounded text-sm font-mono">
                         {children}
                       </code>
                     ) : (
