@@ -5,9 +5,9 @@ import {
   DraggableTopBar,
   ActionButtonsRow,
   NotePreviewList,
-  MarkdownEditor,
 } from './components'
 
+import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 
 import { useRef } from 'react'
 
@@ -18,7 +18,6 @@ const App = () => {
   }
   return (
     <>
-
       <DraggableTopBar />
       <RootLayout>
         <Sidebar className="p-2">
