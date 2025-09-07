@@ -35,7 +35,7 @@ import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { checkboxExtension } from './checkboxExtension'
 import { statusBarExtension } from './statusbar'
 import remarkGfm from 'remark-gfm'
-
+import { MermaidDiagram } from './MermaidDiagram'
 
 
 
@@ -359,6 +359,11 @@ export const MarkdownEditor = () => {
                       {children}
                     </li>
                   ),
+                  strong: ({ children }) => (
+                    <strong className="font-bold text-gray-900 dark:text-white">
+                      {children}
+                    </strong>
+                  ),
                   blockquote: ({ children }) => (
                     <blockquote className="border-l-4 border-lime-200 pl-4 py-2 mb-4 bg-lime-300/20 italic dark:text-white text-gray-700">
                       {children}
@@ -401,6 +406,12 @@ export const MarkdownEditor = () => {
                     const match = /language-(\w+)/.exec(className || '')
                     const language = match ? match[1] : ''
                     const isInline = !match
+                    const codeContent = String(children).replace(/\n$/, '')
+
+                    // Handle Mermaid diagrams
+                    if (language === 'mermaid') {
+                      return <MermaidDiagram chart={codeContent} />
+                    }
 
                     return isInline ? (
                       <code
@@ -412,7 +423,7 @@ export const MarkdownEditor = () => {
                     ) : (
                       <SyntaxHighlighter
                         PreTag="div"
-                        children={String(children).replace(/\n$/, '')}
+                        children={codeContent}
                         language={language}
                         customStyle={{
                           margin: '1rem 0',

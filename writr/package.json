@@ -48,6 +48,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "fs-extra": "^11.2.0",
     "jotai": "^2.13.1",
+    "mermaid": "^11.11.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.6",
     "remark-gfm": "^4.0.1"
