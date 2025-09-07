@@ -10,7 +10,7 @@ Welcome to **Writer**. This is a _markdown_ writing application.
 
 https://github.com/user-attachments/assets/cbf68680-57e6-4bd6-a820-2ce9f0b618a8
 
-## Version 1.0.2
+## Version 1.0.3
 
 ##### Features of Writer:
 
