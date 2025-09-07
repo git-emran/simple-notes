@@ -12,7 +12,6 @@ https://github.com/user-attachments/assets/606b60d6-c4fc-4550-9fe0-38ff04cdccff
 
 <img width="1768" height="1040" alt="lspwriter" src="https://github.com/user-attachments/assets/325477d3-ceac-4cb6-b984-01a03fb73fb3" />
 
-
 ## Version 1.0.3
 
 ##### Features of Writer:
@@ -31,6 +30,8 @@ https://github.com/user-attachments/assets/606b60d6-c4fc-4550-9fe0-38ff04cdccff
 # What is Writer
 
 Writer is a Desktop markdown application made for Vim enthusiasts. I use Vim constantly so I made an app that supports vim so that I can write in peace. Currently available only on macOS. It has the basic markdown feature.
+
+**How does it fit into my workflow?** Most of my notes are not high level documentation, they are brain dumps, disposable thoughts, or just to remember something, I write it. Most note taking apps does not fit into what I do as a developer. So I made very minimal markdown writer that is very suitable for disposable work. It has LSP so writing code or praciticing leetcode is easier and fast.
 
 ---
 
