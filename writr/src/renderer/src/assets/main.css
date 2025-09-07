@@ -27,6 +27,24 @@
   line-height: 1.5;
 }
 
+/* Light mode */
+.cm-table-delimiter {
+  color: #3b82f6;
+  font-weight: bold;
+}
+.cm-table-cell {
+  color: #065f46;
+}
+
+/* Dark mode */
+.dark .cm-table-delimiter {
+  color: #60a5fa;
+  font-weight: bold;
+}
+.dark .cm-table-cell {
+  color: #34d399;
+}
+
 cm-mygutter {
   background-color: '#010100';
 }

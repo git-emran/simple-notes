@@ -34,6 +34,10 @@ import { sql } from '@codemirror/lang-sql'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { checkboxExtension } from './checkboxExtension'
 import { statusBarExtension } from './statusbar'
+import remarkGfm from 'remark-gfm'
+
+
+
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -91,7 +95,6 @@ export const MarkdownEditor = () => {
         base: markdownLanguage,
         codeLanguages,
         addKeymap: true,
-
       }),
       javascript(),
       python(),
@@ -103,7 +106,6 @@ export const MarkdownEditor = () => {
       cpp(),
       css(),
       sql(),
-
 
       typescriptLanguage,
       indentationMarkers({
@@ -128,6 +130,7 @@ export const MarkdownEditor = () => {
       EditorView.lineWrapping,
       checkboxExtension,
       statusBarExtension,
+
     ],
     [isDarkMode, codeLanguages]
   )
@@ -304,6 +307,7 @@ export const MarkdownEditor = () => {
           <div className="absolute inset-0 h-full overflow-auto p-6 bg-transparent dark:bg-transparent">
             <div className="prose prose-sm max-w-fit">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   h1: ({ children }) => (
                     <h1 className=" text-gray-800 dark:text-white font-sans text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-400">
@@ -360,6 +364,39 @@ export const MarkdownEditor = () => {
                       {children}
                     </blockquote>
                   ),
+                  // Enhanced table rendering for preview mode
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-6">
+                      <table className="min-w-full border-collapse bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  thead: ({ children }) => (
+                    <thead className="bg-gray-50 dark:bg-gray-900">
+                      {children}
+                    </thead>
+                  ),
+                  tbody: ({ children }) => (
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {children}
+                    </tbody>
+                  ),
+                  tr: ({ children }) => (
+                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      {children}
+                    </tr>
+                  ),
+                  th: ({ children }) => (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => (
+                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                      {children}
+                    </td>
+                  ),
                   code: ({ children, className, node, ...rest }) => {
                     const match = /language-(\w+)/.exec(className || '')
                     const language = match ? match[1] : ''
@@ -367,7 +404,7 @@ export const MarkdownEditor = () => {
 
                     return isInline ? (
                       <code
-                        className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-300 text-gray-800 rounded text-sm font-mono"
+                        className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-200 text-gray-800 rounded text-sm font-mono"
                         {...rest}
                       >
                         {children}
