@@ -6,9 +6,12 @@ Welcome to **Writer**. This is a _markdown_ writing application.
 
 [⬇️ Download latest macOS App](https://drive.google.com/drive/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1?usp=drive_link)
 
-<img width="2464" height="2002" alt="writer 1 2" src="https://github.com/user-attachments/assets/2af98cac-780a-4aea-8ad4-57519d74d8b7" />
+<img width="3000" height="1774" alt="writer1 3" src="https://github.com/user-attachments/assets/8be373a9-9b57-448c-910e-898c044813f2" />
 
-https://github.com/user-attachments/assets/cbf68680-57e6-4bd6-a820-2ce9f0b618a8
+https://github.com/user-attachments/assets/606b60d6-c4fc-4550-9fe0-38ff04cdccff
+
+<img width="1768" height="1040" alt="lspwriter" src="https://github.com/user-attachments/assets/325477d3-ceac-4cb6-b984-01a03fb73fb3" />
+
 
 ## Version 1.0.3
 
@@ -22,8 +25,6 @@ https://github.com/user-attachments/assets/cbf68680-57e6-4bd6-a820-2ce9f0b618a8
 - Syntax Highlighting and Auto-Completions for 10+ Languages.
 - Draggable sidebar.
 - Default Transparent Background.
-
----
 
 ---
 
@@ -83,7 +84,7 @@ Here we have a numbered list:
 
 Inline code is written as double `
 
-Code block snippets using the following syntax \_\`\`\`js\`\`\`
+Code block snippets using the following syntax \_\`\`\`js or py\`\`\`
 
 ### Links
 
