@@ -24,6 +24,7 @@ import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { checkboxExtension } from './checkboxExtension'
+import { statusBarExtension } from './statusbar'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -106,6 +107,7 @@ export const MarkdownEditor = () => {
       relativeLineNumbers(),
       EditorView.lineWrapping,
       checkboxExtension,
+      statusBarExtension,
     ],
     [isDarkMode, codeLanguages]
   )

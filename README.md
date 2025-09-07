@@ -2,7 +2,7 @@
 
 #electron #typescript #react #desktop-app
 
-Welcome to **Writer**. This is a markdown writing application.
+Welcome to **Writer**. This is a _markdown_ writing application.
 
 [⬇️ Download latest macOS App](https://drive.google.com/drive/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1?usp=drive_link)
 
@@ -12,25 +12,18 @@ https://github.com/user-attachments/assets/cbf68680-57e6-4bd6-a820-2ce9f0b618a8
 
 ## Version 1.0.2
 
-##### New Updates to Writer:
+##### Features of Writer:
 
-- Relative Line numbers only
-- Syntax Highlighting for 10+ Languages
-- Preview Mode update
-- Race condition bug fixes.
+- 🔥 **Vim motions**. Since I use vim for everything, I decided to add vim motions by default. No other way to write lol.
+- 🔥 LSP support for 10+ languages inside the `Code Block`.
+- 🔥 Relative Line numbers only.
+- Codemirror 6 under the hood.
+- Native Preview mode.
+- Syntax Highlighting and Auto-Completions for 10+ Languages.
+- Draggable sidebar.
+- Default Transparent Background.
 
 ---
-
-### Version 1.0.1
-
-I have introduced some new updates to my notes.
-
-- Transitioned from MDX to Codemirror 6
-- Vim keyBindigs. Since I use vim for everything, I decided to add vim keybindings by default. No other way to write lol.
-- Line numbers
-- Native preview mode
-- Transparent Background
-- Colorscheme update. Currently the editor has transparent mode enabled by default.
 
 ---
 

@@ -77,14 +77,14 @@ export const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#6b7280' },
   {
     tag: tags.monospace,
-    backgroundColor: '#AADCFF',
-    color: '#103956',
+    backgroundColor: '#9AC1DC',
+    color: '#0C5A91',
     fontFamily: 'JetBrains Mono',
     padding: '2px 4px',
     borderRadius: '3px'
   },
   { tag: tags.keyword, color: '#B7211F', fontWeight: 'bold' },
-  { tag: tags.string, color: '#596600', fontStyle: 'normal' },
+  { tag: tags.string, color: '#059669', fontStyle: 'normal' },
   { tag: tags.comment, color: '#6b7280', fontStyle: 'italic' },
   { tag: tags.number, color: '#D33682' },
   { tag: tags.operator, color: '#6b7280' },
