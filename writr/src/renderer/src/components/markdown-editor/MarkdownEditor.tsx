@@ -18,6 +18,12 @@ import { markdownLanguage } from "@codemirror/lang-markdown"
 import SyntaxHighlighter from 'react-syntax-highlighter'
 import { gutterTheme, markdownEditorTheme, markdownHighlightStyle, markdownHighlightStyleDark } from './editorTheme'
 import { codeLanguages } from './languageConfig'
+import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
+import { autoCloseTags } from '@codemirror/lang-html'
+import { javascript } from '@codemirror/lang-javascript'
+import { python } from '@codemirror/lang-python'
+import { indentationMarkers } from '@replit/codemirror-indentation-markers'
+import { checkboxExtension } from './checkboxExtension'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -67,15 +73,39 @@ export const MarkdownEditor = () => {
       ]),
       vim(),
       drawSelection(),
+      closeBrackets(),
+
+      autoCloseTags,
       gutterTheme,
       markdown({
         base: markdownLanguage,
         codeLanguages,
         addKeymap: true,
+
       }),
+      javascript(),
+      python(),
+      indentationMarkers({
+        highlightActiveBlock: false,
+        hideFirstIndent: true,
+        markerType: "codeOnly",
+        thickness: 1,
+        colors: {
+          light: '#B9B9B9',
+          dark: '#434343',
+          activeLight: '#B9B9B9',
+          activeDark: '#434343',
+        }
+      }),
+
       syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
+      autocompletion({
+        activateOnTyping: true,
+        icons: true,
+      }),
       relativeLineNumbers(),
       EditorView.lineWrapping,
+      checkboxExtension,
     ],
     [isDarkMode, codeLanguages]
   )
@@ -130,6 +160,7 @@ export const MarkdownEditor = () => {
 
     // Wait for any ongoing saves to complete
     await saveQueueRef.current
+    currentNoteTitleRef.current = noteTitle
 
     // Only proceed if note hasn't changed
     if (currentNoteTitleRef.current !== noteTitle) return
