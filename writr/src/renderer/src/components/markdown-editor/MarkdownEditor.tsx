@@ -22,6 +22,15 @@ import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { autoCloseTags } from '@codemirror/lang-html'
 import { javascript } from '@codemirror/lang-javascript'
 import { python } from '@codemirror/lang-python'
+import { rust } from '@codemirror/lang-rust'
+import { php } from '@codemirror/lang-php'
+import { typescriptLanguage } from '@codemirror/lang-javascript'
+import { go } from '@codemirror/lang-go'
+import { cpp } from '@codemirror/lang-cpp'
+import { html } from '@codemirror/lang-html'
+import { css } from '@codemirror/lang-css'
+import { java } from '@codemirror/lang-java'
+import { sql } from '@codemirror/lang-sql'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { checkboxExtension } from './checkboxExtension'
 import { statusBarExtension } from './statusbar'
@@ -86,6 +95,17 @@ export const MarkdownEditor = () => {
       }),
       javascript(),
       python(),
+      rust(),
+      html(),
+      php(),
+      go(),
+      java(),
+      cpp(),
+      css(),
+      sql(),
+
+
+      typescriptLanguage,
       indentationMarkers({
         highlightActiveBlock: false,
         hideFirstIndent: true,
