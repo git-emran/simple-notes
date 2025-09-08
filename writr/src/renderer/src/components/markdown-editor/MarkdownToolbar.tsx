@@ -167,7 +167,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   const applyLineFormat = (prefix: string) => {
     if (!view) return
 
-    const { from, to } = view.state.selection.main
+    const { from } = view.state.selection.main
     const line = view.state.doc.lineAt(from)
     const lineText = line.text
 
@@ -248,7 +248,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   const insertCheckbox = () => {
     if (!view) return
 
-    const { from, to } = view.state.selection.main
+    const { from } = view.state.selection.main
     const line = view.state.doc.lineAt(from)
 
     const checkboxText = "- [ ] "
@@ -267,7 +267,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   const insertHorizontalRule = () => {
     if (!view) return
 
-    const { from, to } = view.state.selection.main
+    const { from } = view.state.selection.main
     const line = view.state.doc.lineAt(from)
 
     const hrText = "\n---\n"
@@ -303,7 +303,6 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   }
 
   const btnClass = "p-[0.18rem] rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-600 dark:text-gray-300"
-  const activeBtnClass = "p-4 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
 
   const renderDropdown = () => {
     if (!showHeaderDropdown) return null
@@ -365,7 +364,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaStrikethrough />
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
 
       {/* Headers Dropdown */}
       <div className="relative">
@@ -384,7 +383,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
       </div>
 
       <button
-        onClick={() => applyLineFormat("> ")}
+        onClick={() => applyLineFormat(">")}
         disabled={!view}
         className={btnClass}
         title="Quote (Ctrl+Q)"
@@ -392,7 +391,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaQuoteRight />
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
 
       {/* Lists */}
       <button
@@ -422,7 +421,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaCheckSquare />
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
 
       {/* Code */}
       <button
@@ -443,7 +442,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <div className="text-xs font-mono">{`{}`}</div>
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
 
       {/* Insertions */}
       <button
