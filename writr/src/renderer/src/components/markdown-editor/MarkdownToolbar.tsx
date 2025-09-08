@@ -311,20 +311,21 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
     return createPortal(
       <div
         ref={dropdownRef}
-        className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-[1000] max-w-xl py-2 min-w-[150px]"
+        className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-[1000] max-w-md py-2 min-w-[150px]"
       >
         {[1, 2, 3, 4, 5, 6].map((level) => (
           <button
             key={level}
             onClick={() => applyHeaderFormat(level)}
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+            className="w-full px-4 py-2 text-left hover:bg-gray-300 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
             role="menuitem"
           >
             <span className="font-bold">H{level}</span>
             <span className="ml-2 text-sm opacity-75">
               {"#".repeat(level)} Heading {level}
             </span>
-            <span className="ml-auto text-xs opacity-60">
+            {" "}
+            <span className="text-[0.6rem] p-1 rounded-sm font-medium bg-gray-100 shadow-lg text-gray-700">
               Ctrl+{level}
             </span>
           </button>
@@ -335,7 +336,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   }
 
   return (
-    <div className="flex items-center gap-3 px-3 py-1 border-b border-gray-400/30 dark:border-gray-500 bg-transparent dark:bg-gray-800 overflow-x-auto max-w-full">
+    <div className="flex items-center gap-3 px-3 py-1 border-b border-gray-400/30 dark:border-gray-500 bg-transparent dark:bg-transparent overflow-x-auto max-w-full">
       {/* Text Formatting */}
       <button
         onClick={() => applyFormat("**", "**")}
@@ -364,7 +365,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaStrikethrough />
       </button>
 
-      <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
 
       {/* Headers Dropdown */}
       <div className="relative">
@@ -391,7 +392,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaQuoteRight />
       </button>
 
-      <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
 
       {/* Lists */}
       <button
@@ -421,7 +422,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaCheckSquare />
       </button>
 
-      <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
 
       {/* Code */}
       <button
@@ -442,7 +443,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <div className="text-xs font-mono">{`{}`}</div>
       </button>
 
-      <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-300 mx-1" />
 
       {/* Insertions */}
       <button
@@ -469,7 +470,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         className={btnClass}
         title="Horizontal Rule (Ctrl+H)"
       >
-        <div className="text-xs font-bold">---</div>
+        <div className="text-xs font-bold text-slate-700 dark:text-slate-200">---</div>
       </button>
 
       {renderDropdown()}

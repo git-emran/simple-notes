@@ -13,14 +13,12 @@
   }
 }
 /* For the custom drawn selection (via drawSelection) */
-.cm-selectionBackground {
-  background-color: rgba(52, 151, 219, 0.1); /* Light blue tint; adjust opacity */
-}
 
-/* For native browser selection (as fallback when not focused) */
-.cm-editor ::selection {
-  background-color: rgba(52, 151, 219, 0.1);
+.cm-editor .cm-selectionBackground {
+  background-color: rgba(100, 149, 200, 0.2) !important; /* 0.5 = 50% opacity */
 }
+/* For native browser selection (as fallback when not focused) */
+
 .cm-editor {
   font-family: 'JetBrains Mono', monospace !important; /* any font you like */
   font-size: 12px; /* adjust size */
@@ -34,6 +32,10 @@
 }
 .cm-table-cell {
   color: #065f46;
+}
+
+.cm-editor .cm-quote {
+  background-color: #3b82f6;
 }
 
 /* Dark mode */

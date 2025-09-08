@@ -38,19 +38,11 @@ export const markdownEditorTheme = EditorView.theme({
   '.cm-foldGutter .cm-gutterElement': {
     fontSize: '14px'
   },
-  '&.cm-focused .cm-selectionBackground': {
-    backgroundColor: 'rgba(59, 130, 246, 0.25)' // lighter
-  },
+
   '.cm-selectionBackground': {
     backgroundColor: 'rgba(20, 130, 246, 0.15)' // lighter
   },
-  '.cm-content ::selection': {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)' // lighter fallback
-  },
 
-  '.cm-selectionBackground *': {
-    color: 'transparent' // Ensure text remains readable
-  },
   '.cm-line:has(.ͼ1)': {
     marginTop: '1.5em',
     marginBottom: '0.5em'
@@ -111,10 +103,12 @@ export const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.list, color: '#374151' },
   {
     tag: tags.quote,
-    color: '#6b7280',
+    color: '#374151',
     fontStyle: 'italic',
     borderLeft: '4px solid #d1d5db',
-    paddingLeft: '12px'
+    paddingLeft: '12px',
+    padding: '4px',
+    backgroundColor: 'rgba(288, 255, 0, 0.19)'
   },
   { tag: tags.meta, color: '#9ca3af', opacity: '0.7' },
   { tag: tags.contentSeparator, color: '#d1d5db' },
@@ -170,10 +164,13 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
     color: '#9ca3af',
     fontStyle: 'italic',
     borderLeft: '4px solid #4b5563',
-    paddingLeft: '12px'
+    paddingLeft: '12px',
+    padding: '4px',
+    borderRadius: '3px',
+    backgroundColor: 'rgba(288, 255, 0, 0.19)'
   },
   { tag: tags.meta, color: '#6b7280', opacity: '0.7' },
-  { tag: tags.contentSeparator, color: '#4b5563' },
+  { tag: tags.contentSeparator, color: '#000000' },
   { tag: tags.content, color: '#D6D6D6' },
   { tag: tags.processingInstruction, color: '#a78bfa', fontStyle: 'italic' }
 ])
