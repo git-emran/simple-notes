@@ -1,16 +1,24 @@
 # Writer
 
-> Built by Emran Hossain
+> Built with love by A passionate Vim enthusiast, Emran Hossain.
 
-Welcome to **Writer**. This is a _markdown_ Text editor. With the power of the built in LSP (language server protocol) you can build your documentation, practice your DSA, or document in general using the markdown syntax. Also it support Vim motions.
+Welcome to **Writer**. This is a _markdown_ Text editor. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
 
 [⬇️ Download latest macOS App](https://drive.google.com/drive/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1?usp=drive_link)
 
-<img width="3000" height="1774" alt="writer1 3" src="https://github.com/user-attachments/assets/8be373a9-9b57-448c-910e-898c044813f2" />
 
-https://github.com/user-attachments/assets/606b60d6-c4fc-4550-9fe0-38ff04cdccff
+https://github.com/user-attachments/assets/606b60d6-c4fc
 
-<img width="1768" height="1040" alt="lspwriter" src="https://github.com/user-attachments/assets/325477d3-ceac-4cb6-b984-01a03fb73fb3" />
+
+# Use Features like 
+
+### "Flowchart creation" using Mermaidjs
+https://github.com/user-attachments/assets/343c8956-26da-4506-9fe6-23691dcf8c11
+
+
+### Custom Syntax to insert Tables, CodeBlocks etc.
+https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
+
 
 ## Version 1.0.4
 
