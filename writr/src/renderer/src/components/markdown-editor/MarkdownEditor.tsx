@@ -461,7 +461,7 @@ export const MarkdownEditor = () => {
                       </thead>
                     ),
                     tbody: ({ children }) => (
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      <tbody className="divide-y font-light divide-gray-200 dark:divide-gray-700">
                         {children}
                       </tbody>
                     ),
@@ -471,7 +471,7 @@ export const MarkdownEditor = () => {
                       </tr>
                     ),
                     th: ({ children }) => (
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0">
                         {children}
                       </th>
                     ),
