@@ -11,7 +11,7 @@ import { autoSavingTime } from '@shared/constants'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
 import { AiOutlineRead } from "react-icons/ai";
-import { TbEdit } from "react-icons/tb";
+import { HiOutlineEye } from "react-icons/hi2";
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
 import { markdownLanguage } from "@codemirror/lang-markdown"
@@ -38,6 +38,8 @@ import remarkGfm from 'remark-gfm'
 import { MermaidDiagram } from './MermaidDiagram'
 import { MarkdownToolbar } from './MarkdownToolbar'
 import { tabAsSpaces } from './tabAsSpaces'
+import { TbLayoutSidebarRightExpandFilled } from "react-icons/tb";
+import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -53,6 +55,7 @@ export const MarkdownEditor = () => {
   const currentNoteTitleRef = useRef<string>('')
   const isSwitchingRef = useRef(false)
   const [isPreview, setIsPreview] = useState(false)
+  const [isFullPreview, setIsFullPreview] = useState(false) // New state for full preview
   const [currentContent, setCurrentContent] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
 
@@ -250,7 +253,7 @@ export const MarkdownEditor = () => {
 
   // Draggable resize
   useEffect(() => {
-    if (!isPreview) return
+    if (!isPreview || isFullPreview) return // Disabled for full preview mode
     const dragBar = dragBarRef.current
     const editor = editorContainerRef.current
     const preview = previewContainerRef.current
@@ -286,7 +289,28 @@ export const MarkdownEditor = () => {
     return () => {
       dragBar.removeEventListener('mousedown', onMouseDown)
     }
-  }, [isPreview])
+  }, [isPreview, isFullPreview])
+
+  const handleFullPreviewToggle = () => {
+    // If already in full preview, switch to edit mode.
+    // Otherwise, switch to full preview mode.
+    if (isFullPreview) {
+      setIsFullPreview(false);
+      setIsPreview(false);
+    } else {
+      setIsFullPreview(true);
+      setIsPreview(true);
+    }
+  }
+
+  const handleSplitViewToggle = () => {
+    if (isFullPreview) {
+      setIsFullPreview(false)
+      setIsPreview(true)
+    } else {
+      setIsPreview(!isPreview)
+    }
+  }
 
   if (!selectedNote) {
     return (
@@ -303,20 +327,34 @@ export const MarkdownEditor = () => {
         <h2 className="text-sm font-sans font-medium text-gray-700 dark:text-white truncate">
           {selectedNote.title}
         </h2>
-        <button
-          onClick={() => setIsPreview(!isPreview)}
-          className={`px-3 py-1 text-xs font-medium rounded transition-all ${isPreview
-            ? 'bg-blue-500 text-white shadow-sm'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          type="button"
-        >
-          {isPreview ? <TbEdit /> : <AiOutlineRead />}
-        </button>
+        <div className='flex gap-2'>
+          {!isFullPreview && (
+            <button
+              onClick={handleSplitViewToggle}
+              className={`px-3 py-1 text-xs font-medium rounded transition-all ${isPreview && !isFullPreview
+                ? 'bg-blue-500 text-white shadow-sm'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+                }`}
+              type="button"
+            >
+              {isPreview ? <TbLayoutSidebarRightCollapse /> : <TbLayoutSidebarRightExpandFilled />}
+            </button>
+          )}
+          <button
+            onClick={handleFullPreviewToggle}
+            className={`px-3 py-1 text-xs font-medium rounded transition-all ${isFullPreview
+              ? 'bg-blue-500 text-white shadow-sm'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+              }`}
+            type="button"
+          >
+            <HiOutlineEye />
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
-      <MarkdownToolbar view={viewRef.current} />
+      {!isFullPreview && <MarkdownToolbar view={viewRef.current} />}
 
       {/* Editor + Preview */}
       <div
@@ -326,7 +364,10 @@ export const MarkdownEditor = () => {
         <div
           ref={editorContainerRef}
           className="h-full"
-          style={{ width: isPreview ? '50%' : '100%' }}
+          style={{
+            width: isFullPreview ? '0' : (isPreview ? '50%' : '100%'),
+            display: isFullPreview ? 'none' : 'block'
+          }}
         >
           <div
             ref={editorRef}
@@ -336,14 +377,16 @@ export const MarkdownEditor = () => {
 
         {isPreview && (
           <>
-            <div
-              ref={dragBarRef}
-              className="w-1 cursor-col-resize bg-gray-300 dark:bg-gray-600 hover:bg-gray-500 z-10"
-            />
+            {!isFullPreview && (
+              <div
+                ref={dragBarRef}
+                className="w-1 cursor-col-resize bg-gray-300 dark:bg-gray-600 hover:bg-gray-500 z-10"
+              />
+            )}
             <div
               ref={previewContainerRef}
               className="h-full preview-scrollbar overflow-auto p-6 bg-transparent dark:bg-transparent"
-              style={{ width: '50%' }}
+              style={{ width: isFullPreview ? '100%' : '50%' }}
             >
               <div className="prose prose-sm max-w-fit">
                 <ReactMarkdown
@@ -491,4 +534,3 @@ export const MarkdownEditor = () => {
     </div>
   )
 }
-
