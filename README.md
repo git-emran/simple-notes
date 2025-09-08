@@ -8,15 +8,15 @@ Welcome to **Writer**. This is a _markdown_ Text editor. With the power of the b
 
 <img width="3000" height="2250" alt="writer1" src="https://github.com/user-attachments/assets/7b65408f-930b-471a-8696-0bc0837aa53e" />
 
-# Use Features like 
+# Use Features like
 
 ### "Flowchart creation" using Mermaidjs
+
 https://github.com/user-attachments/assets/343c8956-26da-4506-9fe6-23691dcf8c11
 
-
 ### Custom Syntax to insert Tables, CodeBlocks etc.
-https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
 
+https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
 
 ## Version 1.0.4
 
@@ -40,7 +40,7 @@ https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
 
 Writer is a Desktop markdown application made for Vim enthusiasts. I use Vim constantly so I made an app that supports vim so that I can write in peace. Currently available only on macOS. It has the basic markdown feature.
 
-**How does it fit into my workflow?** Most of my notes are not high level documentation, they are brain dumps, disposable thoughts, or just to remember something, I write it. Most note taking apps does not fit into what I do as a developer. So I made very minimal markdown writer that is very suitable for disposable work. It has LSP so writing code or praciticing leetcode is easier and fast.
+**How does it fit into my workflow?** Most of my notes are not high level documentation, they are brain dumps, disposable thoughts, or just to remember something, I write it. Most note taking apps does not fit into what I do as a developer. So I made a very minimal markdown writer that is very suitable for disposable work. It has LSP so writing code or practicing leetcode is easier and fast.
 
 ---
 
