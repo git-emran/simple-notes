@@ -39,14 +39,16 @@ import { MermaidDiagram } from './MermaidDiagram'
 import { MarkdownToolbar } from './MarkdownToolbar'
 import { tabAsSpaces } from './tabAsSpaces'
 
-
-
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
   const saveNote = useSetAtom(saveNoteAtom)
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  const editorContainerRef = useRef<HTMLDivElement>(null)
+  const previewContainerRef = useRef<HTMLDivElement>(null)
+  const dragBarRef = useRef<HTMLDivElement>(null)
 
   const currentNoteTitleRef = useRef<string>('')
   const isSwitchingRef = useRef(false)
@@ -60,13 +62,18 @@ export const MarkdownEditor = () => {
 
   useEffect(() => {
     const checkDarkMode = () => {
-      setIsDarkMode(document.documentElement.classList.contains('dark') ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches)
+      setIsDarkMode(
+        document.documentElement.classList.contains('dark') ||
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+      )
     }
 
     checkDarkMode()
     const observer = new MutationObserver(checkDarkMode)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     mediaQuery.addEventListener('change', checkDarkMode)
 
@@ -76,27 +83,17 @@ export const MarkdownEditor = () => {
     }
   }, [])
 
-
-
   const baseExtensions = useMemo(
     () => [
       history(),
       markdownEditorTheme,
-      keymap.of([
-        ...defaultKeymap,
-        ...historyKeymap,
-      ]),
+      keymap.of([...defaultKeymap, ...historyKeymap]),
       vim(),
       drawSelection(),
       closeBrackets(),
-
       autoCloseTags,
       gutterTheme,
-      markdown({
-        base: markdownLanguage,
-        codeLanguages,
-        addKeymap: true,
-      }),
+      markdown({ base: markdownLanguage, codeLanguages, addKeymap: true }),
       javascript(),
       python(),
       rust(),
@@ -107,94 +104,79 @@ export const MarkdownEditor = () => {
       cpp(),
       css(),
       sql(),
-
       typescriptLanguage,
       indentationMarkers({
         highlightActiveBlock: false,
         hideFirstIndent: true,
-        markerType: "codeOnly",
+        markerType: 'codeOnly',
         thickness: 1,
         colors: {
           light: '#B9B9B9',
           dark: '#434343',
           activeLight: '#B9B9B9',
           activeDark: '#434343',
-        }
+        },
       }),
-
       syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
-      autocompletion({
-        activateOnTyping: true,
-        icons: true,
-      }),
+      autocompletion({ activateOnTyping: true, icons: true }),
       relativeLineNumbers(),
       EditorView.lineWrapping,
       checkboxExtension,
       statusBarExtension,
       tabAsSpaces,
-
     ],
     [isDarkMode, codeLanguages]
   )
 
   // Optimized save function with queue
-  const executeSave = useCallback(async (content: string, noteTitle: string) => {
-    if (isSwitchingRef.current || currentNoteTitleRef.current !== noteTitle) {
-      return
-    }
+  const executeSave = useCallback(
+    async (content: string, noteTitle: string) => {
+      if (isSwitchingRef.current || currentNoteTitleRef.current !== noteTitle) return
+      isSavingRef.current = true
+      try {
+        await saveNote(content)
+        console.info('Save completed')
+      } catch (error) {
+        console.error('Save failed:', error)
+      } finally {
+        isSavingRef.current = false
+      }
+    },
+    [saveNote]
+  )
 
-    isSavingRef.current = true
-    try {
-      await saveNote(content)
-      console.info('Save completed')
-    } catch (error) {
-      console.error('Save failed:', error)
-    } finally {
-      isSavingRef.current = false
-    }
-  }, [saveNote])
+  const queueSave = useCallback(
+    (content: string, noteTitle: string) => {
+      saveQueueRef.current = saveQueueRef.current.then(() =>
+        executeSave(content, noteTitle)
+      )
+      return saveQueueRef.current
+    },
+    [executeSave]
+  )
 
-  // Queue-based save manager
-  const queueSave = useCallback((content: string, noteTitle: string) => {
-    saveQueueRef.current = saveQueueRef.current.then(() =>
-      executeSave(content, noteTitle)
-    )
-    return saveQueueRef.current
-  }, [executeSave])
-
-  // Optimized debounced autosave
   const debouncedSave = useMemo(
     () =>
       throttle(
-        (content: string, noteTitle: string) => {
-          return queueSave(content, noteTitle)
-        },
+        (content: string, noteTitle: string) => queueSave(content, noteTitle),
         autoSavingTime,
         { leading: false, trailing: true }
       ),
     [queueSave]
   )
 
-  // Optimized manual save
   const handleBlurSave = useCallback(async () => {
     if (!selectedNote || !viewRef.current || isSwitchingRef.current) return
-
     const content = viewRef.current.state.doc.toString()
     const noteTitle = selectedNote.title
-
-    // Cancel pending autosaves
     debouncedSave.cancel()
-
-    // Wait for any ongoing saves to complete
     await saveQueueRef.current
     currentNoteTitleRef.current = noteTitle
-
-    // Only proceed if note hasn't changed
     if (currentNoteTitleRef.current !== noteTitle) return
-
     await queueSave(content, noteTitle)
   }, [selectedNote, queueSave, debouncedSave])
 
+  // Initialize editor
   useEffect(() => {
     if (!selectedNote || !editorRef.current) {
       setCurrentContent('')
@@ -207,7 +189,7 @@ export const MarkdownEditor = () => {
       const newContent = selectedNote.content
 
       debouncedSave.cancel()
-      await saveQueueRef.current // Wait for any pending saves
+      await saveQueueRef.current
 
       currentNoteTitleRef.current = newTitle
       setCurrentContent(newContent)
@@ -232,28 +214,20 @@ export const MarkdownEditor = () => {
         ],
       })
 
-      if (viewRef.current) {
-        viewRef.current.destroy()
-      }
-
-      viewRef.current = new EditorView({
-        state,
-        parent: editorRef.current!,
-      })
-
+      if (viewRef.current) viewRef.current.destroy()
+      viewRef.current = new EditorView({ state, parent: editorRef.current! })
       isSwitchingRef.current = false
     }
 
     switchNote()
-
     return () => {
       debouncedSave.cancel()
     }
   }, [selectedNote?.title, selectedNote?.content, baseExtensions, debouncedSave, handleBlurSave])
 
+  // Update editor content if note changes
   useEffect(() => {
     if (!viewRef.current || !selectedNote || isSwitchingRef.current) return
-
     const editorContent = viewRef.current.state.doc.toString()
     if (editorContent !== selectedNote.content) {
       viewRef.current.dispatch({
@@ -263,6 +237,7 @@ export const MarkdownEditor = () => {
     }
   }, [selectedNote?.content])
 
+  // Clean up editor
   useEffect(() => {
     return () => {
       if (viewRef.current) {
@@ -272,6 +247,46 @@ export const MarkdownEditor = () => {
       debouncedSave.cancel()
     }
   }, [debouncedSave])
+
+  // Draggable resize
+  useEffect(() => {
+    if (!isPreview) return
+    const dragBar = dragBarRef.current
+    const editor = editorContainerRef.current
+    const preview = previewContainerRef.current
+    if (!dragBar || !editor || !preview) return
+
+    let startX = 0
+    let startWidth = 0
+
+    const onMouseMove = (e: MouseEvent) => {
+      const delta = e.clientX - startX
+      const newWidth = startWidth + delta
+      const containerWidth = containerRef.current?.offsetWidth || 1
+      const minWidth = containerWidth * 0.2
+      const maxWidth = containerWidth * 0.8
+      const clampedWidth = Math.min(Math.max(newWidth, minWidth), maxWidth)
+      editor.style.width = `${clampedWidth}px`
+      preview.style.width = `${containerWidth - clampedWidth}px`
+    }
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+
+    const onMouseDown = (e: MouseEvent) => {
+      startX = e.clientX
+      startWidth = editor.offsetWidth
+      window.addEventListener('mousemove', onMouseMove)
+      window.addEventListener('mouseup', onMouseUp)
+    }
+
+    dragBar.addEventListener('mousedown', onMouseDown)
+    return () => {
+      dragBar.removeEventListener('mousedown', onMouseDown)
+    }
+  }, [isPreview])
 
   if (!selectedNote) {
     return (
@@ -283,6 +298,7 @@ export const MarkdownEditor = () => {
 
   return (
     <div className="flex flex-col h-full w-full">
+      {/* Header */}
       <div className="flex items-center justify-between p-2 my-2 border-b border-gray-400/30 dark:border-gray-500 bg-transparent relative z-10">
         <h2 className="text-sm font-sans font-medium text-gray-700 dark:text-white truncate">
           {selectedNote.title}
@@ -299,166 +315,180 @@ export const MarkdownEditor = () => {
         </button>
       </div>
 
-      {/* Fixed Toolbar */}
-      {!isPreview && <MarkdownToolbar view={viewRef.current} />}
+      {/* Toolbar */}
+      <MarkdownToolbar view={viewRef.current} />
 
-      <div className="flex-1 overflow-hidden relative">
+      {/* Editor + Preview */}
+      <div
+        ref={containerRef}
+        className="flex-1 flex h-full overflow-hidden relative"
+      >
         <div
-          ref={editorRef}
-          className={`absolute inset-0 w-full h-full ${isPreview ? 'invisible' : 'visible'}`}
-        />
-
-
+          ref={editorContainerRef}
+          className="h-full"
+          style={{ width: isPreview ? '50%' : '100%' }}
+        >
+          <div
+            ref={editorRef}
+            className="absolute inset-0 w-full h-full visible"
+          />
+        </div>
 
         {isPreview && (
-          <div className="absolute inset-0 h-full overflow-auto p-6 bg-transparent dark:bg-transparent">
-            <div className="prose prose-sm max-w-fit">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ children }) => (
-                    <h1 className=" text-gray-800 dark:text-white font-sans text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-400">
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children }) => (
-                    <h2 className="text-xl text-gray-800 dark:text-white font-semibold mt-6 mb-3">
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children }) => (
-                    <h3 className="text-lg font-medium mt-5 mb-2 text-gray-800 dark:text-white">
-                      {children}
-                    </h3>
-                  ),
-                  h4: ({ children }) => (
-                    <h4 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
-                      {children}
-                    </h4>
-                  ),
-                  h5: ({ children }) => (
-                    <h5 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
-                      {children}
-                    </h5>
-                  ),
-                  h6: ({ children }) => (
-                    <h6 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
-                      {children}
-                    </h6>
-                  ),
-                  p: ({ children }) => (
-                    <p className="mb-4 text-sm font-sans text-gray-800 dark:text-white">
-                      {children}
-                    </p>
-                  ),
-                  ul: ({ children }) => (
-                    <ul className="font-sans mb-4 pl-6 space-y-1 text-gray-800 dark:text-white">
-                      {children}
-                    </ul>
-                  ),
-                  ol: ({ children }) => (
-                    <ol className="text-gray-800 dark:text-white font-sans mb-4 pl-6 space-y-1">
-                      {children}
-                    </ol>
-                  ),
-                  li: ({ children }) => (
-                    <li className="font-sans text-sm text-gray-800 dark:text-white">
-                      {children}
-                    </li>
-                  ),
-                  strong: ({ children }) => (
-                    <strong className="font-bold text-gray-900 dark:text-white">
-                      {children}
-                    </strong>
-                  ),
-                  blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-lime-200 pl-4 py-2 mb-4 bg-lime-300/20 italic dark:text-white text-gray-700">
-                      {children}
-                    </blockquote>
-                  ),
-                  // Enhanced table rendering for preview mode
-                  table: ({ children }) => (
-                    <div className="overflow-x-auto my-6">
-                      <table className="min-w-full border-collapse bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+          <>
+            <div
+              ref={dragBarRef}
+              className="w-1 cursor-col-resize bg-gray-300 dark:bg-gray-600 hover:bg-gray-500 z-10"
+            />
+            <div
+              ref={previewContainerRef}
+              className="h-full preview-scrollbar overflow-auto p-6 bg-transparent dark:bg-transparent"
+              style={{ width: '50%' }}
+            >
+              <div className="prose prose-sm max-w-fit">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({ children }) => (
+                      <h1 className=" text-gray-800 dark:text-white font-sans text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-400">
                         {children}
-                      </table>
-                    </div>
-                  ),
-                  thead: ({ children }) => (
-                    <thead className="bg-gray-50 dark:bg-gray-900">
-                      {children}
-                    </thead>
-                  ),
-                  tbody: ({ children }) => (
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {children}
-                    </tbody>
-                  ),
-                  tr: ({ children }) => (
-                    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                      {children}
-                    </tr>
-                  ),
-                  th: ({ children }) => (
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0">
-                      {children}
-                    </th>
-                  ),
-                  td: ({ children }) => (
-                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 last:border-r-0">
-                      {children}
-                    </td>
-                  ),
-                  code: ({ children, className, node, ...rest }) => {
-                    const match = /language-(\w+)/.exec(className || '')
-                    const language = match ? match[1] : ''
-                    const isInline = !match
-                    const codeContent = String(children).replace(/\n$/, '')
-
-                    // Handle Mermaid diagrams
-                    if (language === 'mermaid') {
-                      return <MermaidDiagram chart={codeContent} />
-                    }
-
-                    return isInline ? (
-                      <code
-                        className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-200 text-gray-800 rounded text-sm font-mono"
-                        {...rest}
-                      >
+                      </h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-lg font-sans text-gray-800 dark:text-white font-semibold mt-6 mb-3">
                         {children}
-                      </code>
-                    ) : (
-                      <SyntaxHighlighter
-                        PreTag="div"
-                        children={codeContent}
-                        language={language}
-                        customStyle={{
-                          margin: '1rem 0',
-                          borderRadius: '0.5rem',
-                          fontSize: '0.875rem',
-                          lineHeight: '1.5',
-                        }}
-                        codeTagProps={{
-                          style: {
-                            fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
-                          }
-                        }}
-                      />
-                    )
-                  },
-                  pre: ({ children }) => (
-                    <pre className="mb-4 bg-transparent overflow-hidden rounded">
-                      {children}
-                    </pre>
-                  ),
-                }}
-              >
-                {currentContent}
-              </ReactMarkdown>
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                        {children}
+                      </h3>
+                    ),
+                    h4: ({ children }) => (
+                      <h4 className="text-md font sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                        {children}
+                      </h4>),
+
+                    h5: ({ children }) => (
+                      <h5 className="text-md font sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                        {children}
+                      </h5>
+                    ),
+
+                    p: ({ children }) => (
+                      <p className="mb-4 text-sm font-sans text-gray-800 dark:text-white">
+                        {children}
+                      </p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="font-sans mb-4 pl-6 space-y-1 text-gray-800 dark:text-white">
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="text-gray-800 dark:text-whitetext-xs font-sans mb-4 pl-6 space-y-1">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="font-sans text-xs text-gray-800 dark:text-white">
+                        {children}
+                      </li>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-bold text-gray-900 dark:text-white">
+                        {children}
+                      </strong>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-lime-200 pl-4 py-2 mb-4 bg-lime-300/20 italic dark:text-white text-gray-700">
+                        {children}
+                      </blockquote>
+                    ),
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-6">
+                        <table className="min-w-full font-sans text-sm border-collapse bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    thead: ({ children }) => (
+                      <thead className="bg-gray-50 dark:bg-gray-900">
+                        {children}
+                      </thead>
+                    ),
+                    tbody: ({ children }) => (
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {children}
+                      </tbody>
+                    ),
+                    tr: ({ children }) => (
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        {children}
+                      </tr>
+                    ),
+                    th: ({ children }) => (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                        {children}
+                      </td>
+                    ),
+                    code: ({ children, className, ...rest }) => {
+                      const match = /language-(\w+)/.exec(className || '')
+                      const language = match ? match[1] : ''
+                      const isInline = !match
+                      const codeContent = String(children).replace(/\n$/, '')
+
+                      if (language === 'mermaid') {
+                        return <MermaidDiagram chart={codeContent} />
+                      }
+
+                      return isInline ? (
+                        <code
+                          className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-200 text-gray-800 rounded text-sm font-mono"
+                          {...rest}
+                        >
+                          {children}
+                        </code>
+                      ) : (
+                        <SyntaxHighlighter
+                          PreTag="div"
+                          children={codeContent}
+                          language={language}
+                          customStyle={{
+                            margin: '1rem 0',
+                            borderRadius: '0.2rem',
+                            fontSize: '0.875rem',
+                            lineHeight: '1.5',
+                            overflowWrap: 'break-word'
+                          }}
+                          codeTagProps={{
+                            style: {
+                              fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
+                            },
+                          }}
+                        />
+                      )
+                    },
+                    pre: ({ children }) => (
+                      <pre className="mb-4 bg-transparent overflow-hidden rounded">
+                        {children}
+                      </pre>
+                    ),
+                  }}
+                >
+                  {currentContent}
+                </ReactMarkdown>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
   )
 }
+

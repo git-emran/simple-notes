@@ -70,3 +70,9 @@ header {
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
 }
+
+/* Webkit-based browsers (Chrome, Edge, Safari) */
+.preview-scrollbar::-webkit-scrollbar {
+  width: 6px; /* width of vertical scrollbar */
+  height: 6px; /* height of horizontal scrollbar */
+}
