@@ -1,8 +1,8 @@
 # Writer
 
-#electron #typescript #react #desktop-app
+> Built by Emran Hossain
 
-Welcome to **Writer**. This is a _markdown_ writing application.
+Welcome to **Writer**. This is a _markdown_ Text editor. With the power of the built in LSP (language server protocol) you can build your documentation, practice your DSA, or document in general using the markdown syntax. Also it support Vim motions.
 
 [⬇️ Download latest macOS App](https://drive.google.com/drive/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1?usp=drive_link)
 
@@ -12,14 +12,17 @@ https://github.com/user-attachments/assets/606b60d6-c4fc-4550-9fe0-38ff04cdccff
 
 <img width="1768" height="1040" alt="lspwriter" src="https://github.com/user-attachments/assets/325477d3-ceac-4cb6-b984-01a03fb73fb3" />
 
-## Version 1.0.3
+## Version 1.0.4
 
 ##### Features of Writer:
 
 - 🔥 **Vim motions**. Since I use vim for everything, I decided to add vim motions by default. No other way to write lol.
 - 🔥 LSP support for 10+ languages inside the `Code Block`.
-- 🔥 Relative Line numbers only.
-- Codemirror 6 under the hood.
+- 🔥 Relative Line numbers to jump around like a spider.
+- 🔥 Split preview and Reader mode.
+- 🔥 Create Flow charts.
+- 🔥 Markdown shortcuts support for faster text editing.
+- CodeMirror 6 under the hood.
 - Native Preview mode.
 - Syntax Highlighting and Auto-Completions for 10+ Languages.
 - Draggable sidebar.
