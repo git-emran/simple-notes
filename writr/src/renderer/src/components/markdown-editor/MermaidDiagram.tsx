@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 
 let mermaidInstance: typeof import('mermaid').default | null = null
 const getMermaid = async () => {
