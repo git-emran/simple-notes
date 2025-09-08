@@ -36,6 +36,8 @@ import { checkboxExtension } from './checkboxExtension'
 import { statusBarExtension } from './statusbar'
 import remarkGfm from 'remark-gfm'
 import { MermaidDiagram } from './MermaidDiagram'
+import { MarkdownToolbar } from './MarkdownToolbar'
+import { tabAsSpaces } from './tabAsSpaces'
 
 
 
@@ -44,7 +46,6 @@ export const MarkdownEditor = () => {
   const saveNote = useSetAtom(saveNoteAtom)
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
-
 
 
   const currentNoteTitleRef = useRef<string>('')
@@ -130,6 +131,7 @@ export const MarkdownEditor = () => {
       EditorView.lineWrapping,
       checkboxExtension,
       statusBarExtension,
+      tabAsSpaces,
 
     ],
     [isDarkMode, codeLanguages]
@@ -297,11 +299,16 @@ export const MarkdownEditor = () => {
         </button>
       </div>
 
+      {/* Fixed Toolbar */}
+      {!isPreview && <MarkdownToolbar view={viewRef.current} />}
+
       <div className="flex-1 overflow-hidden relative">
         <div
           ref={editorRef}
           className={`absolute inset-0 w-full h-full ${isPreview ? 'invisible' : 'visible'}`}
         />
+
+
 
         {isPreview && (
           <div className="absolute inset-0 h-full overflow-auto p-6 bg-transparent dark:bg-transparent">
