@@ -10,7 +10,6 @@ import { selectedNoteAtom, saveNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
-import { AiOutlineRead } from "react-icons/ai";
 import { HiOutlineEye } from "react-icons/hi2";
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
