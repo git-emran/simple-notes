@@ -57,7 +57,7 @@ This is an _italic_ text.
 
 ## Headings
 
-Here are all the heading formats currently supported by **_NoteMark_**:
+Here are all the heading formats currently supported by **_Writer_**:
 
 # Heading 1
 
@@ -69,6 +69,8 @@ Write warnings
 :> [!WARNING]
 
 #### Heading 4
+
+##### Heading 5
 
 ### Bulleted list
 
