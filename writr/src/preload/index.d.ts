@@ -1,6 +1,3 @@
-/// <reference types="vite/client" />
-// (any existing content)
-
 import { GetNotes, ReadNote, WriteNote, CreateNote, DeleteNote } from '@shared/types'
 
 declare global {
@@ -16,4 +13,4 @@ declare global {
   }
 }
 
-export {} // This makes it a module
+export {}
