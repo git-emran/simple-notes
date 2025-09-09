@@ -18,8 +18,12 @@ https://github.com/user-attachments/assets/343c8956-26da-4506-9fe6-23691dcf8c11
 
 https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
 
-## Version 1.0.4
+### Code Completions
 
+<img width="1768" height="1040" alt="lspwriter" src="https://github.com/user-attachments/assets/fca366c8-8953-48d2-a7fd-e70e3b5550e1" />
+
+
+## Version 1.0.4
 ##### Features of Writer:
 
 - 🔥 **Vim motions**. Since I use vim for everything, I decided to add vim motions by default. No other way to write lol.
