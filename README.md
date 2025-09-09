@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
 
 ### Code Completions
 
-<img width="1768" height="1040" alt="lspwriter" src="https://github.com/user-attachments/assets/fca366c8-8953-48d2-a7fd-e70e3b5550e1" />
+<img width="1772" height="1498" alt="Screenshot 2025-09-09 at 3 36 27 PM" src="https://github.com/user-attachments/assets/211672a2-34f2-44e5-8563-1dda9c679dfc" />
 
 
 ## Version 1.0.4
