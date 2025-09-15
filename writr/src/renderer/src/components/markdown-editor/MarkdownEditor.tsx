@@ -39,6 +39,7 @@ import { MarkdownToolbar } from './MarkdownToolbar'
 import { tabAsSpaces } from './tabAsSpaces'
 import { TbLayoutSidebarRightExpandFilled } from "react-icons/tb";
 import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
+import { markdownTableEnhancement } from './extendTableEditing'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -122,6 +123,7 @@ export const MarkdownEditor = () => {
       syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
       autocompletion({ activateOnTyping: true, icons: true }),
       relativeLineNumbers(),
+      markdownTableEnhancement,
       EditorView.lineWrapping,
       checkboxExtension,
       statusBarExtension,
