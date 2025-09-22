@@ -1,6 +1,7 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
   "include": [
+    "eslint.d.ts",
     "src/renderer/src/env.d.ts",
     "src/renderer/src/index.d.ts",
     "src/renderer/src/**/*",
