@@ -129,7 +129,7 @@ export const MarkdownEditor = () => {
       statusBarExtension,
       tabAsSpaces,
     ],
-    [isDarkMode, codeLanguages]
+    [isDarkMode]
   )
 
   // Optimized save function with queue
@@ -139,7 +139,6 @@ export const MarkdownEditor = () => {
       isSavingRef.current = true
       try {
         await saveNote(content)
-        console.info('Save completed')
       } catch (error) {
         console.error('Save failed:', error)
       } finally {
@@ -227,7 +226,7 @@ export const MarkdownEditor = () => {
     return () => {
       debouncedSave.cancel()
     }
-  }, [selectedNote?.title, selectedNote?.content, baseExtensions, debouncedSave, handleBlurSave])
+  }, [selectedNote?.title, selectedNote?.content, baseExtensions, debouncedSave, selectedNote, handleBlurSave])
 
   // Update editor content if note changes
   useEffect(() => {
@@ -239,7 +238,7 @@ export const MarkdownEditor = () => {
       })
       setCurrentContent(selectedNote.content)
     }
-  }, [selectedNote?.content])
+  }, [selectedNote?.content, selectedNote])
 
   // Clean up editor
   useEffect(() => {
