@@ -4,9 +4,3 @@ export type NoteInfo = {
 }
 
 export type NoteContent = string
-
-export type Folder = {
-  id: string
-  name: string
-  notes: NoteInfo[]
-}

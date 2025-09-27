@@ -6,6 +6,8 @@ import {
   ActionButtonsRow,
   NotePreviewList,
 } from './components'
+import FileExplorer from './components/FileExplorer'
+import { FileTree } from './components/FileTree'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { useRef, useState, useEffect } from 'react'
 
@@ -53,7 +55,6 @@ const App = () => {
       <DraggableTopBar />
 
       <RootLayout>
-        {/* Sidebar */}
         {!collapsed && (
           <Sidebar
             width={sidebarWidth}
@@ -61,6 +62,7 @@ const App = () => {
             className="mt-10"
           >
             <ActionButtonsRow className="flex justify-between mt-1" />
+
             <NotePreviewList className="mt-3 space-y-1" onSelect={resetScroll} />
           </Sidebar>
         )}

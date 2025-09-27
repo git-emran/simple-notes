@@ -14,7 +14,7 @@ export const RootLayout = ({ children, className, ...props }: ComponentProps<'ma
 export const Sidebar = ({
   className,
   children,
-  onClose,
+  // onClose,
   width,
   ...props
 }: ComponentProps<'aside'> & { onClose?: () => void; width?: number }) => {

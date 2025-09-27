@@ -1,6 +1,9 @@
-import { NoteContent, NoteInfo } from '@shared/models'
+import { NoteContent, NoteInfo, FileNode } from '@shared/models'
 import { atom } from 'jotai'
 import { unwrap } from 'jotai/utils'
+
+export const fileTreeAtom = atom<FileNode[]>([])
+export const selectedNodeAtom = atom<FileNode | null>(null)
 
 export const isDarkModeAtom = atom(false)
 
