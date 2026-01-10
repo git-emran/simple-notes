@@ -19,7 +19,7 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
-    assetsInclude: 'src/renderer/assets/**',
+    assetsInclude: ['**/*.wasm', 'src/renderer/assets/**'],
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),

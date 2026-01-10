@@ -7,6 +7,10 @@ export const selectedNodeAtom = atom<FileNode | null>(null)
 
 export const isDarkModeAtom = atom(false)
 
+const fileTreeAsyncAtom = atom(async () => {
+  return
+})
+
 const loadNotes = async () => {
   const notes = await window.context.getNotes()
 
