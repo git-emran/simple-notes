@@ -27,7 +27,6 @@ export const getNotes: GetNotes = async () => {
   const notes = notesFileNames.filter((fileName) => fileName.endsWith('.md'))
 
   if (isEmpty(notes)) {
-    console.info('No Notes Found, Creating a welcome note')
     const content = await readFile(welcomeNoteFile, { encoding: fileEncoding })
     await writeFile(`${rootDir}/${welcomeNoteFileName}`, content, { encoding: fileEncoding })
 
@@ -54,7 +53,6 @@ export const readNote: ReadNote = async (filename: string) => {
 export const writeNote: WriteNote = async (filename, content) => {
   const rootDir = getRootDir()
 
-  console.info(`Writing note ${filename}`)
   return writeFile(`${rootDir}/${filename}.md`, content, { encoding: fileEncoding })
 }
 
@@ -73,7 +71,6 @@ export const createNote: CreateNote = async () => {
   })
 
   if (canceled || !filePath) {
-    console.info('Note Creation canceled')
     return false
   }
 
@@ -108,7 +105,6 @@ export const deleteNote: DeleteNote = async (filename) => {
   })
 
   if (response === 1) {
-    console.info('Note deletion canceled')
     return false
   }
 
