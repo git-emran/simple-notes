@@ -12,21 +12,80 @@ export const fileTreeAtom = unwrap(fileTreeAtomAsync, (prev) => prev)
 
 export const selectedNodeAtom = atom<FileNode | null>(null)
 
+// Tabs State
+export const tabsAtom = atom<FileNode[]>([])
+export const activeTabPathAtom = atom<string | null>(null)
+
+export const setActiveTabAtom = atom(null, (get, set, path: string) => {
+  set(activeTabPathAtom, path)
+  
+  // Find node in tabs to update selectedNodeAtom
+  const tabs = get(tabsAtom)
+  const node = tabs.find(t => t.path === path)
+  if (node) {
+    set(selectedNodeAtom, node)
+  }
+})
+
+export const switchTabByIndexAtom = atom(null, (get, set, index: number) => {
+  const tabs = get(tabsAtom)
+  if (index >= 0 && index < tabs.length) {
+    set(setActiveTabAtom, tabs[index].path)
+  }
+})
+
+export const openTabAtom = atom(null, (get, set, node: FileNode) => {
+  if (node.type !== 'file') return
+
+  const tabs = get(tabsAtom)
+  if (!tabs.find((t) => t.path === node.path)) {
+    set(tabsAtom, [...tabs, node])
+  }
+  set(activeTabPathAtom, node.path)
+  set(selectedNodeAtom, node)
+})
+
+export const closeTabAtom = atom(null, (get, set, path: string) => {
+  const tabs = get(tabsAtom)
+  const activeTabPath = get(activeTabPathAtom)
+  const newTabs = tabs.filter((t) => t.path !== path)
+  set(tabsAtom, newTabs)
+
+  if (activeTabPath === path) {
+    if (newTabs.length > 0) {
+      const nextTab = newTabs[newTabs.length - 1]
+      set(activeTabPathAtom, nextTab.path)
+      set(selectedNodeAtom, nextTab)
+    } else {
+      set(activeTabPathAtom, null)
+      set(selectedNodeAtom, null)
+    }
+  }
+})
+
 export const isDarkModeAtom = atom(false)
 
 // Notes Atoms (derived from selectedNode)
 export const selectedNoteAtomAsync = atom(async (get) => {
-  const selectedNode = get(selectedNodeAtom)
+  const activeTabPath = get(activeTabPathAtom)
 
-  if (!selectedNode || selectedNode.type !== 'file') return null
+  if (!activeTabPath) return null
 
-  const content = await window.context.readFileNew(selectedNode.path)
+  // Find the node in the tree or tabs to get the name
+  // For simplicity, we can just use the path to read content
+  const content = await window.context.readFileNew(activeTabPath)
+  
+  // Extract name for title
+  const lastSlash = activeTabPath.lastIndexOf('/')
+  const lastBackslash = activeTabPath.lastIndexOf('\\')
+  const maxIndex = Math.max(lastSlash, lastBackslash)
+  const name = maxIndex === -1 ? activeTabPath : activeTabPath.substring(maxIndex + 1)
 
   return {
-    title: selectedNode.name.replace(/\.md$/, ''),
+    title: name.replace(/\.md$/, ''),
     lastEditTime: Date.now(),
     content: content,
-    path: selectedNode.path
+    path: activeTabPath
   }
 })
 
@@ -66,18 +125,45 @@ export const createDirectoryAtom = atom(null, async (_, set, parentDir: string) 
   set(fileTreeAtom, await loadFileTree())
 })
 
-export const deleteNodeAtom = atom(null, async (_, set, path: string) => {
+export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   const isDeleted = await window.context.deletePath(path)
   if (!isDeleted) return
 
   set(selectedNodeAtom, null)
   set(fileTreeAtom, await loadFileTree())
+  
+  // Close tab if it was open
+  const tabs = get(tabsAtom)
+  if (tabs.find(t => t.path === path)) {
+    set(closeTabAtom, path)
+  }
 })
 
 export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: string; dest: string }) => {
   const success = await window.context.movePath(src, dest)
   if (success) {
     set(fileTreeAtom, await loadFileTree())
+
+    // Update tabs if any tab matches the moved path
+    const tabs = get(tabsAtom)
+    const activeTabPath = get(activeTabPathAtom)
+    
+    let tabMatched = false
+    const newTabs = tabs.map(tab => {
+      if (tab.path === src) {
+        tabMatched = true
+        const name = dest.substring(Math.max(dest.lastIndexOf('/'), dest.lastIndexOf('\\')) + 1)
+        return { ...tab, path: dest, name }
+      }
+      return tab
+    })
+    
+    if (tabMatched) {
+      set(tabsAtom, newTabs)
+      if (activeTabPath === src) {
+        set(activeTabPathAtom, dest)
+      }
+    }
 
     // Update selected node if it was the one moved/renamed
     const selectedNode = get(selectedNodeAtom)

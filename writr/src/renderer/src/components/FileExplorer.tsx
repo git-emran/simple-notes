@@ -5,7 +5,8 @@ import {
   deleteNodeAtom,
   fileTreeAtom,
   selectedNodeAtom,
-  movePathAtom
+  movePathAtom,
+  openTabAtom
 } from '@renderer/store'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { ComponentProps, useState, useEffect } from 'react'
@@ -21,6 +22,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const createDirectory = useSetAtom(createDirectoryAtom)
   const deleteNode = useSetAtom(deleteNodeAtom)
   const movePath = useSetAtom(movePathAtom)
+  const openTab = useSetAtom(openTabAtom)
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
@@ -62,7 +64,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     <aside className={twMerge('flex flex-col h-full bg-zinc-50 dark:bg-[#252526] border-r border-zinc-200 dark:border-[#1e1e1e]', className)} {...props}>
       {/* Title & Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-        <span>Explorer</span>
+        <span>FILES</span>
         <div className="flex items-center gap-1">
             <button
             onClick={() => {
@@ -167,7 +169,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
               <FileTreeItem
                 key={node.path}
                 node={node}
-                onNodeSelect={setSelectedNode}
+                onNodeSelect={openTab}
                 selectedNode={selectedNode}
                 expandedNodes={expandedNodes}
                 onToggleExpand={handleToggleExpand}
