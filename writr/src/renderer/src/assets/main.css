@@ -20,7 +20,7 @@
 /* For native browser selection (as fallback when not focused) */
 
 .cm-editor {
-  font-family: 'JetBrains Mono', monospace !important; /* any font you like */
+  font-family: 'JetBrains Mono', monospace !important;
   font-size: 12px; /* adjust size */
   line-height: 1.5;
 }
@@ -73,6 +73,6 @@ header {
 
 /* Webkit-based browsers (Chrome, Edge, Safari) */
 .preview-scrollbar::-webkit-scrollbar {
-  width: 6px; /* width of vertical scrollbar */
-  height: 6px; /* height of horizontal scrollbar */
+  width: 2px; /* width of vertical scrollbar */
+  height: 2px; /* height of horizontal scrollbar */
 }

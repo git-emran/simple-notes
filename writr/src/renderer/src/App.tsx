@@ -2,12 +2,9 @@ import {
   Content,
   RootLayout,
   Sidebar,
-  DraggableTopBar,
-  ActionButtonsRow,
-  NotePreviewList,
+  DraggableTopBar
 } from './components'
-import FileExplorer from './components/FileExplorer'
-import { FileTree } from './components/FileTree'
+import { FileExplorer } from './components/FileExplorer'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { useRef, useState, useEffect } from 'react'
 
@@ -61,9 +58,7 @@ const App = () => {
             onClose={() => setCollapsed(true)}
             className="mt-10"
           >
-            <ActionButtonsRow className="flex justify-between mt-1" />
-
-            <NotePreviewList className="mt-3 space-y-1" onSelect={resetScroll} />
+            <FileExplorer />
           </Sidebar>
         )}
 

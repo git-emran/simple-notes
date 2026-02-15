@@ -506,7 +506,7 @@ export const MarkdownEditor = () => {
                           customStyle={{
                             margin: '1rem 0',
                             borderRadius: '0.2rem',
-                            fontSize: '0.875rem',
+                            fontSize: '0.675rem',
                             lineHeight: '1.5',
                             overflowWrap: 'break-word'
                           }}

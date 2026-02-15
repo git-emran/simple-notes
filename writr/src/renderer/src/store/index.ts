@@ -2,41 +2,31 @@ import { NoteContent, NoteInfo, FileNode } from '@shared/models'
 import { atom } from 'jotai'
 import { unwrap } from 'jotai/utils'
 
-export const fileTreeAtom = atom<FileNode[]>([])
+// File Tree Atoms
+const loadFileTree = async () => {
+  return await window.context.getFileTree()
+}
+
+const fileTreeAtomAsync = atom<FileNode[] | Promise<FileNode[]>>(loadFileTree())
+export const fileTreeAtom = unwrap(fileTreeAtomAsync, (prev) => prev)
+
 export const selectedNodeAtom = atom<FileNode | null>(null)
 
 export const isDarkModeAtom = atom(false)
 
-const fileTreeAsyncAtom = atom(async () => {
-  return
-})
+// Notes Atoms (derived from selectedNode)
+export const selectedNoteAtomAsync = atom(async (get) => {
+  const selectedNode = get(selectedNodeAtom)
 
-const loadNotes = async () => {
-  const notes = await window.context.getNotes()
+  if (!selectedNode || selectedNode.type !== 'file') return null
 
-  // sort them by most recently edited
-  return notes.sort((a, b) => b.lastEditTime - a.lastEditTime)
-}
-
-const notesAtomAsync = atom<NoteInfo[] | Promise<NoteInfo[]>>(loadNotes())
-
-export const notesAtom = unwrap(notesAtomAsync, (prev) => prev)
-
-export const selectedNoteIndexAtom = atom<number | null>(null)
-
-const selectedNoteAtomAsync = atom(async (get) => {
-  const notes = get(notesAtom)
-  const selectedNoteIndex = get(selectedNoteIndexAtom)
-
-  if (selectedNoteIndex == null || !notes) return null
-
-  const selectedNote = notes[selectedNoteIndex]
-
-  const noteContent = await window.context.readNote(selectedNote.title)
+  const content = await window.context.readFileNew(selectedNode.path)
 
   return {
-    ...selectedNote,
-    content: noteContent
+    title: selectedNode.name.replace(/\.md$/, ''),
+    lastEditTime: Date.now(),
+    content: content,
+    path: selectedNode.path
   }
 })
 
@@ -46,70 +36,47 @@ export const selectedNoteAtom = unwrap(
     prev ?? {
       title: '',
       content: '',
-      lastEditTime: Date.now()
+      lastEditTime: Date.now(),
+      path: ''
     }
 )
 
-export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent) => {
-  const notes = get(notesAtom)
+export const saveNoteAtom = atom(null, async (get, _set, newContent: NoteContent) => {
   const selectedNote = get(selectedNoteAtom)
 
-  if (!selectedNote || !notes) return
+  if (!selectedNote || !selectedNote.path) return
 
-  // save on disk
-  await window.context.writeNote(selectedNote.title, newContent)
+  await window.context.writeFileNew(selectedNote.path, newContent)
 
-  // update the saved note's content in place to avoid remount
-  set(selectedNoteAtom, {
-    ...selectedNote,
-    content: newContent,
-    lastEditTime: Date.now() // optional: update lastEditTime here too
-  })
-
-  // update the saved note's last edit time in notesAtom
-  set(
-    notesAtom,
-    notes.map((note) =>
-      note.title === selectedNote.title ? { ...note, lastEditTime: Date.now() } : note
-    )
-  )
 })
 
-export const createEmptyNoteAtom = atom(null, async (get, set) => {
-  const notes = get(notesAtom)
+export const createNoteAtom = atom(null, async (_, set, parentDir: string) => {
+  const filePath = await window.context.createNoteNew(parentDir)
+  if (!filePath) return
 
-  if (!notes) return
-
-  const title = await window.context.createNote()
-
-  if (!title) return
-
-  const newNote: NoteInfo = {
-    title,
-    lastEditTime: Date.now()
-  }
-
-  set(notesAtom, [newNote, ...notes.filter((note) => note.title !== newNote.title)])
-
-  set(selectedNoteIndexAtom, 0)
+  // Refresh tree
+  set(fileTreeAtom, await loadFileTree())
 })
 
-export const deleteNoteAtom = atom(null, async (get, set) => {
-  const notes = get(notesAtom)
-  const selectedNote = get(selectedNoteAtom)
+export const createDirectoryAtom = atom(null, async (_, set, parentDir: string) => {
+  const dirPath = await window.context.createDirectory(parentDir)
+  if (!dirPath) return
 
-  if (!selectedNote || !notes) return
+  // Refresh tree
+  set(fileTreeAtom, await loadFileTree())
+})
 
-  const isDeleted = await window.context.deleteNote(selectedNote.title)
-
+export const deleteNodeAtom = atom(null, async (_, set, path: string) => {
+  const isDeleted = await window.context.deletePath(path)
   if (!isDeleted) return
 
-  // filter out the deleted note
-  set(
-    notesAtom,
-    notes.filter((note) => note.title !== selectedNote.title)
-  )
+  set(selectedNodeAtom, null)
+  set(fileTreeAtom, await loadFileTree())
+})
 
-  // de select any note
-  set(selectedNoteIndexAtom, null)
+export const movePathAtom = atom(null, async (_get, set, { src, dest }: { src: string; dest: string }) => {
+  const success = await window.context.movePath(src, dest)
+  if (success) {
+    set(fileTreeAtom, await loadFileTree())
+  }
 })

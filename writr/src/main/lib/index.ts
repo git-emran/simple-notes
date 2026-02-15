@@ -1,8 +1,8 @@
 import { appDirectoryName, fileEncoding, welcomeNoteFileName } from '@shared/constants'
-import { NoteInfo } from '@shared/models'
-import { CreateNote, DeleteNote, GetNotes, ReadNote, WriteNote } from '@shared/types'
+import { NoteInfo, FileNode } from '@shared/models'
+import { CreateNote, DeleteNote, GetNotes, ReadNote, WriteNote, GetFileTree, CreateNoteNew, CreateDirectory, DeletePath, ReadFile, WriteFile, MovePath } from '@shared/types'
 import { dialog } from 'electron'
-import { readFile, writeFile } from 'fs-extra'
+import { readFile, writeFile, move, pathExists } from 'fs-extra'
 import { ensureDir, readdir, stat } from 'fs-extra'
 import { remove } from 'fs-extra'
 import { isEmpty } from 'lodash'
@@ -112,4 +112,144 @@ export const deleteNote: DeleteNote = async (filename) => {
   await remove(`${rootDir}/${filename}.md`)
 
   return true
+}
+
+export const getFileTree: GetFileTree = async () => {
+  const rootDir = getRootDir()
+  await ensureDir(rootDir)
+
+  const buildTree = async (currentDir: string): Promise<FileNode[]> => {
+    const dirents = await readdir(currentDir, { withFileTypes: true })
+
+    const nodes = await Promise.all(
+      dirents.map(async (dirent) => {
+        const res = path.resolve(currentDir, dirent.name)
+        const isDirectory = dirent.isDirectory()
+
+        if (isDirectory) {
+          return {
+            id: res,
+            name: dirent.name,
+            path: res,
+            type: 'folder',
+            children: await buildTree(res),
+            isExpanded: false
+          } as FileNode
+        } else {
+          if (!dirent.name.endsWith('.md')) return null
+
+          return {
+            id: res,
+            name: dirent.name,
+            path: res,
+            type: 'file',
+            isExpanded: false
+          } as FileNode
+        }
+      })
+    )
+
+    return nodes.filter(Boolean).sort((a, b) => {
+      if (a!.type === b!.type) return a!.name.localeCompare(b!.name)
+      return a!.type === 'folder' ? -1 : 1
+    }) as FileNode[]
+  }
+
+  return buildTree(rootDir)
+}
+
+export const readFileNew: ReadFile = async (filePath) => {
+  return readFile(filePath, { encoding: fileEncoding })
+}
+
+export const writeFileNew: WriteFile = async (filePath, content) => {
+  return writeFile(filePath, content, { encoding: fileEncoding })
+}
+
+export const createNoteNew: CreateNoteNew = async (parentDir) => {
+  const dir = parentDir || getRootDir()
+  await ensureDir(dir)
+
+  let name = 'Untitled'
+  let counter = 0
+  let filePath = ''
+
+  while (true) {
+    const fileName = counter === 0 ? `${name}.md` : `${name} (${counter}).md`
+    filePath = path.join(dir, fileName)
+
+    try {
+      await stat(filePath)
+      counter++
+    } catch {
+      break
+    }
+  }
+
+  await writeFile(filePath, '')
+  return filePath
+}
+
+export const createDirectory: CreateDirectory = async (parentDir) => {
+  const dir = parentDir || getRootDir()
+  await ensureDir(dir)
+
+  let name = 'New Folder'
+  let counter = 0
+  let dirPath = ''
+
+  while (true) {
+    const dirName = counter === 0 ? name : `${name} (${counter})`
+    dirPath = path.join(dir, dirName)
+
+    try {
+      await stat(dirPath)
+      counter++
+    } catch {
+      break
+    }
+  }
+
+  await ensureDir(dirPath)
+  return dirPath
+}
+
+export const deletePath: DeletePath = async (filePath) => {
+  try {
+    const { response } = await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Delete',
+      message: `Are you sure you want to delete ${path.basename(filePath)}?`,
+      buttons: ['Delete', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1
+    })
+
+    if (response === 1) return false
+
+    await remove(filePath)
+    return true
+  } catch (error) {
+    console.error(error)
+    return false
+  }
+}
+
+export const movePath: MovePath = async (src, dest) => {
+  try {
+     const exists = await pathExists(dest)
+     if (exists) {
+         // Should we support overwrite? For now, no.
+         // Or strictly speaking, if it's DnD, we might be moving into a folder, 
+         // but the caller sends the full destination path.
+         console.warn(`Destination ${dest} already exists`)
+         return false
+     }
+     
+     await move(src, dest)
+     return true
+  } catch (e) {
+      console.error(e)
+      return false
+  }
 }

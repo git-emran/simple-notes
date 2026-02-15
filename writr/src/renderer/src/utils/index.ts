@@ -4,14 +4,7 @@ import { twMerge } from 'tailwind-merge'
 
 export {}
 
-declare global {
-  interface Window {
-    electron: ElectronAPI
-    context: {
-      locale: string
-    }
-  }
-}
+
 const dateFormatter = new Intl.DateTimeFormat(window.context?.locale, {
   dateStyle: 'short',
   timeStyle: 'short',
