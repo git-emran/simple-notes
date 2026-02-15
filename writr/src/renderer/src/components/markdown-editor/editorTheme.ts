@@ -11,7 +11,7 @@ export const gutterTheme = EditorView.theme({
   }
 })
 
-export const markdownEditorTheme = EditorView.theme({
+export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   '&': {
     height: '100%',
     fontSize: '14px',
@@ -43,6 +43,33 @@ export const markdownEditorTheme = EditorView.theme({
     backgroundColor: 'rgba(20, 130, 246, 0.15)' // lighter
   },
 
+  // Autocomplete Tooltip Styles
+  '.cm-tooltip': {
+    backgroundColor: isDark ? '#18181b' : '#ffffff',
+    border: isDark ? '1px solid #3f3f46' : '1px solid #e5e7eb',
+    borderRadius: '4px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+  },
+  '.cm-tooltip.cm-tooltip-autocomplete > ul': {
+    fontFamily: 'JetBrains Mono',
+    fontSize: '12px',
+    backgroundColor: isDark ? '#18181b' : '#ffffff',
+    color: isDark ? '#f9fafb' : '#000000'
+  },
+  '.cm-tooltip-autocomplete ul li': {
+    padding: '4px 8px',
+    color: isDark ? '#f9fafb' : '#000000'
+  },
+  '.cm-tooltip-autocomplete ul li[aria-selected]': {
+    backgroundColor: isDark ? '#27272a' : '#eff6ff',
+    color: isDark ? '#ffffff' : '#1d4ed8'
+  },
+
+  '.cm-cursor': {
+    borderLeftColor: '#ffffff',
+    mixBlendMode: 'difference'
+  },
+
   '.cm-line:has(.ͼ1)': {
     marginTop: '1.5em',
     marginBottom: '0.5em'
@@ -52,7 +79,7 @@ export const markdownEditorTheme = EditorView.theme({
     marginBottom: '0.4em'
   },
   '.cm-line:has(.ͼ3)': {
-    marginTop: '1em',
+    marginTop: '1.0em',
     marginBottom: '0.3em'
   }
 })

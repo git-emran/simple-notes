@@ -302,7 +302,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
     view.focus()
   }
 
-  const btnClass = "p-[0.18rem] rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-600 dark:text-gray-300"
+  const btnClass = "p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
 
   const renderDropdown = () => {
     if (!showHeaderDropdown) return null
@@ -335,7 +335,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   }
 
   return (
-    <div className="flex items-center gap-3 px-3 py-1 border-b border-gray-400/30 dark:border-gray-500 bg-transparent dark:bg-transparent overflow-x-auto max-w-full">
+    <div className="flex items-center gap-1.5 px-6 py-2 bg-transparent dark:bg-transparent overflow-x-auto max-w-full shrink-0 border-b border-zinc-100 dark:border-zinc-800/50">
       {/* Text Formatting */}
       <button
         onClick={() => applyFormat("**", "**")}
@@ -364,7 +364,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaStrikethrough />
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
+      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
 
       {/* Headers Dropdown */}
       <div className="relative">
@@ -391,7 +391,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaQuoteRight />
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
+      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
 
       {/* Lists */}
       <button
@@ -421,7 +421,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaCheckSquare />
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
+      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
 
       {/* Code */}
       <button
@@ -442,7 +442,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <div className="text-xs font-mono">{`{}`}</div>
       </button>
 
-      <div className="w-px h-6 bg-gray-400/70 dark:bg-gray-500 mx-1" />
+      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
 
       {/* Insertions */}
       <button

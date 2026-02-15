@@ -15,7 +15,7 @@ import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
 import { markdownLanguage } from "@codemirror/lang-markdown"
 import SyntaxHighlighter from 'react-syntax-highlighter'
-import { gutterTheme, markdownEditorTheme, markdownHighlightStyle, markdownHighlightStyleDark } from './editorTheme'
+import { gutterTheme, getEditorTheme, markdownHighlightStyle, markdownHighlightStyleDark } from './editorTheme'
 import { codeLanguages } from './languageConfig'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { autoCloseTags } from '@codemirror/lang-html'
@@ -40,6 +40,7 @@ import { tabAsSpaces } from './tabAsSpaces'
 import { TbLayoutSidebarRightExpandFilled } from "react-icons/tb";
 import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
 import { markdownTableEnhancement } from './extendTableEditing'
+import { codeBlockCopy } from './codeBlockCopy'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -89,7 +90,7 @@ export const MarkdownEditor = () => {
   const baseExtensions = useMemo(
     () => [
       history(),
-      markdownEditorTheme,
+      getEditorTheme(isDarkMode),
       keymap.of([...defaultKeymap, ...historyKeymap]),
       vim(),
       drawSelection(),
@@ -114,10 +115,10 @@ export const MarkdownEditor = () => {
         markerType: 'codeOnly',
         thickness: 1,
         colors: {
-          light: '#B9B9B9',
-          dark: '#434343',
-          activeLight: '#B9B9B9',
-          activeDark: '#434343',
+          light: 'rgba(0, 0, 0, 0.05)',
+          dark: 'rgba(255, 255, 255, 0.05)',
+          activeLight: 'rgba(0, 0, 0, 0.1)',
+          activeDark: 'rgba(255, 255, 255, 0.1)',
         },
       }),
       syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
@@ -128,6 +129,7 @@ export const MarkdownEditor = () => {
       checkboxExtension,
       statusBarExtension,
       tabAsSpaces,
+      codeBlockCopy,
     ],
     [isDarkMode]
   )
@@ -323,32 +325,34 @@ export const MarkdownEditor = () => {
   return (
     <div className="flex flex-col h-full w-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-2 my-2 border-b border-gray-400/30 dark:border-gray-500 bg-transparent relative z-10">
-        <h2 className="text-sm font-sans font-medium text-gray-700 dark:text-white truncate">
+      <div className="flex items-center justify-between px-6 py-4 bg-transparent shrink-0">
+        <h2 className="text-2xl font-bold font-sans text-zinc-700 dark:text-zinc-100 truncate focus:outline-none">
           {selectedNote.title}
         </h2>
         <div className='flex gap-2'>
           {!isFullPreview && (
             <button
               onClick={handleSplitViewToggle}
-              className={`px-3 py-1 text-xs font-medium rounded transition-all ${isPreview && !isFullPreview
-                ? 'bg-blue-500 text-white shadow-sm'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+              className={`p-1.5 rounded-md transition-all ${isPreview && !isFullPreview
+                ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100'
+                : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                 }`}
               type="button"
+              title="Toggle Split View"
             >
-              {isPreview ? <TbLayoutSidebarRightCollapse /> : <TbLayoutSidebarRightExpandFilled />}
+              {isPreview ? <TbLayoutSidebarRightCollapse className="w-4 h-4" /> : <TbLayoutSidebarRightExpandFilled className="w-4 h-4" />}
             </button>
           )}
           <button
             onClick={handleFullPreviewToggle}
-            className={`px-3 py-1 text-xs font-medium rounded transition-all ${isFullPreview
-              ? 'bg-blue-500 text-white shadow-sm'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600'
+            className={`p-1.5 rounded-md transition-all ${isFullPreview
+              ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100'
+              : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
               }`}
             type="button"
+            title="Toggle Preview Mode"
           >
-            <HiOutlineEye />
+            <HiOutlineEye className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -388,7 +392,7 @@ export const MarkdownEditor = () => {
               className="h-full preview-scrollbar overflow-auto p-6 bg-transparent dark:bg-transparent"
               style={{ width: isFullPreview ? '100%' : '50%' }}
             >
-              <div className="prose prose-sm max-w-fit">
+              <div className="prose prose-sm max-w-none w-full break-words">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{

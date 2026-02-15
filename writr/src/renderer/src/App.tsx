@@ -65,7 +65,7 @@ const App = () => {
         {/* Content */}
         <Content
           ref={contentContainerRef}
-          className="relative border-l bg-zinc-300/20 border-l-black/20 dark:border-l-white/20"
+          className="relative h-full bg-white dark:bg-[#1e1e1e]"
         >
           <MarkdownEditor />
         </Content>
