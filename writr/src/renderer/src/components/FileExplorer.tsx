@@ -24,6 +24,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
 
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
+  const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
 
   const handleToggleExpand = (path: string) => {
     setExpandedNodes((prev) => {
@@ -104,7 +105,10 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
 
       {/* Tree */}
       <div 
-        className="flex-1 overflow-auto py-1"
+        className={twMerge(
+            "flex-1 overflow-auto py-1 transition-colors",
+            isDraggingOverRoot && "bg-blue-50/50 dark:bg-blue-900/10"
+        )}
         onClick={(e) => {
             if (e.target === e.currentTarget) {
                 setSelectedNode(null)
@@ -113,6 +117,47 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         onContextMenu={(e) => {
             if (e.target === e.currentTarget) {
                 setContextMenu(null)
+            }
+        }}
+        onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            e.dataTransfer.dropEffect = 'move'
+            setIsDraggingOverRoot(true)
+        }}
+        onDragLeave={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            // Only unhighlight if leaving the container, not entering a child
+            if (e.currentTarget.contains(e.relatedTarget as Node)) return
+            setIsDraggingOverRoot(false)
+        }}
+        onDrop={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setIsDraggingOverRoot(false)
+            
+            const src = e.dataTransfer.getData('text/plain')
+            if (src) {
+                // Calculate Root Path
+                // We assume the first node's parent is the root or the node itself is at root.
+                // If the tree is empty, we can't drag anything anyway.
+                if (fileTree && fileTree.length > 0) {
+                    const sampleNode = fileTree[0]
+                    const lastSlash = sampleNode.path.lastIndexOf('/')
+                    const lastBackslash = sampleNode.path.lastIndexOf('\\')
+                    const maxIndex = Math.max(lastSlash, lastBackslash)
+                    
+                    if (maxIndex !== -1) {
+                        const rootPath = sampleNode.path.substring(0, maxIndex)
+                        const fileName = src.substring(Math.max(src.lastIndexOf('/'), src.lastIndexOf('\\')) + 1)
+                        const dest = `${rootPath}/${fileName}`
+                        
+                        if (dest !== src) {
+                            movePath({ src, dest })
+                        }
+                    }
+                }
             }
         }}
       >

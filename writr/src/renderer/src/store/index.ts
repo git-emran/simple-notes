@@ -74,9 +74,16 @@ export const deleteNodeAtom = atom(null, async (_, set, path: string) => {
   set(fileTreeAtom, await loadFileTree())
 })
 
-export const movePathAtom = atom(null, async (_get, set, { src, dest }: { src: string; dest: string }) => {
+export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: string; dest: string }) => {
   const success = await window.context.movePath(src, dest)
   if (success) {
     set(fileTreeAtom, await loadFileTree())
+
+    // Update selected node if it was the one moved/renamed
+    const selectedNode = get(selectedNodeAtom)
+    if (selectedNode?.path === src) {
+        const name = dest.substring(Math.max(dest.lastIndexOf('/'), dest.lastIndexOf('\\')) + 1)
+        set(selectedNodeAtom, { ...selectedNode, path: dest, name })
+    }
   }
 })

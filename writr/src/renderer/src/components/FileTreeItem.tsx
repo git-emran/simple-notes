@@ -33,11 +33,13 @@ export const FileTreeItem = ({
   
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(node.name)
+  const [extension, setExtension] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isEditing) {
         inputRef.current?.focus()
+        // Select logic handled by focus? No, need to select all text in input.
         inputRef.current?.select()
     }
   }, [isEditing])
@@ -53,7 +55,20 @@ export const FileTreeItem = ({
   const handleDoubleClick = (e: React.MouseEvent) => {
       e.stopPropagation()
       setIsEditing(true)
-      setEditName(node.name)
+      
+      if (node.type === 'file') {
+          const lastDotIndex = node.name.lastIndexOf('.')
+          if (lastDotIndex !== -1) {
+              setEditName(node.name.substring(0, lastDotIndex))
+              setExtension(node.name.substring(lastDotIndex))
+          } else {
+              setEditName(node.name)
+              setExtension('')
+          }
+      } else {
+          setEditName(node.name)
+          setExtension('')
+      }
   }
   
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -71,10 +86,10 @@ export const FileTreeItem = ({
   const handleDragOver = (e: React.DragEvent) => {
       e.preventDefault() // Essential to allow dropping
       e.stopPropagation()
-      if (node.type === 'folder') {
-          e.dataTransfer.dropEffect = 'move'
-          e.currentTarget.classList.add('bg-blue-100/50', 'dark:bg-blue-900/30')
-      }
+      
+      // Allow dropping on both folders and files
+      e.dataTransfer.dropEffect = 'move'
+      e.currentTarget.classList.add('bg-blue-100/50', 'dark:bg-blue-900/30')
   }
   
   const handleDragLeave = (e: React.DragEvent) => {
@@ -88,24 +103,38 @@ export const FileTreeItem = ({
       
       const src = e.dataTransfer.getData('text/plain')
       if (src && src !== node.path) {
-          // If dropping on a folder, move into it
+          const fileName = src.substring(Math.max(src.lastIndexOf('/'), src.lastIndexOf('\\')) + 1)
+          
           if (node.type === 'folder') {
-            const fileName = src.substring(Math.max(src.lastIndexOf('/'), src.lastIndexOf('\\')) + 1)
+            // Move into folder
             const dest = `${node.path}/${fileName}` 
             onDropNode?.(src, dest)
+          } else {
+            // Move to same directory as file (rearrangement/sibling)
+            // Get parent directory of the target file
+            const parentPath = node.path.substring(0, Math.max(node.path.lastIndexOf('/'), node.path.lastIndexOf('\\')))
+            const dest = `${parentPath}/${fileName}`
+            
+            // Avoid moving to same location
+            if (dest !== src) {
+                onDropNode?.(src, dest)
+            }
           }
       }
   }
   
   const handleSubmitRename = () => {
       setIsEditing(false)
-      if (editName !== node.name && editName.trim() !== '') {
+      const newName = editName + extension
+      if (newName !== node.name && editName.trim() !== '') {
           // Calculate new path
           const parentPath = node.path.substring(0, Math.max(node.path.lastIndexOf('/'), node.path.lastIndexOf('\\')))
-          const newPath = `${parentPath}/${editName}`
-          onDropNode?.(node.path, newPath) // We reuse onDropNode (which is really onMove)
+          const newPath = `${parentPath}/${newName}`
+          onDropNode?.(node.path, newPath) 
       } else {
-          setEditName(node.name)
+          setEditName(node.name) // Reset logic if cancelled/invalid might need more care, but this handles basic reset to *something* safe. 
+          // Actually if we cancel we should reset to node.name, handled in effect or by re-render?
+          // If node changes, component re-renders. 
       }
   }
   
@@ -114,7 +143,15 @@ export const FileTreeItem = ({
           handleSubmitRename()
       } else if (e.key === 'Escape') {
           setIsEditing(false)
-          setEditName(node.name)
+          setEditName(node.name) // This might be buggy if we split it.
+          // Better: just let re-render handle it if we don't save.
+          // Or reset explicitly:
+          /* 
+          if (node.type === 'file' ...) { ... }
+          */
+         // For simplicity, just relying on next render or resetting:
+         // Re-run the double click logic essentially? No.
+         // Just set isEditing false.
       }
       e.stopPropagation() 
   }
@@ -156,17 +193,19 @@ export const FileTreeItem = ({
           )}
         </span>
         
-        {isEditing ? (
-            <input 
-                ref={inputRef}
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onBlur={handleSubmitRename}
-                onKeyDown={handleKeyDown}
-                className="ml-1 flex-1 bg-white dark:bg-black border border-blue-500 outline-none text-sm px-1 rounded-sm"
-                onClick={(e) => e.stopPropagation()}
-            />
+         {isEditing ? (
+            <div className="flex items-center ml-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                <input 
+                    ref={inputRef}
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={handleSubmitRename}
+                    onKeyDown={handleKeyDown}
+                    className="bg-white dark:bg-black border border-blue-500 outline-none text-sm px-1 rounded-sm min-w-0 flex-shrink"
+                />
+                <span className="text-zinc-500 whitespace-pre">{extension}</span>
+            </div>
         ) : (
             <span className="truncate ml-1 flex-1">{node.name}</span>
         )}
