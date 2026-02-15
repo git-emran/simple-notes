@@ -22,8 +22,15 @@ https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
 
 <img width="1772" height="1498" alt="Screenshot 2025-09-09 at 3 36 27 PM" src="https://github.com/user-attachments/assets/211672a2-34f2-44e5-8563-1dda9c679dfc" />
 
+## Version 1.0.5
+
+##### New Release:
+
+- 🔥 **File Explorer**. File explorer with drag and drop re-arrangement like vscode, cursor etc.
+- 🔥 **Tabs**. New tabs for each note and move between tabs with `cmd/ctrl + 1` `cmd + 2` and so on.
 
 ## Version 1.0.4
+
 ##### Features of Writer:
 
 - 🔥 **Vim motions**. Since I use vim for everything, I decided to add vim motions by default. No other way to write lol.
