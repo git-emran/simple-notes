@@ -81,6 +81,11 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   '.cm-line:has(.ͼ3)': {
     marginTop: '1.0em',
     marginBottom: '0.3em'
+  },
+  // Hide/dim backtick markers for inline code in the editor
+  '.cm-code-punctuation': {
+    opacity: '0.3',
+    fontSize: '0.9em'
   }
 })
 

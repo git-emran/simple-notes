@@ -502,7 +502,7 @@ export const MarkdownEditor = () => {
 
                       return isInline ? (
                         <code
-                          className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-200 text-gray-800 rounded text-sm font-mono"
+                          className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-200 text-gray-800 rounded text-sm font-mono before:content-none after:content-none"
                           {...rest}
                         >
                           {children}
