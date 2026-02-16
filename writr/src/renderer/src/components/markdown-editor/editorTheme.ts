@@ -86,6 +86,31 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   '.cm-code-punctuation': {
     opacity: '0.3',
     fontSize: '0.9em'
+  },
+  '.cm-table-line': {
+    fontFamily: 'JetBrains Mono, monospace',
+    whiteSpace: 'pre',
+    backgroundColor: 'rgba(128, 128, 128, 0.03)',
+    borderLeft: '1px solid rgba(128, 128, 128, 0.2)',
+    borderRight: '1px solid rgba(128, 128, 128, 0.2)',
+    paddingTop: '2px',
+    paddingBottom: '2px'
+  },
+  '.cm-table-header': {
+    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    fontWeight: 'bold',
+    borderTop: '1px solid rgba(128, 128, 128, 0.3)',
+    borderBottom: '1px solid rgba(128, 128, 128, 0.3)'
+  },
+  '.cm-table-hidden-pipe': {
+    display: 'none'
+  },
+  '.cm-table-sep-line': {
+    display: 'none'
+  },
+  '.cm-focused-table-row': {
+    backgroundColor: 'rgba(20, 130, 246, 0.05)',
+    outline: '1px solid rgba(20, 130, 246, 0.2)'
   }
 })
 

@@ -459,33 +459,33 @@ export const MarkdownEditor = () => {
                     ),
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-6">
-                        <table className="min-w-full font-sans text-sm border-collapse bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+                        <table className="min-w-full font-sans text-sm border-collapse border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden">
                           {children}
                         </table>
                       </div>
                     ),
                     thead: ({ children }) => (
-                      <thead className="bg-gray-50 dark:bg-gray-900">
+                      <thead className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-300 dark:border-zinc-700">
                         {children}
                       </thead>
                     ),
                     tbody: ({ children }) => (
-                      <tbody className="divide-y font-light divide-gray-200 dark:divide-gray-700">
+                      <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
                         {children}
                       </tbody>
                     ),
                     tr: ({ children }) => (
-                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                      <tr className="even:bg-zinc-50/30 dark:even:bg-zinc-800/10 transition-colors">
                         {children}
                       </tr>
                     ),
                     th: ({ children }) => (
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                      <th className="px-4 py-2.5 text-left text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tight border-r border-zinc-300 dark:border-zinc-700 last:border-r-0">
                         {children}
                       </th>
                     ),
                     td: ({ children }) => (
-                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 last:border-r-0">
+                      <td className="px-4 py-2 text-sm text-zinc-800 dark:text-zinc-200 border-r border-zinc-300 dark:border-zinc-700 last:border-r-0">
                         {children}
                       </td>
                     ),
