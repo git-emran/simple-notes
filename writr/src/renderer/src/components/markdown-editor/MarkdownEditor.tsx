@@ -454,6 +454,9 @@ export const MarkdownEditor = () => {
                         {children}
                       </blockquote>
                     ),
+                    hr: () => (
+                      <hr className="my-8 border-t border-gray-400 dark:border-gray-500" />
+                    ),
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-6">
                         <table className="min-w-full font-sans text-sm border-collapse bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">

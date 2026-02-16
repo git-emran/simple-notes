@@ -138,7 +138,7 @@ export const markdownHighlightStyle = HighlightStyle.define([
     backgroundColor: 'rgba(288, 255, 0, 0.19)'
   },
   { tag: tags.meta, color: '#9ca3af', opacity: '0.7' },
-  { tag: tags.contentSeparator, color: '#d1d5db' },
+  { tag: tags.contentSeparator, color: '#9ca3af' },
   { tag: tags.processingInstruction, color: '#7c3aed', fontStyle: 'italic' }
 ])
 
@@ -197,7 +197,7 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
     backgroundColor: 'rgba(288, 255, 0, 0.19)'
   },
   { tag: tags.meta, color: '#6b7280', opacity: '0.7' },
-  { tag: tags.contentSeparator, color: '#000000' },
+  { tag: tags.contentSeparator, color: '#ffffff' },
   { tag: tags.content, color: '#D6D6D6' },
   { tag: tags.processingInstruction, color: '#a78bfa', fontStyle: 'italic' }
 ])
