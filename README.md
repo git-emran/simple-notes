@@ -6,7 +6,7 @@ Welcome to **Writer**. This is a _markdown_ Text editor. With the power of the b
 
 [⬇️ Download latest macOS App](https://drive.google.com/drive/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1?usp=drive_link)
 
-<img width="3000" height="2250" alt="writer1" src="https://github.com/user-attachments/assets/7b65408f-930b-471a-8696-0bc0837aa53e" />
+<img width="3000" height="2250" alt="writer1" src="https://github.com/user-attachments/assets/29668099-de29-42bb-a859-629715c1994f" />
 
 # Use Features like
 
