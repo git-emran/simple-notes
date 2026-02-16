@@ -12,13 +12,17 @@ export const EditorTabs = () => {
   if (tabs.length === 0) return null
 
   return (
-    <div className="flex bg-zinc-50 dark:bg-[#181818] overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-800/50">
+    <div 
+      className="flex bg-zinc-50 dark:bg-[#181818] overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-800/50"
+      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+    >
       {tabs.map((tab) => {
         const isActive = activeTabPath === tab.path
         return (
           <div
             key={tab.path}
             onClick={() => setActiveTab(tab.path)}
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             className={twMerge(
               'group relative flex items-center min-w-[140px] max-w-[220px] h-10 px-4 cursor-pointer select-none transition-all duration-75',
               isActive
@@ -53,6 +57,7 @@ export const EditorTabs = () => {
                 e.stopPropagation()
                 closeTab(tab.path)
               }}
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               className={twMerge(
                 'ml-2 p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all invisible group-hover:visible',
                 isActive && 'visible text-zinc-400 dark:text-zinc-500'

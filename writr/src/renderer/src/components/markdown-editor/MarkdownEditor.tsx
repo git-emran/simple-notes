@@ -328,8 +328,8 @@ export const MarkdownEditor = () => {
       {/* Header Controls */}
       <div className="flex items-center justify-between px-6 py-2 bg-transparent shrink-0">
         <div className="text-[11px] font-sans text-zinc-400 dark:text-zinc-500 truncate flex items-center gap-2">
-           <VscFile className="w-3 h-3" />
-           <span>{selectedNote.path}</span>
+          <VscFile className="w-3 h-3" />
+          <span>{selectedNote.path}</span>
         </div>
         <div className='flex gap-1.5'>
           {!isFullPreview && (
