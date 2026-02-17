@@ -69,9 +69,12 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     color: isDark ? '#ffffff' : '#1d4ed8'
   },
 
-  '.cm-cursor': {
-    borderLeftColor: '#ffffff',
-    mixBlendMode: 'difference'
+  '.cm-cursor, .cm-dropCursor': {
+    borderLeftColor: isDark ? '#ffffff' : '#000000',
+    borderLeftWidth: '2px'
+  },
+  '.cm-cursor-primary': {
+    borderLeftColor: isDark ? '#ffffff' : '#000000',
   },
 
   '.cm-line:has(.ͼ1)': {

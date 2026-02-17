@@ -19,8 +19,20 @@ export const statusBarExtension = ViewPlugin.fromClass(
         z-index: 10;
       `
 
-      view.dom.parentElement!.style.position = 'relative'
-      view.dom.parentElement!.appendChild(this.dom)
+      const parent = view.dom.parentElement
+      if (parent) {
+        parent.style.position = 'relative'
+        parent.appendChild(this.dom)
+      } else {
+        // Fallback or wait
+        requestAnimationFrame(() => {
+          const p = view.dom.parentElement
+          if (p) {
+            p.style.position = 'relative'
+            p.appendChild(this.dom)
+          }
+        })
+      }
 
       // initial dark mode check
       this.darkMode =

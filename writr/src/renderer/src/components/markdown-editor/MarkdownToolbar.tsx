@@ -10,8 +10,10 @@ import {
   FaTable,
   FaCheckSquare,
   FaStrikethrough,
-  FaChevronDown
+  FaChevronDown,
+  FaImage
 } from "react-icons/fa"
+import { MdHorizontalRule } from "react-icons/md"
 import { EditorView } from "@codemirror/view"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
@@ -226,6 +228,32 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
     view.focus()
   }
 
+  const applyImageFormat = () => {
+    if (!view) return
+
+    const { from, to, empty } = view.state.selection.main
+    const selected = view.state.sliceDoc(from, to)
+
+    if (empty) {
+      const insert = "![alt text](url)"
+      view.dispatch({
+        changes: { from, to, insert },
+        selection: { anchor: from + 2, head: from + 10 }
+      })
+    } else {
+      const insert = `![${selected}](url)`
+      view.dispatch({
+        changes: { from, to, insert },
+        selection: {
+          anchor: from + selected.length + 4,
+          head: from + selected.length + 7
+        }
+      })
+    }
+
+    view.focus()
+  }
+
   const insertTable = () => {
     if (!view) return
 
@@ -302,7 +330,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
     view.focus()
   }
 
-  const btnClass = "p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+  const btnClass = "p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 flex-shrink-0"
 
   const renderDropdown = () => {
     if (!showHeaderDropdown) return null
@@ -335,7 +363,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-6 py-2 bg-transparent dark:bg-transparent overflow-x-auto max-w-full shrink-0 border-b border-zinc-100 dark:border-zinc-800/50">
+    <div className="flex items-center flex-wrap gap-1.5 px-6 py-2 bg-transparent dark:bg-transparent max-w-full shrink-0 border-b border-zinc-100 dark:border-zinc-800/50">
       {/* Text Formatting */}
       <button
         onClick={() => applyFormat("**", "**")}
@@ -455,6 +483,15 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
       </button>
 
       <button
+        onClick={applyImageFormat}
+        disabled={!view}
+        className={btnClass}
+        title="Insert Image"
+      >
+        <FaImage />
+      </button>
+
+      <button
         onClick={insertTable}
         disabled={!view}
         className={btnClass}
@@ -469,7 +506,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         className={btnClass}
         title="Horizontal Rule (Ctrl+H)"
       >
-        <div className="text-xs font-bold text-slate-700 dark:text-slate-200">---</div>
+        <MdHorizontalRule className="w-5 h-5" />
       </button>
 
       {renderDropdown()}

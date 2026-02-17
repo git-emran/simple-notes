@@ -4,6 +4,10 @@ import { unwrap } from 'jotai/utils'
 
 // File Tree Atoms
 const loadFileTree = async () => {
+  if (!window.context) {
+    console.warn('window.context is not defined. Are you running in Electron?')
+    return []
+  }
   return await window.context.getFileTree()
 }
 
@@ -71,9 +75,19 @@ export const selectedNoteAtomAsync = atom(async (get) => {
 
   if (!activeTabPath) return null
 
-  // Find the node in the tree or tabs to get the name
-  // For simplicity, we can just use the path to read content
+  if (!window.context) {
+    console.warn('window.context is not defined.')
+    return {
+      title: activeTabPath.split('/').pop()?.replace(/\.md$/, '') || 'Untitled',
+      lastEditTime: Date.now(),
+      content: '',
+      path: activeTabPath
+    }
+  }
+
   const content = await window.context.readFileNew(activeTabPath)
+  
+  // Extract name for title
   
   // Extract name for title
   const lastSlash = activeTabPath.lastIndexOf('/')

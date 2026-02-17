@@ -1,9 +1,14 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
 import { join } from 'path'
+import { promises as fs } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { createNote, deleteNote, getNotes, readNote, writeNote, getFileTree, createNoteNew, createDirectory, deletePath, readFileNew, writeFileNew, movePath } from '@/lib'
 import { CreateNote, DeleteNote, GetNotes, ReadNote, WriteNote, GetFileTree, CreateNoteNew, CreateDirectory, DeletePath, ReadFile, WriteFile, MovePath } from '@shared/types'
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'local-file', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+])
 
 function createWindow(): void {
   // Create the browser window.
@@ -63,6 +68,25 @@ app.whenReady().then(() => {
   ipcMain.handle('readFileNew', (_, ...args: Parameters<ReadFile>) => readFileNew(...args))
   ipcMain.handle('writeFileNew', (_, ...args: Parameters<WriteFile>) => writeFileNew(...args))
   ipcMain.handle('movePath', (_, ...args: Parameters<MovePath>) => movePath(...args))
+  
+  protocol.handle('local-file', async (request) => {
+    try {
+      console.log('Main: local-file request:', request.url)
+      const url = new URL(request.url)
+      let filePath = decodeURIComponent(url.pathname)
+      // Remove leading slash on Windows if present (e.g. /C:/ -> C:/)
+      if (process.platform === 'win32' && filePath.startsWith('/') && !filePath.startsWith('//')) {
+          filePath = filePath.slice(1);
+      }
+      
+      console.log('Main: serving file:', filePath)
+      const data = await fs.readFile(filePath)
+      return new Response(data as any)
+    } catch (e) {
+      console.error('Failed to serve local file:', e)
+      return new Response('Not Found', { status: 404 })
+    }
+  })
 
   createWindow()
 

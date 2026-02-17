@@ -4,7 +4,7 @@ import { EditorState } from '@codemirror/state'
 import { EditorView, keymap, drawSelection } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
 import { vim } from '@replit/codemirror-vim'
-import { throttle } from 'lodash'
+import { throttle, debounce } from 'lodash'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { selectedNoteAtom, saveNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
@@ -43,6 +43,8 @@ import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
 import { markdownTableEnhancement } from './extendTableEditing'
 import { codeBlockCopy } from './codeBlockCopy'
 import { codeBlockBackground } from './codeBlockBackground'
+import { livePreviewImages } from './livePreviewImages'
+import { MdDragIndicator } from "react-icons/md";
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -60,6 +62,7 @@ export const MarkdownEditor = () => {
   const [isPreview, setIsPreview] = useState(false)
   const [isFullPreview, setIsFullPreview] = useState(false) // New state for full preview
   const [currentContent, setCurrentContent] = useState('')
+  const [debouncedContent, setDebouncedContent] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   // Save queue management
@@ -88,6 +91,16 @@ export const MarkdownEditor = () => {
       mediaQuery.removeEventListener('change', checkDarkMode)
     }
   }, [])
+
+  const debouncedSetContent = useMemo(
+    () => debounce((content: string) => setDebouncedContent(content), 300),
+    []
+  )
+
+  useEffect(() => {
+    debouncedSetContent(currentContent)
+    return debouncedSetContent.cancel
+  }, [currentContent, debouncedSetContent])
 
   const baseExtensions = useMemo(
     () => [
@@ -133,6 +146,7 @@ export const MarkdownEditor = () => {
       tabAsSpaces,
       codeBlockCopy,
       codeBlockBackground,
+      livePreviewImages,
     ],
     [isDarkMode]
   )
@@ -388,8 +402,10 @@ export const MarkdownEditor = () => {
             {!isFullPreview && (
               <div
                 ref={dragBarRef}
-                className="w-1 cursor-col-resize bg-gray-300 dark:bg-gray-600 hover:bg-gray-500 z-10"
-              />
+                className="w-1.5 cursor-col-resize bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-400 dark:hover:bg-zinc-600 z-10 flex items-center justify-center transition-colors"
+              >
+                <MdDragIndicator className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
+              </div>
             )}
             <div
               ref={previewContainerRef}
@@ -416,16 +432,15 @@ export const MarkdownEditor = () => {
                       </h3>
                     ),
                     h4: ({ children }) => (
-                      <h4 className="text-md font sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      <h4 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
                         {children}
-                      </h4>),
-
+                      </h4>
+                    ),
                     h5: ({ children }) => (
-                      <h5 className="text-md font sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      <h5 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
                         {children}
                       </h5>
                     ),
-
                     p: ({ children }) => (
                       <p className="mb-4 text-sm font-sans text-gray-800 dark:text-white">
                         {children}
@@ -456,6 +471,39 @@ export const MarkdownEditor = () => {
                         {children}
                       </blockquote>
                     ),
+                    a: ({ href, children }) => {
+                      const isImage = href && (
+                        href.toLowerCase().endsWith('.png') || 
+                        href.toLowerCase().endsWith('.jpg') || 
+                        href.toLowerCase().endsWith('.jpeg') || 
+                        href.toLowerCase().endsWith('.gif') || 
+                        href.toLowerCase().endsWith('.svg') || 
+                        href.toLowerCase().endsWith('.webp')
+                      )
+
+                      if (isImage) {
+                        const isRelative = href && !href.startsWith('http') && !href.startsWith('data:') && !href.startsWith('local-file://')
+                        const finalSrc = isRelative ? `local-file://${encodeURI(href)}` : href
+                        return (
+                          <img 
+                            src={finalSrc} 
+                            alt={String(children)} 
+                            className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-zinc-200 dark:border-zinc-800" 
+                          />
+                        )
+                      }
+
+                      return (
+                        <a 
+                          href={href} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-4"
+                        >
+                          {children}
+                        </a>
+                      )
+                    },
                     hr: () => (
                       <hr className="my-8 border-t border-gray-400 dark:border-gray-500" />
                     ),
@@ -501,7 +549,6 @@ export const MarkdownEditor = () => {
                         return <MermaidDiagram chart={codeContent} />
                       }
 
-
                       return isInline ? (
                         <code
                           className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-200 text-gray-800 rounded text-sm font-mono before:content-none after:content-none"
@@ -534,9 +581,20 @@ export const MarkdownEditor = () => {
                         {children}
                       </pre>
                     ),
+                    img: ({ src, alt }) => {
+                      const isRelative = src && !src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('local-file://')
+                      const finalSrc = isRelative ? `local-file://${encodeURI(src)}` : src
+                      return (
+                        <img 
+                          src={finalSrc} 
+                          alt={alt} 
+                          className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-zinc-200 dark:border-zinc-800" 
+                        />
+                      )
+                    }
                   }}
                 >
-                  {currentContent}
+                  {debouncedContent.replace(/!\[\[(.*?)\]\]/g, '![$1]($1)')}
                 </ReactMarkdown>
               </div>
             </div>
