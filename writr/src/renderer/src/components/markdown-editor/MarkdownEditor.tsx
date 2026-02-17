@@ -459,7 +459,7 @@ export const MarkdownEditor = () => {
                     ),
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-6 border border-zinc-300 dark:border-zinc-700 rounded-lg">
-                        <table className="min-w-full border-collapse">
+                        <table className="min-w-full w-max border-collapse">
                           {children}
                         </table>
                       </div>

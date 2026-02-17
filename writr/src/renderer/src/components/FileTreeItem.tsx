@@ -160,11 +160,14 @@ export const FileTreeItem = ({
     <>
       <li
         className={twMerge(
-          'group cursor-pointer py-[2px] flex items-center gap-1 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors text-sm font-light select-none relative',
+          'group cursor-pointer py-[2px] flex items-center gap-1 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors text-[13px] select-none relative',
           isSelected ? 'bg-blue-100 dark:bg-[#37373d] text-blue-600 dark:text-white' : 'text-zinc-600 dark:text-zinc-400',
           className
         )}
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        style={{ 
+          paddingLeft: `${depth * 12 + 8}px`,
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
@@ -182,13 +185,14 @@ export const FileTreeItem = ({
         </span>
         
         <span className="flex-shrink-0">
-          {node.type === 'folder' ? (
+          {node.type === 'folder' && (
             isExpanded ? (
               <VscFolderOpened className="w-4 h-4 text-blue-500" />
             ) : (
               <VscFolder className="w-4 h-4 text-blue-500" />
             )
-          ) : (
+          )}
+          {node.type === 'file' && !node.name.toLowerCase().endsWith('.md') && (
             <VscFile className="w-4 h-4 text-zinc-500" />
           )}
         </span>
@@ -202,12 +206,12 @@ export const FileTreeItem = ({
                     onChange={(e) => setEditName(e.target.value)}
                     onBlur={handleSubmitRename}
                     onKeyDown={handleKeyDown}
-                    className="bg-white dark:bg-black border border-blue-500 outline-none text-sm px-1 rounded-sm min-w-0 flex-shrink"
+                    className="bg-white dark:bg-black border border-blue-500 outline-none text-[13px] px-1 rounded-sm min-w-0 flex-shrink"
                 />
                 <span className="text-zinc-500 whitespace-pre">{extension}</span>
             </div>
         ) : (
-            <span className="truncate ml-1 flex-1">{node.name}</span>
+            <span className={`truncate flex-1 ${node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1'}`}>{node.name}</span>
         )}
         
         {/* Delete on Hover (only when not editing) */}

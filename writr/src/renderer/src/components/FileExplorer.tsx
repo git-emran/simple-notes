@@ -61,7 +61,11 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   }
 
   return (
-    <aside className={twMerge('flex flex-col h-full bg-zinc-50 dark:bg-[#252526] border-r border-zinc-200 dark:border-[#1e1e1e]', className)} {...props}>
+    <aside 
+      className={twMerge('flex flex-col h-full bg-zinc-50 dark:bg-[#252526] border-r border-zinc-200 dark:border-[#1e1e1e]', className)} 
+      style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
+      {...props}
+    >
       {/* Title & Toolbar */}
       <div className="flex items-center justify-start px-4 py-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
         <div className="flex items-center gap-1">

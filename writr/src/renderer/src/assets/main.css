@@ -60,11 +60,11 @@ header {
 }
 
 ::-webkit-scrollbar {
-  @apply w-1;
+  @apply w-1 h-1;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-[#555] rounded-md;
+  @apply bg-zinc-300 dark:bg-zinc-700 rounded-md;
 }
 
 ::-webkit-scrollbar-track {

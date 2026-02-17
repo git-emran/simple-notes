@@ -6,7 +6,8 @@ export const gutterTheme = EditorView.theme({
   '.cm-gutters': {
     paddingRight: '4px',
     textAlign: 'right',
-    borderRight: '1px solid rgba(128, 128, 128, 0.5)'
+    borderRight: '1px solid rgba(128, 128, 128, 0.5)',
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
   }
 })
 
@@ -36,7 +37,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   },
   '.cm-gutters': {
     backgroundColor: isDark ? '#1e1e1e' : '#ffffff',
-    paddingLeft: '8px'
+    paddingLeft: '0'
   },
   '.cm-foldGutter .cm-gutterElement': {
     fontSize: '14px'
@@ -117,6 +118,9 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     backgroundColor: 'rgba(20, 130, 246, 0.05)',
     outline: '1px solid rgba(20, 130, 246, 0.2)',
     overflow: 'visible'
+  },
+  '.cm-line:has(.cm-code-punctuation), .cm-line:has(.ͼe), .cm-line:has(.ͼf), .cm-line:has(.ͼg), .cm-line:has(.ͼh)': {
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
   }
 })
 
