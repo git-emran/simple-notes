@@ -458,8 +458,8 @@ export const MarkdownEditor = () => {
                       <hr className="my-8 border-t border-gray-400 dark:border-gray-500" />
                     ),
                     table: ({ children }) => (
-                      <div className="overflow-x-auto my-6">
-                        <table className="min-w-full font-sans text-sm border-collapse border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden">
+                      <div className="overflow-x-auto my-6 border border-zinc-300 dark:border-zinc-700 rounded-lg">
+                        <table className="min-w-full border-collapse">
                           {children}
                         </table>
                       </div>
