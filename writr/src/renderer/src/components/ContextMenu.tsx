@@ -24,7 +24,7 @@ export const ContextMenu = ({ x, y, onClose, children, ...props }: ContextMenuPr
   return (
     <div
       ref={ref}
-      className="fixed z-50 bg-white dark:bg-[#252526] border border-zinc-200 dark:border-[#454545] shadow-lg rounded py-1 min-w-[150px]"
+      className="fixed z-50 bg-white dark:bg-[#252526] border border-zinc-200 dark:border-[#454545] shadow-lg rounded py-1 min-w-[150px] max-h-[400px] overflow-y-auto preview-scrollbar"
       style={{ top: y, left: x }}
       {...props}
     >
@@ -39,7 +39,7 @@ export const ContextMenuItem = ({ children, onClick, ...props }: ComponentProps<
             e.stopPropagation()
             onClick?.(e)
         }}
-        className="w-full text-left px-3 py-1.5 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 text-sm text-zinc-700 dark:text-zinc-300"
+        className="w-full text-left px-3 py-1 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-600 text-[13px] text-zinc-700 dark:text-zinc-300 flex items-center gap-2"
         {...props}
     >
         {children}

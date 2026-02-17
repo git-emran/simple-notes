@@ -45,6 +45,14 @@ import { codeBlockCopy } from './codeBlockCopy'
 import { codeBlockBackground } from './codeBlockBackground'
 import { livePreviewImages } from './livePreviewImages'
 import { MdDragIndicator } from "react-icons/md";
+import { ContextMenu, ContextMenuItem } from '../ContextMenu'
+import * as commands from './editorCommands'
+import { 
+  FaBold, FaItalic, FaStrikethrough, FaQuoteRight, 
+  FaListUl, FaListOl, FaCheckSquare, FaCode, 
+  FaLink, FaImage, FaTable, FaHeading 
+} from 'react-icons/fa'
+import { MdHorizontalRule } from 'react-icons/md'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -64,6 +72,7 @@ export const MarkdownEditor = () => {
   const [currentContent, setCurrentContent] = useState('')
   const [debouncedContent, setDebouncedContent] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   // Save queue management
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
@@ -382,6 +391,11 @@ export const MarkdownEditor = () => {
       <div
         ref={containerRef}
         className="flex-1 flex h-full overflow-hidden relative"
+        onContextMenu={(e) => {
+          if (isFullPreview) return
+          e.preventDefault()
+          setContextMenu({ x: e.clientX, y: e.clientY })
+        }}
       >
         <div
           ref={editorContainerRef}
@@ -601,6 +615,98 @@ export const MarkdownEditor = () => {
           </>
         )}
       </div>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          className="fixed z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar"
+        >
+          <ContextMenuItem onClick={() => { commands.applyFormat(viewRef.current, "**", "**"); setContextMenu(null); }}>
+             <FaBold className="w-3 h-3 opacity-60" />
+             <span>Bold</span>
+             <span className="ml-auto text-[10px] opacity-40">Ctrl+B</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { commands.applyFormat(viewRef.current, "*", "*"); setContextMenu(null); }}>
+             <FaItalic className="w-3 h-3 opacity-60" />
+             <span>Italic</span>
+             <span className="ml-auto text-[10px] opacity-40">Ctrl+I</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { commands.applyFormat(viewRef.current, "~~", "~~"); setContextMenu(null); }}>
+             <FaStrikethrough className="w-3 h-3 opacity-60" />
+             <span>Strikethrough</span>
+             <span className="ml-auto text-[10px] opacity-40">Ctrl+D</span>
+          </ContextMenuItem>
+
+          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+          
+          <ContextMenuItem onClick={() => { commands.applyHeaderFormat(viewRef.current, 1); setContextMenu(null); }}>
+            <FaHeading className="w-3 h-3 opacity-60" />
+            <span>Header 1</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { commands.applyHeaderFormat(viewRef.current, 2); setContextMenu(null); }}>
+            <FaHeading className="w-3 h-3 opacity-60" />
+            <span>Header 2</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { commands.applyHeaderFormat(viewRef.current, 3); setContextMenu(null); }}>
+            <FaHeading className="w-3 h-3 opacity-60" />
+            <span>Header 3</span>
+          </ContextMenuItem>
+
+          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+
+          <ContextMenuItem onClick={() => { commands.applyLineFormat(viewRef.current, "> "); setContextMenu(null); }}>
+            <FaQuoteRight className="w-3 h-3 opacity-60" />
+            <span>Quote</span>
+            <span className="ml-auto text-[10px] opacity-40">Ctrl+Q</span>
+          </ContextMenuItem>
+          
+          <ContextMenuItem onClick={() => { commands.applyLineFormat(viewRef.current, "- "); setContextMenu(null); }}>
+            <FaListUl className="w-3 h-3 opacity-60" />
+            <span>Bullet List</span>
+            <span className="ml-auto text-[10px] opacity-40">Ctrl+L</span>
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => { commands.insertCheckbox(viewRef.current); setContextMenu(null); }}>
+            <FaCheckSquare className="w-3 h-3 opacity-60" />
+            <span>Task List</span>
+            <span className="ml-auto text-[10px] opacity-40">Ctrl+T</span>
+          </ContextMenuItem>
+
+          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+
+          <ContextMenuItem onClick={() => { commands.applyLinkFormat(viewRef.current); setContextMenu(null); }}>
+            <FaLink className="w-3 h-3 opacity-60" />
+            <span>Link</span>
+            <span className="ml-auto text-[10px] opacity-40">Ctrl+K</span>
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => { commands.applyImageFormat(viewRef.current); setContextMenu(null); }}>
+            <FaImage className="w-3 h-3 opacity-60" />
+            <span>Image</span>
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => { commands.insertTable(viewRef.current); setContextMenu(null); }}>
+            <FaTable className="w-3 h-3 opacity-60" />
+            <span>Table</span>
+            <span className="ml-auto text-[10px] opacity-40">Ctrl+Shift+T</span>
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => { commands.insertHorizontalRule(viewRef.current); setContextMenu(null); }}>
+            <MdHorizontalRule className="w-3 h-3 opacity-60" />
+            <span>Horizontal Rule</span>
+            <span className="ml-auto text-[10px] opacity-40">Ctrl+H</span>
+          </ContextMenuItem>
+
+          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+
+          <ContextMenuItem onClick={() => { commands.insertCodeBlock(viewRef.current); setContextMenu(null); }}>
+            <FaCode className="w-3 h-3 opacity-60" />
+            <span>Code Block</span>
+            <span className="ml-auto text-[10px] opacity-40">Ctrl+Shift+`</span>
+          </ContextMenuItem>
+        </ContextMenu>
+      )}
     </div>
   )
 }
