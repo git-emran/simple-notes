@@ -42,6 +42,7 @@ import { TbLayoutSidebarRightExpandFilled } from "react-icons/tb";
 import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
 import { markdownTableEnhancement } from './extendTableEditing'
 import { codeBlockCopy } from './codeBlockCopy'
+import { codeBlockBackground } from './codeBlockBackground'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -131,6 +132,7 @@ export const MarkdownEditor = () => {
       statusBarExtension,
       tabAsSpaces,
       codeBlockCopy,
+      codeBlockBackground,
     ],
     [isDarkMode]
   )

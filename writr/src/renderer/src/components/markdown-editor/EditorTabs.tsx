@@ -14,7 +14,10 @@ export const EditorTabs = () => {
   return (
     <div 
       className="flex bg-zinc-50 dark:bg-[#181818] overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-800/50"
-      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      style={{ 
+          WebkitAppRegion: 'drag',
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+      } as React.CSSProperties}
     >
       {tabs.map((tab) => {
         const isActive = activeTabPath === tab.path

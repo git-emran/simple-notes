@@ -160,13 +160,12 @@ export const FileTreeItem = ({
     <>
       <li
         className={twMerge(
-          'group cursor-pointer py-[2px] flex items-center gap-1 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors text-[13px] select-none relative',
+          'group cursor-pointer py-[2px] flex items-center gap-1 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors text-[11px] select-none relative',
           isSelected ? 'bg-blue-100 dark:bg-[#37373d] text-blue-600 dark:text-white' : 'text-zinc-600 dark:text-zinc-400',
           className
         )}
         style={{ 
           paddingLeft: `${depth * 12 + 8}px`,
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
         }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -206,12 +205,18 @@ export const FileTreeItem = ({
                     onChange={(e) => setEditName(e.target.value)}
                     onBlur={handleSubmitRename}
                     onKeyDown={handleKeyDown}
-                    className="bg-white dark:bg-black border border-blue-500 outline-none text-[13px] px-1 rounded-sm min-w-0 flex-shrink"
+                    className="bg-white dark:bg-black border border-blue-500 outline-none text-[11px] px-1 rounded-sm min-w-0 flex-shrink"
                 />
                 <span className="text-zinc-500 whitespace-pre">{extension}</span>
             </div>
         ) : (
-            <span className={`truncate flex-1 ${node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1'}`}>{node.name}</span>
+            <span className={twMerge(
+                "truncate flex-1",
+                node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1',
+                node.type === 'folder' && 'font-medium text-zinc-700 dark:text-zinc-300'
+            )}>
+                {node.name}
+            </span>
         )}
         
         {/* Delete on Hover (only when not editing) */}

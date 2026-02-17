@@ -119,8 +119,8 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     outline: '1px solid rgba(20, 130, 246, 0.2)',
     overflow: 'visible'
   },
-  '.cm-line:has(.cm-code-punctuation), .cm-line:has(.ͼe), .cm-line:has(.ͼf), .cm-line:has(.ͼg), .cm-line:has(.ͼh)': {
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+  '.cm-codeblock-line': {
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
   }
 })
 
