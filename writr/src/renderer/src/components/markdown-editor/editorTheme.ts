@@ -4,7 +4,6 @@ import { tags } from '@lezer/highlight'
 
 export const gutterTheme = EditorView.theme({
   '.cm-gutters': {
-    backgroundColor: 'transparent',
     paddingRight: '4px',
     textAlign: 'right',
     borderRight: '1px solid rgba(128, 128, 128, 0.5)'
@@ -19,7 +18,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   },
   '.cm-scroller': {
     fontFamily: 'JetBrains Mono',
-    padding: '16px'
+    padding: '0'
   },
   '.cm-focused': {
     outline: 'none'
@@ -29,11 +28,15 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   },
   '.cm-content': {
     minHeight: '100%',
-    padding: '2px'
+    padding: '16px 0'
   },
   '.cm-line': {
-    paddingLeft: '0',
+    paddingLeft: '16px',
     paddingRight: '16px'
+  },
+  '.cm-gutters': {
+    backgroundColor: isDark ? '#1e1e1e' : '#ffffff',
+    paddingLeft: '8px'
   },
   '.cm-foldGutter .cm-gutterElement': {
     fontSize: '14px'
@@ -94,13 +97,15 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     borderLeft: '1px solid rgba(128, 128, 128, 0.2)',
     borderRight: '1px solid rgba(128, 128, 128, 0.2)',
     paddingTop: '2px',
-    paddingBottom: '2px'
+    paddingBottom: '2px',
+    overflowX: 'auto'
   },
   '.cm-table-header': {
     backgroundColor: 'rgba(128, 128, 128, 0.1)',
     fontWeight: 'bold',
     borderTop: '1px solid rgba(128, 128, 128, 0.3)',
-    borderBottom: '1px solid rgba(128, 128, 128, 0.3)'
+    borderBottom: '1px solid rgba(128, 128, 128, 0.3)',
+    overflowX: 'auto'
   },
   '.cm-table-hidden-pipe': {
     display: 'none'
@@ -110,7 +115,8 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   },
   '.cm-focused-table-row': {
     backgroundColor: 'rgba(20, 130, 246, 0.05)',
-    outline: '1px solid rgba(20, 130, 246, 0.2)'
+    outline: '1px solid rgba(20, 130, 246, 0.2)',
+    overflow: 'visible'
   }
 })
 

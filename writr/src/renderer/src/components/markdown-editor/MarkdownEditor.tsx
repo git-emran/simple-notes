@@ -480,12 +480,12 @@ export const MarkdownEditor = () => {
                       </tr>
                     ),
                     th: ({ children }) => (
-                      <th className="px-4 py-2.5 text-left text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tight border-r border-zinc-300 dark:border-zinc-700 last:border-r-0">
+                      <th className="px-4 py-2.5 text-left text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tight border-r border-zinc-300 dark:border-zinc-700 last:border-r-0 whitespace-nowrap">
                         {children}
                       </th>
                     ),
                     td: ({ children }) => (
-                      <td className="px-4 py-2 text-sm text-zinc-800 dark:text-zinc-200 border-r border-zinc-300 dark:border-zinc-700 last:border-r-0">
+                      <td className="px-4 py-2 text-sm text-zinc-800 dark:text-zinc-200 border-r border-zinc-300 dark:border-zinc-700 last:border-r-0 whitespace-nowrap">
                         {children}
                       </td>
                     ),
