@@ -42,7 +42,8 @@ import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
 import { markdownTableEnhancement } from './extendTableEditing'
 import { codeBlockCopy } from './codeBlockCopy'
 import { codeBlockBackground } from './codeBlockBackground'
-import { livePreviewImages } from './livePreviewImages'
+import { createLivePreviewImages } from './livePreviewImages'
+import { toLocalFileUrl } from './localFileUrl'
 import { MdDragIndicator } from "react-icons/md";
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import * as commands from './editorCommands'
@@ -81,11 +82,14 @@ export const MarkdownEditor = () => {
   const isSavingRef = useRef(false)
 
   useEffect(() => {
+    const getIsDarkMode = () => {
+      if (document.documentElement.classList.contains('dark')) return true
+      if (document.documentElement.classList.contains('light')) return false
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+    }
+
     const checkDarkMode = () => {
-      setIsDarkMode(
-        document.documentElement.classList.contains('dark') ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-      )
+      setIsDarkMode(getIsDarkMode())
     }
 
     checkDarkMode()
@@ -157,9 +161,9 @@ export const MarkdownEditor = () => {
       tabAsSpaces,
       codeBlockCopy,
       codeBlockBackground,
-      livePreviewImages,
+      createLivePreviewImages(selectedNote?.path),
     ],
-    [isDarkMode]
+    [isDarkMode, selectedNote?.path]
   )
 
   // Optimized save function with queue
@@ -606,13 +610,13 @@ export const MarkdownEditor = () => {
                       )
 
                       if (isImage) {
-                        const isRelative = href && !href.startsWith('http') && !href.startsWith('data:') && !href.startsWith('local-file://')
-                        const finalSrc = isRelative ? `local-file://${encodeURI(href)}` : href
+                        const finalSrc = href ? toLocalFileUrl(href, selectedNote.path) : href
                         return (
                           <img 
                             src={finalSrc} 
                             alt={String(children)} 
-                            className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-[var(--obsidian-border)]" 
+                            className="block max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
+                            style={{ maxWidth: 'min(100%, 720px)' }}
                           />
                         )
                       }
@@ -706,13 +710,13 @@ export const MarkdownEditor = () => {
                       </pre>
                     ),
                     img: ({ src, alt }) => {
-                      const isRelative = src && !src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('local-file://')
-                      const finalSrc = isRelative ? `local-file://${encodeURI(src)}` : src
+                      const finalSrc = src ? toLocalFileUrl(src, selectedNote.path) : src
                       return (
                         <img 
                           src={finalSrc} 
                           alt={alt} 
-                          className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-[var(--obsidian-border)]" 
+                          className="block max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
+                          style={{ maxWidth: 'min(100%, 720px)' }}
                         />
                       )
                     }

@@ -30,23 +30,19 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
       if (!view || (!e.ctrlKey && !e.metaKey)) return
 
       const key = e.key.toLowerCase()
-      let handled = false
 
       switch (key) {
         case 'b':
           e.preventDefault()
           commands.applyFormat(view, "**", "**")
-          handled = true
           break
         case 'i':
           e.preventDefault()
           commands.applyFormat(view, "*", "*")
-          handled = true
           break
         case 'k':
           e.preventDefault()
           commands.applyLinkFormat(view)
-          handled = true
           break
         case '`':
           e.preventDefault()
@@ -55,12 +51,10 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
           } else {
             commands.applyFormat(view, "`", "`")
           }
-          handled = true
           break
         case 'q':
           e.preventDefault()
           commands.applyLineFormat(view, "> ")
-          handled = true
           break
         case 'l':
           e.preventDefault()
@@ -69,7 +63,6 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
           } else {
             commands.applyLineFormat(view, "- ")
           }
-          handled = true
           break
         case 't':
           e.preventDefault()
@@ -78,25 +71,15 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
           } else {
             commands.insertCheckbox(view)
           }
-          handled = true
           break
         case 'h':
           e.preventDefault()
           commands.insertHorizontalRule(view)
-          handled = true
           break
         case 'd':
           e.preventDefault()
           commands.applyFormat(view, "~~", "~~")
-          handled = true
           break
-      }
-
-      // Handle header shortcuts (Ctrl/Cmd + 1-6)
-      if (!handled && /^[1-6]$/.test(key)) {
-        e.preventDefault()
-        commands.applyHeaderFormat(view, parseInt(key))
-        handled = true
       }
     }
 
@@ -168,10 +151,6 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
             <span className="ml-2 text-sm opacity-75">
               {"#".repeat(level)} Heading {level}
             </span>
-            {" "}
-            <span className="text-[0.6rem] p-1 rounded-sm font-medium bg-black/20 text-[var(--obsidian-text-muted)]">
-              Ctrl+{level}
-            </span>
           </button>
         ))}
       </div>,
@@ -218,7 +197,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
           onClick={() => setShowHeaderDropdown(!showHeaderDropdown)}
           disabled={!view}
           className={`${btnClass} flex items-center gap-1`}
-          title="Headers (Ctrl+1-6)"
+          title="Headers"
           aria-expanded={showHeaderDropdown}
           aria-haspopup="true"
         >

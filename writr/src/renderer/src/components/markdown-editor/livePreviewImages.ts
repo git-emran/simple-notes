@@ -1,27 +1,32 @@
 import { Extension } from "@codemirror/state"
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view"
+import { toLocalFileUrl } from "./localFileUrl"
 
 class ImageWidget extends WidgetType {
-  constructor(readonly url: string, readonly alt: string) {
+  constructor(
+    readonly url: string,
+    readonly alt: string,
+    readonly notePath?: string
+  ) {
     super()
   }
 
   eq(other: ImageWidget) {
-    return other.url === this.url && other.alt === this.alt
+    return other.url === this.url && other.alt === this.alt && other.notePath === this.notePath
   }
 
   toDOM() {
-    const isRelative = this.url && !this.url.startsWith('http') && !this.url.startsWith('data:') && !this.url.startsWith('local-file://')
-    const finalSrc = isRelative ? `local-file://${encodeURI(this.url)}` : this.url
+    const finalSrc = toLocalFileUrl(this.url, this.notePath)
 
     const wrapper = document.createElement("div")
-    wrapper.className = "cm-image-widget-wrapper my-2 flex justify-center"
+    wrapper.className = "cm-image-widget-wrapper my-2 flex justify-start"
     
     const img = document.createElement("img")
     img.src = finalSrc
     img.alt = this.alt
-    img.className = "max-w-full h-auto rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800"
+    img.className = "max-w-full w-auto h-auto rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800"
     img.style.maxHeight = "400px" // Mimic Obsidian's default constraint
+    img.style.maxWidth = "min(100%, 720px)"
 
     wrapper.appendChild(img)
     return wrapper
@@ -42,7 +47,7 @@ function isImageUrl(url: string) {
   }
 }
 
-function getDecorations(view: EditorView) {
+function getDecorations(view: EditorView, notePath?: string) {
   const decorations: any[] = []
   const selection = view.state.selection.main
 
@@ -61,7 +66,7 @@ function getDecorations(view: EditorView) {
         // Hide if cursor is not on the line
         if (selection.from < line.from || selection.from > line.to) {
           decorations.push(Decoration.widget({
-            widget: new ImageWidget(url, alt),
+            widget: new ImageWidget(url, alt, notePath),
             side: 1
           }).range(line.to))
         }
@@ -78,7 +83,7 @@ function getDecorations(view: EditorView) {
         // Hide if cursor is not on the line
         if (selection.from < line.from || selection.from > line.to) {
           decorations.push(Decoration.widget({
-            widget: new ImageWidget(url, ""),
+            widget: new ImageWidget(url, "", notePath),
             side: 1
           }).range(line.to))
         }
@@ -89,17 +94,17 @@ function getDecorations(view: EditorView) {
   return Decoration.set(decorations, true)
 }
 
-export const livePreviewImages: Extension = ViewPlugin.fromClass(
+export const createLivePreviewImages = (notePath?: string): Extension => ViewPlugin.fromClass(
   class {
     decorations: DecorationSet
 
     constructor(view: EditorView) {
-      this.decorations = getDecorations(view)
+      this.decorations = getDecorations(view, notePath)
     }
 
     update(update: ViewUpdate) {
       if (update.docChanged || update.viewportChanged || update.selectionSet) {
-        this.decorations = getDecorations(update.view)
+        this.decorations = getDecorations(update.view, notePath)
       }
     }
   },

@@ -111,10 +111,32 @@ app.whenReady().then(() => {
     try {
       console.log('Main: local-file request:', request.url)
       const url = new URL(request.url)
-      let filePath = decodeURIComponent(url.pathname)
+      const hostPart = decodeURIComponent(url.host || '')
+      const pathPart = decodeURIComponent(url.pathname || '')
+      let filePath = pathPart
+
+      // Handle malformed URLs like local-file://image.png/ where path becomes "/"
+      if ((filePath === '/' || filePath === '') && hostPart) {
+        filePath = hostPart
+      }
+
+      // local-file://host/path -> /host/path on POSIX, host/path on Windows.
+      if (hostPart && pathPart && pathPart !== '/') {
+        if (pathPart.startsWith('/')) {
+          filePath = `/${hostPart}${pathPart}`
+        } else {
+          filePath = `${hostPart}/${pathPart}`
+        }
+      }
+
       // Remove leading slash on Windows if present (e.g. /C:/ -> C:/)
       if (process.platform === 'win32' && filePath.startsWith('/') && !filePath.startsWith('//')) {
           filePath = filePath.slice(1);
+      }
+
+      const fileStat = await fs.stat(filePath)
+      if (!fileStat.isFile()) {
+        return new Response('Not Found', { status: 404 })
       }
       
       console.log('Main: serving file:', filePath)

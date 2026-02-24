@@ -6,6 +6,12 @@ export const statusBarExtension = ViewPlugin.fromClass(
     darkMode: boolean
 
     constructor(view: EditorView) {
+      const getIsDarkMode = () => {
+        if (document.documentElement.classList.contains('dark')) return true
+        if (document.documentElement.classList.contains('light')) return false
+        return window.matchMedia('(prefers-color-scheme: dark)').matches
+      }
+
       this.dom = document.createElement('div')
       this.dom.style.cssText = `
         position: absolute;
@@ -35,18 +41,14 @@ export const statusBarExtension = ViewPlugin.fromClass(
       }
 
       // initial dark mode check
-      this.darkMode =
-        document.documentElement.classList.contains('dark') ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches
+      this.darkMode = getIsDarkMode()
 
       this.applyColors()
       this.updateStatus(view)
 
       // Observe changes to html class
       const observer = new MutationObserver(() => {
-        const isDark =
-          document.documentElement.classList.contains('dark') ||
-          window.matchMedia('(prefers-color-scheme: dark)').matches
+        const isDark = getIsDarkMode()
         if (isDark !== this.darkMode) {
           this.darkMode = isDark
           this.applyColors()
