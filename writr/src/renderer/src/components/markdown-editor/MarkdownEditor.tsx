@@ -11,7 +11,6 @@ import { autoSavingTime } from '@shared/constants'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
 import { HiOutlineEye } from "react-icons/hi2";
-import { VscFile } from "react-icons/vsc";
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
 import { markdownLanguage } from "@codemirror/lang-markdown"
@@ -74,6 +73,7 @@ export const MarkdownEditor = () => {
   const [debouncedContent, setDebouncedContent] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const [exportNotice, setExportNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   // Save queue management
@@ -257,11 +257,24 @@ export const MarkdownEditor = () => {
     setIsExportingPdf(true)
     try {
       const latestContent = viewRef.current?.state.doc.toString() ?? currentContent
-      await window.context.exportNoteToPdf(selectedNote.path, selectedNote.title, latestContent)
+      const success = await window.context.exportNoteToPdf(
+        selectedNote.path,
+        selectedNote.title,
+        latestContent
+      )
+      if (success) {
+        setExportNotice('PDF exported successfully')
+      }
     } finally {
       setIsExportingPdf(false)
     }
   }, [currentContent, selectedNote?.path, selectedNote?.title])
+
+  useEffect(() => {
+    if (!exportNotice) return
+    const timer = window.setTimeout(() => setExportNotice(null), 2200)
+    return () => window.clearTimeout(timer)
+  }, [exportNotice])
 
   // Initialize editor
   useEffect(() => {
@@ -437,9 +450,13 @@ export const MarkdownEditor = () => {
 
   return (
     <div className="flex flex-col h-full w-full bg-[var(--obsidian-workspace)]">
+      {exportNotice && (
+        <div className="absolute top-14 right-5 z-50 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg">
+          {exportNotice}
+        </div>
+      )}
       <div className="flex items-center justify-between px-6 py-2 bg-[var(--obsidian-pane)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
-        <div className="text-[11px] font-sans text-[var(--obsidian-text-muted)] truncate flex items-center gap-2">
-          <VscFile className="w-3 h-3" />
+        <div className="text-[11px] font-sans text-[var(--obsidian-text-muted)] truncate">
           <span>{selectedNote.path}</span>
         </div>
         <div className='flex gap-1.5'>
@@ -447,7 +464,7 @@ export const MarkdownEditor = () => {
             <button
               onClick={handleSplitViewToggle}
                 className={`p-1.5 rounded-md transition-all ${isPreview && !isFullPreview
-                ? 'bg-[var(--obsidian-accent-dim)] text-white'
+                ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
                 : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]'
                 }`}
               type="button"
@@ -459,7 +476,7 @@ export const MarkdownEditor = () => {
           <button
             onClick={handleFullPreviewToggle}
             className={`p-1.5 rounded-md transition-all ${isFullPreview
-              ? 'bg-[var(--obsidian-accent-dim)] text-white'
+              ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
               : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]'
               }`}
             type="button"
