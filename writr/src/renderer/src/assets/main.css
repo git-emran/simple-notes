@@ -3,52 +3,59 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --obsidian-base: #f4f5f8;
+    --obsidian-titlebar: #eceef3;
+    --obsidian-ribbon: #e8ebf2;
+    --obsidian-sidebar: #f7f8fb;
+    --obsidian-workspace: #ffffff;
+    --obsidian-pane: #f6f7fb;
+    --obsidian-border: #d9dde8;
+    --obsidian-border-soft: #e4e7ef;
+    --obsidian-text: #1c2433;
+    --obsidian-text-muted: #6f7786;
+    --obsidian-accent: #4f6adf;
+    --obsidian-accent-dim: rgba(79, 106, 223, 0.14);
+    --obsidian-hover: rgba(28, 36, 51, 0.08);
+    --obsidian-hover-soft: rgba(28, 36, 51, 0.05);
+    --obsidian-table-head: rgba(28, 36, 51, 0.08);
+    --obsidian-table-row: rgba(28, 36, 51, 0.04);
+    --obsidian-inline-code-bg: rgba(28, 36, 51, 0.1);
+    --obsidian-inline-code-text: #6b4d00;
+  }
+
+  .dark {
+    --obsidian-base: #1e1f26;
+    --obsidian-titlebar: #181920;
+    --obsidian-ribbon: #16171d;
+    --obsidian-sidebar: #20222b;
+    --obsidian-workspace: #232530;
+    --obsidian-pane: #252833;
+    --obsidian-border: #333744;
+    --obsidian-border-soft: #2a2e3a;
+    --obsidian-text: #d4d7df;
+    --obsidian-text-muted: #8f95a3;
+    --obsidian-accent: #7c9efb;
+    --obsidian-accent-dim: rgba(124, 158, 251, 0.16);
+    --obsidian-hover: rgba(255, 255, 255, 0.08);
+    --obsidian-hover-soft: rgba(255, 255, 255, 0.05);
+    --obsidian-table-head: rgba(0, 0, 0, 0.15);
+    --obsidian-table-row: rgba(0, 0, 0, 0.1);
+    --obsidian-inline-code-bg: rgba(0, 0, 0, 0.25);
+    --obsidian-inline-code-text: #f7cb6b;
+  }
+
   #root {
     @apply h-full;
   }
 
   html,
   body {
-    @apply h-full select-none bg-transparent font-mono antialiased text-gray-800 dark:text-white overflow-hidden;
+    @apply h-full overflow-hidden antialiased;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--obsidian-base);
+    color: var(--obsidian-text);
   }
-}
-/* For the custom drawn selection (via drawSelection) */
-
-.cm-editor .cm-selectionBackground {
-  background-color: rgba(100, 149, 200, 0.2) !important; /* 0.5 = 50% opacity */
-}
-/* For native browser selection (as fallback when not focused) */
-
-.cm-editor {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px; /* adjust size */
-  line-height: 1.5;
-}
-
-/* Light mode */
-.cm-table-delimiter {
-  color: #3b82f6;
-  font-weight: bold;
-}
-.cm-table-cell {
-  color: #065f46;
-}
-
-.cm-editor .cm-quote {
-  background-color: #3b82f6;
-}
-
-/* Dark mode */
-.dark .cm-table-delimiter {
-  color: #60a5fa;
-  font-weight: bold;
-}
-.dark .cm-table-cell {
-  color: #34d399;
-}
-
-cm-mygutter {
-  background-color: '#010100';
 }
 
 header {
@@ -59,20 +66,80 @@ header {
   -webkit-app-region: no-drag;
 }
 
+.obsidian-shell {
+  background: var(--obsidian-base);
+}
+
+.obsidian-ribbon {
+  width: 46px;
+  flex-shrink: 0;
+  background: var(--obsidian-ribbon);
+  border-right: 1px solid var(--obsidian-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.obsidian-ribbon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  color: var(--obsidian-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.obsidian-ribbon-btn:hover {
+  color: var(--obsidian-text);
+  background: var(--obsidian-hover);
+}
+
+.obsidian-ribbon-btn.is-active {
+  color: #ffffff;
+  background: var(--obsidian-accent-dim);
+}
+
+.obsidian-workspace {
+  background: var(--obsidian-workspace);
+}
+
+.obsidian-tree-drop {
+  background: var(--obsidian-accent-dim);
+}
+
+.cm-editor .cm-selectionBackground {
+  background-color: rgba(124, 158, 251, 0.24) !important;
+}
+
+.cm-editor {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 ::-webkit-scrollbar {
-  @apply w-1 h-1;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-300 dark:bg-zinc-700 rounded-md;
+  border-radius: 99px;
+  background: #3e4354;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a5065;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
 
-/* Webkit-based browsers (Chrome, Edge, Safari) */
 .preview-scrollbar::-webkit-scrollbar {
-  width: 2px; /* width of vertical scrollbar */
-  height: 2px; /* height of horizontal scrollbar */
+  width: 8px;
+  height: 8px;
 }

@@ -146,7 +146,8 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
     setShowHeaderDropdown(false)
   }
 
-  const btnClass = "p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 flex-shrink-0"
+  const btnClass =
+    'p-1.5 rounded-md transition-colors text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] flex-shrink-0'
 
   const renderDropdown = () => {
     if (!showHeaderDropdown) return null
@@ -154,13 +155,13 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
     return createPortal(
       <div
         ref={dropdownRef}
-        className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-[1000] max-w-md py-2 min-w-[150px]"
+        className="fixed bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] rounded shadow-lg z-[1000] max-w-md py-2 min-w-[150px]"
       >
         {[1, 2, 3, 4, 5, 6].map((level) => (
           <button
             key={level}
             onClick={() => applyHeaderFormat(level)}
-            className="w-full px-4 py-2 text-left hover:bg-gray-300 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
+            className="w-full px-4 py-2 text-left hover:bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] transition-colors"
             role="menuitem"
           >
             <span className="font-bold">H{level}</span>
@@ -168,7 +169,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
               {"#".repeat(level)} Heading {level}
             </span>
             {" "}
-            <span className="text-[0.6rem] p-1 rounded-sm font-medium bg-gray-100 shadow-lg text-gray-700">
+            <span className="text-[0.6rem] p-1 rounded-sm font-medium bg-black/20 text-[var(--obsidian-text-muted)]">
               Ctrl+{level}
             </span>
           </button>
@@ -179,7 +180,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
   }
 
   return (
-    <div className="flex items-center flex-wrap gap-1.5 px-6 py-2 bg-transparent dark:bg-transparent max-w-full shrink-0 border-b border-zinc-100 dark:border-zinc-800/50">
+    <div className="flex items-center flex-wrap gap-1.5 px-6 py-2 max-w-full shrink-0 border-b border-[var(--obsidian-border-soft)] bg-[var(--obsidian-pane)]">
       {/* Text Formatting */}
       <button
         onClick={() => commands.applyFormat(view, "**", "**")}
@@ -208,7 +209,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaStrikethrough />
       </button>
 
-      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
+      <div className="w-px h-4 bg-[var(--obsidian-border)] mx-2" />
 
       {/* Headers Dropdown */}
       <div className="relative">
@@ -235,7 +236,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaQuoteRight />
       </button>
 
-      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
+      <div className="w-px h-4 bg-[var(--obsidian-border)] mx-2" />
 
       {/* Lists */}
       <button
@@ -265,7 +266,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <FaCheckSquare />
       </button>
 
-      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
+      <div className="w-px h-4 bg-[var(--obsidian-border)] mx-2" />
 
       {/* Code */}
       <button
@@ -286,7 +287,7 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         <div className="text-xs font-mono">{`{}`}</div>
       </button>
 
-      <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-2" />
+      <div className="w-px h-4 bg-[var(--obsidian-border)] mx-2" />
 
       {/* Insertions */}
       <button

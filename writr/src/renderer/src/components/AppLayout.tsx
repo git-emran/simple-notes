@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge'
 
 export const RootLayout = ({ children, className, ...props }: ComponentProps<'main'>) => {
   return (
-    <main className={twMerge('flex h-screen w-full', className)} {...props}>
+    <main className={twMerge('flex h-screen w-full overflow-hidden', className)} {...props}>
       {children}
     </main>
   )
@@ -21,18 +21,16 @@ export const Sidebar = ({
   return (
     <aside
       className={twMerge(
-        'h-full flex flex-col border-r bg-background relative',
+        'h-full flex flex-col relative border-r border-[var(--obsidian-border)] bg-[var(--obsidian-sidebar)]',
         className
       )}
       style={{ width }}
       {...props}
     >
-      {/* Header */}
       <div className="flex-1 overflow-auto">{children}</div>
 
-      {/* Resize Handle */}
       <div
-        className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-muted"
+        className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[var(--obsidian-accent-dim)]"
         id="resize-handle"
       />
     </aside>
@@ -43,7 +41,7 @@ export const Content = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
   ({ children, className, ...props }, ref) => (
     <div
       ref={ref}
-      className={twMerge('flex-1 overflow-auto', className)}
+      className={twMerge('flex-1 overflow-auto bg-[var(--obsidian-workspace)]', className)}
       {...props}
     >
       {children}
@@ -52,4 +50,3 @@ export const Content = forwardRef<HTMLDivElement, ComponentProps<'div'>>(
 )
 
 Content.displayName = 'Content'
-

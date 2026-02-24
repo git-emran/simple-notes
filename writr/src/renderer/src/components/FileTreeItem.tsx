@@ -89,17 +89,17 @@ export const FileTreeItem = ({
       
       // Allow dropping on both folders and files
       e.dataTransfer.dropEffect = 'move'
-      e.currentTarget.classList.add('bg-blue-100/50', 'dark:bg-blue-900/30')
+      e.currentTarget.classList.add('obsidian-tree-drop')
   }
   
   const handleDragLeave = (e: React.DragEvent) => {
-       e.currentTarget.classList.remove('bg-blue-100/50', 'dark:bg-blue-900/30')
+       e.currentTarget.classList.remove('obsidian-tree-drop')
   }
   
   const handleDrop = (e: React.DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      e.currentTarget.classList.remove('bg-blue-100/50', 'dark:bg-blue-900/30')
+      e.currentTarget.classList.remove('obsidian-tree-drop')
       
       const src = e.dataTransfer.getData('text/plain')
       if (src && src !== node.path) {
@@ -160,8 +160,10 @@ export const FileTreeItem = ({
     <>
       <li
         className={twMerge(
-          'group cursor-pointer py-[2px] flex items-center gap-1 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 transition-colors text-[11px] select-none relative',
-          isSelected ? 'bg-blue-100 dark:bg-[#37373d] text-blue-600 dark:text-white' : 'text-zinc-600 dark:text-zinc-400',
+          'group cursor-pointer py-[3px] flex items-center gap-1 transition-colors text-[12px] select-none relative rounded-sm mx-1',
+          isSelected
+            ? 'bg-[var(--obsidian-accent-dim)] text-white'
+            : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]',
           className
         )}
         style={{ 
@@ -186,13 +188,13 @@ export const FileTreeItem = ({
         <span className="flex-shrink-0">
           {node.type === 'folder' && (
             isExpanded ? (
-              <VscFolderOpened className="w-4 h-4 text-blue-500" />
+              <VscFolderOpened className="w-4 h-4 text-[var(--obsidian-accent)]" />
             ) : (
-              <VscFolder className="w-4 h-4 text-blue-500" />
+              <VscFolder className="w-4 h-4 text-[var(--obsidian-accent)]" />
             )
           )}
           {node.type === 'file' && !node.name.toLowerCase().endsWith('.md') && (
-            <VscFile className="w-4 h-4 text-zinc-500" />
+            <VscFile className="w-4 h-4 text-[var(--obsidian-text-muted)]" />
           )}
         </span>
         
@@ -205,15 +207,15 @@ export const FileTreeItem = ({
                     onChange={(e) => setEditName(e.target.value)}
                     onBlur={handleSubmitRename}
                     onKeyDown={handleKeyDown}
-                    className="bg-white dark:bg-black border border-blue-500 outline-none text-[11px] px-1 rounded-sm min-w-0 flex-shrink"
+                    className="bg-[var(--obsidian-workspace)] border border-[var(--obsidian-accent)] outline-none text-[11px] px-1 rounded-sm min-w-0 flex-shrink text-[var(--obsidian-text)]"
                 />
-                <span className="text-zinc-500 whitespace-pre">{extension}</span>
+                <span className="text-[var(--obsidian-text-muted)] whitespace-pre">{extension}</span>
             </div>
         ) : (
             <span className={twMerge(
                 "truncate flex-1",
                 node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1',
-                node.type === 'folder' && 'font-medium text-zinc-700 dark:text-zinc-300'
+                node.type === 'folder' && 'font-medium text-[var(--obsidian-text)]'
             )}>
                 {node.name}
             </span>
@@ -226,7 +228,7 @@ export const FileTreeItem = ({
                     e.stopPropagation()
                     onDelete?.(node.path)
                 }}
-                className="invisible group-hover:visible p-0.5 hover:bg-zinc-300 dark:hover:bg-zinc-600 rounded mr-2 text-zinc-500 hover:text-red-500 transition-colors"
+                className="invisible group-hover:visible p-0.5 hover:bg-[var(--obsidian-hover)] rounded mr-2 text-[var(--obsidian-text-muted)] hover:text-red-400 transition-colors"
                 title="Delete"
             >
                 <VscTrash className="w-3.5 h-3.5" />
@@ -254,4 +256,3 @@ export const FileTreeItem = ({
     </>
   )
 }
-

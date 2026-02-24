@@ -4,22 +4,24 @@ import { tags } from '@lezer/highlight'
 
 export const gutterTheme = EditorView.theme({
   '.cm-gutters': {
-    paddingRight: '4px',
+    paddingRight: '6px',
     textAlign: 'right',
-    borderRight: '1px solid rgba(128, 128, 128, 0.5)',
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
   }
 })
 
 export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   '&': {
     height: '100%',
-    fontSize: '14px',
-    lineHeight: '1.5'
+    fontSize: '13px',
+    lineHeight: '1.55',
+    backgroundColor: isDark ? '#232530' : '#ffffff',
+    color: isDark ? '#d4d7df' : '#111827'
   },
   '.cm-scroller': {
     fontFamily: 'JetBrains Mono',
-    padding: '0'
+    padding: '0',
+    backgroundColor: isDark ? '#232530' : '#ffffff'
   },
   '.cm-focused': {
     outline: 'none'
@@ -29,52 +31,53 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   },
   '.cm-content': {
     minHeight: '100%',
-    padding: '16px 0'
+    padding: '20px 0'
   },
   '.cm-line': {
-    paddingLeft: '16px',
-    paddingRight: '16px'
+    paddingLeft: '24px',
+    paddingRight: '24px'
   },
   '.cm-gutters': {
-    backgroundColor: isDark ? '#1e1e1e' : '#ffffff',
-    paddingLeft: '0'
+    backgroundColor: isDark ? '#232530' : '#ffffff',
+    paddingLeft: '0',
+    borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.16)'
   },
   '.cm-foldGutter .cm-gutterElement': {
     fontSize: '14px'
   },
 
   '.cm-selectionBackground': {
-    backgroundColor: 'rgba(20, 130, 246, 0.15)' // lighter
+    backgroundColor: isDark ? 'rgba(124, 158, 251, 0.24)' : 'rgba(37, 99, 235, 0.2)'
   },
 
   // Autocomplete Tooltip Styles
   '.cm-tooltip': {
-    backgroundColor: isDark ? '#18181b' : '#ffffff',
-    border: isDark ? '1px solid #3f3f46' : '1px solid #e5e7eb',
+    backgroundColor: isDark ? '#252833' : '#ffffff',
+    border: isDark ? '1px solid #333744' : '1px solid #e5e7eb',
     borderRadius: '4px',
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
   },
   '.cm-tooltip.cm-tooltip-autocomplete > ul': {
     fontFamily: 'JetBrains Mono',
     fontSize: '12px',
-    backgroundColor: isDark ? '#18181b' : '#ffffff',
-    color: isDark ? '#f9fafb' : '#000000'
+    backgroundColor: isDark ? '#252833' : '#ffffff',
+    color: isDark ? '#d4d7df' : '#000000'
   },
   '.cm-tooltip-autocomplete ul li': {
     padding: '4px 8px',
-    color: isDark ? '#f9fafb' : '#000000'
+    color: isDark ? '#d4d7df' : '#000000'
   },
   '.cm-tooltip-autocomplete ul li[aria-selected]': {
-    backgroundColor: isDark ? '#27272a' : '#eff6ff',
+    backgroundColor: isDark ? 'rgba(124, 158, 251, 0.16)' : '#eff6ff',
     color: isDark ? '#ffffff' : '#1d4ed8'
   },
 
   '.cm-cursor, .cm-dropCursor': {
-    borderLeftColor: isDark ? '#ffffff' : '#000000',
+    borderLeftColor: isDark ? '#9fb7ff' : '#000000',
     borderLeftWidth: '2px'
   },
   '.cm-cursor-primary': {
-    borderLeftColor: isDark ? '#ffffff' : '#000000',
+    borderLeftColor: isDark ? '#9fb7ff' : '#000000',
   },
 
   '.cm-line:has(.ͼ1)': {
@@ -97,18 +100,18 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   '.cm-table-line': {
     fontFamily: 'JetBrains Mono, monospace',
     whiteSpace: 'pre',
-    backgroundColor: 'rgba(128, 128, 128, 0.03)',
-    borderLeft: '1px solid rgba(128, 128, 128, 0.2)',
-    borderRight: '1px solid rgba(128, 128, 128, 0.2)',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.12)' : 'rgba(128, 128, 128, 0.03)',
+    borderLeft: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.2)',
+    borderRight: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.2)',
     paddingTop: '2px',
     paddingBottom: '2px',
     overflowX: 'auto'
   },
   '.cm-table-header': {
-    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(128, 128, 128, 0.1)',
     fontWeight: 'bold',
-    borderTop: '1px solid rgba(128, 128, 128, 0.3)',
-    borderBottom: '1px solid rgba(128, 128, 128, 0.3)',
+    borderTop: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.3)',
+    borderBottom: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.3)',
     overflowX: 'auto'
   },
   '.cm-table-hidden-pipe': {
@@ -118,12 +121,12 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     display: 'none'
   },
   '.cm-focused-table-row': {
-    backgroundColor: 'rgba(20, 130, 246, 0.05)',
-    outline: '1px solid rgba(20, 130, 246, 0.2)',
+    backgroundColor: 'rgba(124, 158, 251, 0.08)',
+    outline: '1px solid rgba(124, 158, 251, 0.24)',
     overflow: 'visible'
   },
   '.cm-codeblock-line': {
-    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.24)' : 'rgba(0, 0, 0, 0.05)',
   }
 })
 

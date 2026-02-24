@@ -342,17 +342,16 @@ export const MarkdownEditor = () => {
 
   if (!selectedNote) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex items-center justify-center h-full text-[var(--obsidian-text-muted)]">
         Select a note to start editing
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full w-full">
-      {/* Header Controls */}
-      <div className="flex items-center justify-between px-6 py-2 bg-transparent shrink-0">
-        <div className="text-[11px] font-sans text-zinc-400 dark:text-zinc-500 truncate flex items-center gap-2">
+    <div className="flex flex-col h-full w-full bg-[var(--obsidian-workspace)]">
+      <div className="flex items-center justify-between px-6 py-2 bg-[var(--obsidian-pane)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
+        <div className="text-[11px] font-sans text-[var(--obsidian-text-muted)] truncate flex items-center gap-2">
           <VscFile className="w-3 h-3" />
           <span>{selectedNote.path}</span>
         </div>
@@ -360,9 +359,9 @@ export const MarkdownEditor = () => {
           {!isFullPreview && (
             <button
               onClick={handleSplitViewToggle}
-              className={`p-1.5 rounded-md transition-all ${isPreview && !isFullPreview
-                ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100'
-                : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                className={`p-1.5 rounded-md transition-all ${isPreview && !isFullPreview
+                ? 'bg-[var(--obsidian-accent-dim)] text-white'
+                : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]'
                 }`}
               type="button"
               title="Toggle Split View"
@@ -373,8 +372,8 @@ export const MarkdownEditor = () => {
           <button
             onClick={handleFullPreviewToggle}
             className={`p-1.5 rounded-md transition-all ${isFullPreview
-              ? 'bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-100'
-              : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+              ? 'bg-[var(--obsidian-accent-dim)] text-white'
+              : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]'
               }`}
             type="button"
             title="Toggle Preview Mode"
@@ -384,10 +383,8 @@ export const MarkdownEditor = () => {
         </div>
       </div>
 
-      {/* Toolbar */}
       {!isFullPreview && <MarkdownToolbar view={viewRef.current} />}
 
-      {/* Editor + Preview */}
       <div
         ref={containerRef}
         className="flex-1 flex h-full overflow-hidden relative"
@@ -416,72 +413,72 @@ export const MarkdownEditor = () => {
             {!isFullPreview && (
               <div
                 ref={dragBarRef}
-                className="w-1.5 cursor-col-resize bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-400 dark:hover:bg-zinc-600 z-10 flex items-center justify-center transition-colors"
+                className="w-1.5 cursor-col-resize bg-[var(--obsidian-border)] hover:bg-[var(--obsidian-accent)] z-10 flex items-center justify-center transition-colors"
               >
-                <MdDragIndicator className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
+                <MdDragIndicator className="w-3 h-3 text-[var(--obsidian-text-muted)]" />
               </div>
             )}
             <div
               ref={previewContainerRef}
-              className="h-full preview-scrollbar overflow-auto p-6 bg-transparent dark:bg-transparent"
+              className="h-full preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
               style={{ width: isFullPreview ? '100%' : '50%' }}
             >
-              <div className="prose prose-sm max-w-none w-full break-words">
+              <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
                     h1: ({ children }) => (
-                      <h1 className=" text-gray-800 dark:text-white font-sans text-2xl font-bold mt-8 mb-4 pb-2 border-b border-gray-400">
+                      <h1 className="font-sans text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-[var(--obsidian-border)] text-[var(--obsidian-text)]">
                         {children}
                       </h1>
                     ),
                     h2: ({ children }) => (
-                      <h2 className="text-lg font-sans text-gray-800 dark:text-white font-semibold mt-6 mb-3">
+                      <h2 className="text-xl font-sans text-[var(--obsidian-text)] font-semibold mt-6 mb-3">
                         {children}
                       </h2>
                     ),
                     h3: ({ children }) => (
-                      <h3 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      <h3 className="text-lg font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]">
                         {children}
                       </h3>
                     ),
                     h4: ({ children }) => (
-                      <h4 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      <h4 className="text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]">
                         {children}
                       </h4>
                     ),
                     h5: ({ children }) => (
-                      <h5 className="text-md font-sans font-medium mt-5 mb-2 text-gray-800 dark:text-white">
+                      <h5 className="text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]">
                         {children}
                       </h5>
                     ),
                     p: ({ children }) => (
-                      <p className="mb-4 text-sm font-sans text-gray-800 dark:text-white">
+                      <p className="mb-4 text-[14px] leading-7 font-sans text-[var(--obsidian-text)]">
                         {children}
                       </p>
                     ),
                     ul: ({ children }) => (
-                      <ul className="font-sans mb-4 pl-6 space-y-1 text-gray-800 dark:text-white">
+                      <ul className="font-sans mb-4 pl-6 space-y-1 text-[var(--obsidian-text)]">
                         {children}
                       </ul>
                     ),
                     ol: ({ children }) => (
-                      <ol className="text-gray-800 dark:text-whitetext-xs font-sans mb-4 pl-6 space-y-1">
+                      <ol className="text-[var(--obsidian-text)] text-sm font-sans mb-4 pl-6 space-y-1">
                         {children}
                       </ol>
                     ),
                     li: ({ children }) => (
-                      <li className="font-sans text-xs text-gray-800 dark:text-white">
+                      <li className="font-sans text-sm text-[var(--obsidian-text)]">
                         {children}
                       </li>
                     ),
                     strong: ({ children }) => (
-                      <strong className="font-bold text-gray-900 dark:text-white">
+                      <strong className="font-semibold text-white">
                         {children}
                       </strong>
                     ),
                     blockquote: ({ children }) => (
-                      <blockquote className="border-l-4 border-lime-200 pl-4 py-2 mb-4 bg-lime-300/20 italic dark:text-white text-gray-700">
+                      <blockquote className="border-l-4 border-[var(--obsidian-accent)] pl-4 py-2 mb-4 bg-[var(--obsidian-accent-dim)] italic text-[var(--obsidian-text)]">
                         {children}
                       </blockquote>
                     ),
@@ -502,7 +499,7 @@ export const MarkdownEditor = () => {
                           <img 
                             src={finalSrc} 
                             alt={String(children)} 
-                            className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-zinc-200 dark:border-zinc-800" 
+                            className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-[var(--obsidian-border)]" 
                           />
                         )
                       }
@@ -512,44 +509,44 @@ export const MarkdownEditor = () => {
                           href={href} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-4"
+                          className="text-[var(--obsidian-accent)] hover:opacity-80 underline underline-offset-4"
                         >
                           {children}
                         </a>
                       )
                     },
                     hr: () => (
-                      <hr className="my-8 border-t border-gray-400 dark:border-gray-500" />
+                      <hr className="my-8 border-t border-[var(--obsidian-border)]" />
                     ),
                     table: ({ children }) => (
-                      <div className="overflow-x-auto my-6 border border-zinc-300 dark:border-zinc-700 rounded-lg">
+                      <div className="overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
                         <table className="min-w-full w-max border-collapse">
                           {children}
                         </table>
                       </div>
                     ),
                     thead: ({ children }) => (
-                      <thead className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-300 dark:border-zinc-700">
+                      <thead className="bg-[var(--obsidian-table-head)] border-b border-[var(--obsidian-border)]">
                         {children}
                       </thead>
                     ),
                     tbody: ({ children }) => (
-                      <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                      <tbody className="divide-y divide-[var(--obsidian-border-soft)]">
                         {children}
                       </tbody>
                     ),
                     tr: ({ children }) => (
-                      <tr className="even:bg-zinc-50/30 dark:even:bg-zinc-800/10 transition-colors">
+                      <tr className="even:bg-[var(--obsidian-table-row)] transition-colors">
                         {children}
                       </tr>
                     ),
                     th: ({ children }) => (
-                      <th className="px-4 py-2.5 text-left text-xs font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-tight border-r border-zinc-300 dark:border-zinc-700 last:border-r-0 whitespace-nowrap">
+                      <th className="px-4 py-2.5 text-left text-xs font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-[var(--obsidian-border)] last:border-r-0 whitespace-nowrap">
                         {children}
                       </th>
                     ),
                     td: ({ children }) => (
-                      <td className="px-4 py-2 text-sm text-zinc-800 dark:text-zinc-200 border-r border-zinc-300 dark:border-zinc-700 last:border-r-0 whitespace-nowrap">
+                      <td className="px-4 py-2 text-sm text-[var(--obsidian-text)] border-r border-[var(--obsidian-border-soft)] last:border-r-0 whitespace-nowrap">
                         {children}
                       </td>
                     ),
@@ -565,7 +562,7 @@ export const MarkdownEditor = () => {
 
                       return isInline ? (
                         <code
-                          className="px-1.5 py-0.5 bg-emerald-50/50 dark:bg-gray-700 dark:text-yellow-200 text-gray-800 rounded text-sm font-mono before:content-none after:content-none"
+                          className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono before:content-none after:content-none"
                           {...rest}
                         >
                           {children}
@@ -602,7 +599,7 @@ export const MarkdownEditor = () => {
                         <img 
                           src={finalSrc} 
                           alt={alt} 
-                          className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-zinc-200 dark:border-zinc-800" 
+                          className="max-w-full h-auto rounded-lg shadow-sm mx-auto my-4 border border-[var(--obsidian-border)]" 
                         />
                       )
                     }
@@ -620,7 +617,7 @@ export const MarkdownEditor = () => {
           x={contextMenu.x}
           y={contextMenu.y}
           onClose={() => setContextMenu(null)}
-          className="fixed z-50 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar"
+          className="fixed z-50 bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar"
         >
           <ContextMenuItem onClick={() => { commands.applyFormat(viewRef.current, "**", "**"); setContextMenu(null); }}>
              <FaBold className="w-3 h-3 opacity-60" />
@@ -638,7 +635,7 @@ export const MarkdownEditor = () => {
              <span className="ml-auto text-[10px] opacity-40">Ctrl+D</span>
           </ContextMenuItem>
 
-          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
           
           <ContextMenuItem onClick={() => { commands.applyHeaderFormat(viewRef.current, 1); setContextMenu(null); }}>
             <FaHeading className="w-3 h-3 opacity-60" />
@@ -653,7 +650,7 @@ export const MarkdownEditor = () => {
             <span>Header 3</span>
           </ContextMenuItem>
 
-          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
 
           <ContextMenuItem onClick={() => { commands.applyLineFormat(viewRef.current, "> "); setContextMenu(null); }}>
             <FaQuoteRight className="w-3 h-3 opacity-60" />
@@ -673,7 +670,7 @@ export const MarkdownEditor = () => {
             <span className="ml-auto text-[10px] opacity-40">Ctrl+T</span>
           </ContextMenuItem>
 
-          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
 
           <ContextMenuItem onClick={() => { commands.applyLinkFormat(viewRef.current); setContextMenu(null); }}>
             <FaLink className="w-3 h-3 opacity-60" />
@@ -698,7 +695,7 @@ export const MarkdownEditor = () => {
             <span className="ml-auto text-[10px] opacity-40">Ctrl+H</span>
           </ContextMenuItem>
 
-          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1" />
+          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
 
           <ContextMenuItem onClick={() => { commands.insertCodeBlock(viewRef.current); setContextMenu(null); }}>
             <FaCode className="w-3 h-3 opacity-60" />

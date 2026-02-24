@@ -6,22 +6,41 @@ import {
   EditorTabs
 } from './components'
 import { FileExplorer } from './components/FileExplorer'
+import { SidebarSearch } from './components/SidebarSearch'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { useRef, useState, useEffect } from 'react'
 import { useSetAtom } from 'jotai'
 import { switchTabByIndexAtom } from '@renderer/store'
+import {
+  VscFiles,
+  VscSearch,
+  VscChevronLeft,
+  VscChevronRight,
+  VscColorMode
+} from 'react-icons/vsc'
 
 const App = () => {
   const contentContainerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
+  const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [sidebarWidth, setSidebarWidth] = useState(200) // default width
   const isDragging = useRef(false)
 
-  const resetScroll = () => {
-    contentContainerRef.current?.scrollTo(0, 0)
+  const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
+
+  const applyTheme = (mode: 'light' | 'dark') => {
+    document.documentElement.classList.toggle('dark', mode === 'dark')
+    document.documentElement.classList.toggle('light', mode === 'light')
+    localStorage.setItem('writr-theme', mode)
+    setTheme(mode)
   }
 
-  const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('writr-theme') as 'light' | 'dark' | null
+    const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    applyTheme(storedTheme ?? (preferredDark ? 'dark' : 'light'))
+  }, [])
 
   // Drag to resize logic
   useEffect(() => {
@@ -67,21 +86,57 @@ const App = () => {
     <>
       <DraggableTopBar />
 
-      <RootLayout>
+      <RootLayout className="obsidian-shell">
+        <aside className="obsidian-ribbon mt-8">
+          <button
+            className="obsidian-ribbon-btn"
+            onClick={() => setCollapsed((prev) => !prev)}
+            title={collapsed ? 'Show files' : 'Hide files'}
+          >
+            {collapsed ? <VscChevronRight /> : <VscChevronLeft />}
+          </button>
+          <button
+            className={`obsidian-ribbon-btn ${sidebarView === 'files' ? 'is-active' : ''}`}
+            title="Files"
+            onClick={() => {
+              setSidebarView('files')
+              setCollapsed(false)
+            }}
+          >
+            <VscFiles />
+          </button>
+          <button
+            className={`obsidian-ribbon-btn ${sidebarView === 'search' ? 'is-active' : ''}`}
+            title="Search"
+            onClick={() => {
+              setSidebarView('search')
+              setCollapsed(false)
+            }}
+          >
+            <VscSearch />
+          </button>
+          <button
+            className="obsidian-ribbon-btn mt-auto"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={() => applyTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            <VscColorMode />
+          </button>
+        </aside>
+
         {!collapsed && (
           <Sidebar
             width={sidebarWidth}
             onClose={() => setCollapsed(true)}
-            className="mt-10"
+            className="mt-8"
           >
-            <FileExplorer />
+            {sidebarView === 'files' ? <FileExplorer /> : <SidebarSearch />}
           </Sidebar>
         )}
 
-        {/* Content */}
         <Content
           ref={contentContainerRef}
-          className="relative h-full bg-white dark:bg-[#1e1e1e] flex flex-col"
+          className="relative h-full flex flex-col obsidian-workspace mt-8"
         >
           <EditorTabs />
           <div className="flex-1 overflow-hidden">
@@ -94,4 +149,3 @@ const App = () => {
 }
 
 export default App
-

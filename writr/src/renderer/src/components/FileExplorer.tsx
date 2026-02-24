@@ -12,7 +12,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { ComponentProps, useState, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
-import { VscNewFile, VscNewFolder, VscTrash, VscCollapseAll } from 'react-icons/vsc'
+import { VscNewFile, VscNewFolder, VscCollapseAll } from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 
 export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) => {
@@ -62,12 +62,17 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
 
   return (
     <aside 
-      className={twMerge('flex flex-col h-full bg-zinc-50 dark:bg-[#252526] border-r border-zinc-200 dark:border-[#1e1e1e]', className)} 
-      style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}
+      className={twMerge(
+        'flex flex-col h-full border-r border-[var(--obsidian-border)] bg-[var(--obsidian-sidebar)]',
+        className
+      )} 
+      style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
       {...props}
     >
-      {/* Title & Toolbar */}
-      <div className="flex items-center justify-start px-4 py-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
+        <span className="text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
+          FILES
+        </span>
         <div className="flex items-center gap-1">
             <button
             onClick={() => {
@@ -78,7 +83,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
                    setExpandedNodes(prev => new Set(prev).add(parent))
                 }
             }}
-            className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700/50 rounded transition-colors"
+            className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
             title="New File"
             >
             <VscNewFile className="w-4 h-4" />
@@ -91,7 +96,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
                    setExpandedNodes(prev => new Set(prev).add(parent))
                 }
             }}
-            className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700/50 rounded transition-colors"
+            className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
             title="New Folder"
             >
             <VscNewFolder className="w-4 h-4" />
@@ -100,7 +105,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
             onClick={() => {
                 setExpandedNodes(new Set())
             }}
-            className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700/50 rounded transition-colors"
+            className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
             title="Collapse All"
             >
             <VscCollapseAll className="w-4 h-4" />
@@ -108,11 +113,10 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         </div>
       </div>
 
-      {/* Tree */}
       <div 
         className={twMerge(
             "flex-1 overflow-auto py-1 transition-colors",
-            isDraggingOverRoot && "bg-blue-50/50 dark:bg-blue-900/10"
+            isDraggingOverRoot && "bg-[var(--obsidian-accent-dim)]"
         )}
         onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -185,7 +189,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
             ))}
           </ul>
         ) : (
-          <div className="text-zinc-500 px-4 text-xs mt-4 text-center">
+          <div className="px-4 mt-4 text-center text-xs text-[var(--obsidian-text-muted)]">
             No files found.<br/>
             Create a file to start.
           </div>
@@ -206,7 +210,6 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
                }}>
                    Delete
                </ContextMenuItem>
-               {/* Add Rename later if needed */}
            </ContextMenu>
        )}
     </aside>

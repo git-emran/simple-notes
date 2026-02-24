@@ -13,10 +13,10 @@ export const EditorTabs = () => {
 
   return (
     <div 
-      className="flex bg-zinc-50 dark:bg-[#181818] overflow-x-auto no-scrollbar border-b border-zinc-200 dark:border-zinc-800/50"
+      className="flex overflow-x-auto no-scrollbar border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)]"
       style={{ 
           WebkitAppRegion: 'drag',
-          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       } as React.CSSProperties}
     >
       {tabs.map((tab) => {
@@ -27,29 +27,27 @@ export const EditorTabs = () => {
             onClick={() => setActiveTab(tab.path)}
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             className={twMerge(
-              'group relative flex items-center min-w-[140px] max-w-[220px] h-10 px-4 cursor-pointer select-none transition-all duration-75',
+              'group relative flex items-center min-w-[130px] max-w-[230px] h-9 px-3 cursor-pointer select-none transition-all',
               isActive
-                ? 'bg-white dark:bg-[#1e1e1e] text-zinc-900 dark:text-zinc-100 z-10'
-                : 'bg-zinc-100/50 dark:bg-[#181818] text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+                ? 'bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)] z-10'
+                : 'bg-[var(--obsidian-pane)] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]'
             )}
           >
-            {/* Active Tab Indicator Top */}
             {isActive && (
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500 shadow-[0_1px_3px_rgba(59,130,246,0.5)]" />
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--obsidian-accent)]" />
             )}
 
-            {/* Vertical Separator for Inactive Tabs */}
             {!isActive && (
-                <div className="absolute right-0 top-2 bottom-2 w-[1px] bg-zinc-200 dark:bg-zinc-800" />
+                <div className="absolute right-0 top-2 bottom-2 w-[1px] bg-[var(--obsidian-border-soft)]" />
             )}
 
             <VscFile className={twMerge(
                 "w-3.5 h-3.5 mr-2.5 flex-shrink-0 transition-colors",
-                isActive ? "text-blue-500" : "text-zinc-400 dark:text-zinc-600"
+                isActive ? "text-[var(--obsidian-accent)]" : "text-[var(--obsidian-text-muted)]"
             )} />
             
             <span className={twMerge(
-                "text-[11px] font-medium truncate flex-1 tracking-tight pt-[1px]",
+                "text-[11px] font-medium truncate flex-1 tracking-tight",
                 isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100"
             )}>
               {tab.name.replace(/\.md$/, '')}
@@ -62,8 +60,8 @@ export const EditorTabs = () => {
               }}
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               className={twMerge(
-                'ml-2 p-1 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all invisible group-hover:visible',
-                isActive && 'visible text-zinc-400 dark:text-zinc-500'
+                'ml-2 p-1 rounded-md hover:bg-[var(--obsidian-hover)] transition-all invisible group-hover:visible',
+                isActive && 'visible text-[var(--obsidian-text-muted)]'
               )}
             >
               <VscClose className="w-3.5 h-3.5" />
@@ -72,7 +70,7 @@ export const EditorTabs = () => {
         )
       })}
       {/* Fill remaining space */}
-      <div className="flex-1 border-b border-transparent dark:border-transparent dark:bg-[#181818]" />
+      <div className="flex-1 bg-[var(--obsidian-pane)]" />
     </div>
   )
 }
