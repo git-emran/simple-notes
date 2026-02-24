@@ -12,7 +12,9 @@ import {
   WriteFile,
   MovePath,
   ExportNoteToPdf,
-  ImportImageToNoteFolder
+  ImportImageToNoteFolder,
+  ListFreeAiModels,
+  GenerateWithAi
 } from '@shared/types'
 import { contextBridge, ipcRenderer } from 'electron'
 
@@ -42,7 +44,11 @@ try {
     exportNoteToPdf: (...args: Parameters<ExportNoteToPdf>) =>
       ipcRenderer.invoke('exportNoteToPdf', ...args),
     importImageToNoteFolder: (...args: Parameters<ImportImageToNoteFolder>) =>
-      ipcRenderer.invoke('importImageToNoteFolder', ...args)
+      ipcRenderer.invoke('importImageToNoteFolder', ...args),
+    listFreeAiModels: (...args: Parameters<ListFreeAiModels>) =>
+      ipcRenderer.invoke('listFreeAiModels', ...args),
+    generateWithAi: (...args: Parameters<GenerateWithAi>) =>
+      ipcRenderer.invoke('generateWithAi', ...args)
   })
 } catch (error) {
   console.error(error)

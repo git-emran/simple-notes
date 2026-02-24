@@ -13,7 +13,9 @@ import {
   ReadFile,
   WriteFile,
   MovePath,
-  ImportImageToNoteFolder
+  ImportImageToNoteFolder,
+  ListFreeAiModels,
+  GenerateWithAi
 } from '@shared/types'
 import { BrowserWindow, dialog } from 'electron'
 import { copy, readFile, writeFile, move, pathExists } from 'fs-extra'
@@ -391,5 +393,105 @@ export const importImageToNoteFolder: ImportImageToNoteFolder = async (notePath,
   } catch (error) {
     console.error('Failed to import image:', error)
     return null
+  }
+}
+
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
+
+const fallbackFreeModels = [
+  { id: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B Instruct (Free)' },
+  { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B Instruct (Free)' },
+  { id: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B IT (Free)' }
+]
+
+export const listFreeAiModels: ListFreeAiModels = async (apiKey) => {
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    }
+    if (apiKey?.trim()) {
+      headers.Authorization = `Bearer ${apiKey.trim()}`
+    }
+
+    const response = await fetch(`${OPENROUTER_BASE_URL}/models`, { headers })
+    if (!response.ok) {
+      return fallbackFreeModels
+    }
+
+    const payload = (await response.json()) as {
+      data?: Array<{
+        id: string
+        name?: string
+        pricing?: { prompt?: string; completion?: string }
+      }>
+    }
+
+    const freeModels = (payload.data ?? [])
+      .filter((model) => model.id && model.id.endsWith(':free'))
+      .map((model) => ({
+        id: model.id,
+        name: model.name || model.id
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    return freeModels.length > 0 ? freeModels : fallbackFreeModels
+  } catch (error) {
+    console.error('Failed to list free AI models:', error)
+    return fallbackFreeModels
+  }
+}
+
+export const generateWithAi: GenerateWithAi = async ({ model, prompt, content, apiKey }) => {
+  try {
+    if (!apiKey?.trim()) {
+      return { error: 'OpenRouter API key is required to generate text.' }
+    }
+
+    const finalPrompt = prompt.trim()
+    if (!finalPrompt) {
+      return { error: 'Prompt cannot be empty.' }
+    }
+
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey.trim()}`
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.7,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a writing assistant. Return only polished markdown text based on the instruction.'
+          },
+          {
+            role: 'user',
+            content: `Instruction:\n${finalPrompt}\n\nCurrent content:\n${content || '(empty)'}`
+          }
+        ]
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      return { error: `AI request failed: ${response.status} ${errorText}` }
+    }
+
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+
+    const text = payload.choices?.[0]?.message?.content?.trim()
+    if (!text) {
+      return { error: 'AI returned an empty response.' }
+    }
+
+    return { text }
+  } catch (error) {
+    console.error('Failed to generate AI text:', error)
+    return { error: 'AI generation failed. Please try again.' }
   }
 }

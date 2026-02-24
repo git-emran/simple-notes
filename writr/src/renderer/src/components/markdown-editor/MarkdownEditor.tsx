@@ -53,6 +53,8 @@ import {
   FaLink, FaImage, FaTable, FaHeading 
 } from 'react-icons/fa'
 import { MdHorizontalRule, MdPictureAsPdf } from 'react-icons/md'
+import { VscSparkle } from 'react-icons/vsc'
+import { AiModelInfo } from '@shared/types'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -76,6 +78,14 @@ export const MarkdownEditor = () => {
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [exportNotice, setExportNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiModels, setAiModels] = useState<AiModelInfo[]>([])
+  const [selectedAiModel, setSelectedAiModel] = useState('')
+  const [aiApiKey, setAiApiKey] = useState('')
+  const [isLoadingAiModels, setIsLoadingAiModels] = useState(false)
+  const [isGeneratingWithAi, setIsGeneratingWithAi] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   // Save queue management
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
@@ -279,6 +289,81 @@ export const MarkdownEditor = () => {
     const timer = window.setTimeout(() => setExportNotice(null), 2200)
     return () => window.clearTimeout(timer)
   }, [exportNotice])
+
+  const openAiModal = useCallback(async () => {
+    setContextMenu(null)
+    setIsAiModalOpen(true)
+    setAiError(null)
+    setIsLoadingAiModels(true)
+
+    const storedKey = localStorage.getItem('writr-openrouter-api-key') || ''
+    setAiApiKey(storedKey)
+
+    try {
+      const models = await window.context.listFreeAiModels(storedKey || undefined)
+      setAiModels(models)
+      setSelectedAiModel((prev) => prev || models[0]?.id || '')
+    } catch (error) {
+      console.error('Failed to load AI models:', error)
+      setAiError('Failed to load models.')
+    } finally {
+      setIsLoadingAiModels(false)
+    }
+  }, [])
+
+  const insertAiText = useCallback((text: string) => {
+    const view = viewRef.current
+    if (!view) return
+
+    const selection = view.state.selection.main
+    view.dispatch({
+      changes: { from: selection.from, to: selection.to, insert: text },
+      selection: { anchor: selection.from + text.length }
+    })
+    view.focus()
+  }, [])
+
+  const handleGenerateWithAi = useCallback(async () => {
+    if (!viewRef.current) return
+
+    const prompt = aiPrompt.trim()
+    if (!prompt) {
+      setAiError('Prompt is required.')
+      return
+    }
+    if (!selectedAiModel) {
+      setAiError('Please select a model.')
+      return
+    }
+
+    setIsGeneratingWithAi(true)
+    setAiError(null)
+    localStorage.setItem('writr-openrouter-api-key', aiApiKey.trim())
+
+    try {
+      const currentContent = viewRef.current.state.doc.toString()
+      const result = await window.context.generateWithAi({
+        model: selectedAiModel,
+        prompt,
+        content: currentContent,
+        apiKey: aiApiKey.trim() || undefined
+      })
+
+      if ('error' in result) {
+        setAiError(result.error)
+        return
+      }
+
+      insertAiText(result.text)
+      setIsAiModalOpen(false)
+      setAiPrompt('')
+    } catch (error) {
+      console.error('AI generation failed:', error)
+      setAiError('Failed to generate text.')
+    } finally {
+      setIsGeneratingWithAi(false)
+    }
+  }, [aiApiKey, aiPrompt, insertAiText, selectedAiModel])
 
   // Initialize editor
   useEffect(() => {
@@ -500,7 +585,7 @@ export const MarkdownEditor = () => {
         </div>
       </div>
 
-      {!isFullPreview && <MarkdownToolbar view={viewRef.current} />}
+      {!isFullPreview && <MarkdownToolbar view={viewRef.current} onWriteWithAi={() => void openAiModal()} />}
 
       <div
         ref={containerRef}
@@ -729,6 +814,84 @@ export const MarkdownEditor = () => {
           </>
         )}
       </div>
+      {isAiModalOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+          <div className="w-full max-w-2xl rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-xl">
+            <div className="flex items-center justify-between border-b border-[var(--obsidian-border-soft)] px-4 py-3">
+              <h3 className="text-sm font-semibold text-[var(--obsidian-text)]">Write with AI</h3>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]"
+                onClick={() => setIsAiModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-3 px-4 py-4">
+              <div>
+                <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">OpenRouter API Key</label>
+                <input
+                  type="password"
+                  value={aiApiKey}
+                  onChange={(e) => setAiApiKey(e.target.value)}
+                  placeholder="sk-or-v1-..."
+                  className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">Free Model</label>
+                <select
+                  value={selectedAiModel}
+                  onChange={(e) => setSelectedAiModel(e.target.value)}
+                  disabled={isLoadingAiModels}
+                  className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)] disabled:opacity-60"
+                >
+                  {aiModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">Prompt</label>
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="Example: Rewrite my note in a clearer and concise way."
+                  rows={6}
+                  className="w-full resize-y rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                />
+              </div>
+
+              {aiError && (
+                <div className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                  {aiError}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-[var(--obsidian-border-soft)] px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setIsAiModalOpen(false)}
+                className="rounded border border-[var(--obsidian-border)] px-3 py-1.5 text-xs text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleGenerateWithAi()}
+                disabled={isGeneratingWithAi || isLoadingAiModels}
+                className="rounded bg-[var(--obsidian-accent)] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+              >
+                {isGeneratingWithAi ? 'Generating...' : 'Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -750,6 +913,11 @@ export const MarkdownEditor = () => {
              <FaStrikethrough className="w-3 h-3 opacity-60" />
              <span>Strikethrough</span>
              <span className="ml-auto text-[10px] opacity-40">Ctrl+D</span>
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => { void openAiModal(); }}>
+             <VscSparkle className="w-3 h-3 opacity-60" />
+             <span>Write with AI</span>
           </ContextMenuItem>
 
           <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />

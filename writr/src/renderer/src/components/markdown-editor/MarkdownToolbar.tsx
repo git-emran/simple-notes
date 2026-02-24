@@ -14,12 +14,19 @@ import {
   FaImage
 } from "react-icons/fa"
 import { MdHorizontalRule } from "react-icons/md"
+import { VscSparkle } from "react-icons/vsc"
 import { EditorView } from "@codemirror/view"
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import * as commands from "./editorCommands"
 
-export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
+export const MarkdownToolbar = ({
+  view,
+  onWriteWithAi
+}: {
+  view: EditorView | null
+  onWriteWithAi: () => void
+}) => {
   const [showHeaderDropdown, setShowHeaderDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const headerButtonRef = useRef<HTMLButtonElement>(null)
@@ -303,6 +310,17 @@ export const MarkdownToolbar = ({ view }: { view: EditorView | null }) => {
         title="Horizontal Rule (Ctrl+H)"
       >
         <MdHorizontalRule className="w-5 h-5" />
+      </button>
+
+      <div className="w-px h-4 bg-[var(--obsidian-border)] mx-2" />
+
+      <button
+        onClick={onWriteWithAi}
+        disabled={!view}
+        className={btnClass}
+        title="Write with AI"
+      >
+        <VscSparkle />
       </button>
 
       {renderDropdown()}

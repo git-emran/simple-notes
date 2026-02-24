@@ -18,3 +18,21 @@ export type ImportImageToNoteFolder = (
   notePath: string,
   sourceImagePath: string
 ) => Promise<{ markdownPath: string; absolutePath: string } | null>
+
+export type AiModelInfo = {
+  id: string
+  name: string
+}
+
+export type ListFreeAiModels = (apiKey?: string) => Promise<AiModelInfo[]>
+
+export type GenerateWithAiParams = {
+  model: string
+  prompt: string
+  content: string
+  apiKey?: string
+}
+
+export type GenerateWithAi = (
+  params: GenerateWithAiParams
+) => Promise<{ text: string } | { error: string }>

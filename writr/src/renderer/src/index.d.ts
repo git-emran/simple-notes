@@ -12,7 +12,9 @@ import {
   WriteFile,
   MovePath,
   ExportNoteToPdf,
-  ImportImageToNoteFolder
+  ImportImageToNoteFolder,
+  ListFreeAiModels,
+  GenerateWithAi
 } from '@shared/types'
 
 declare global {
@@ -33,6 +35,8 @@ declare global {
       movePath: MovePath
       exportNoteToPdf: ExportNoteToPdf
       importImageToNoteFolder: ImportImageToNoteFolder
+      listFreeAiModels: ListFreeAiModels
+      generateWithAi: GenerateWithAi
     }
   }
 }

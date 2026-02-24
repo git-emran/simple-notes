@@ -17,7 +17,9 @@ import {
   writeFileNew,
   movePath,
   exportNoteToPdf,
-  importImageToNoteFolder
+  importImageToNoteFolder,
+  listFreeAiModels,
+  generateWithAi
 } from '@/lib'
 import {
   CreateNote,
@@ -33,7 +35,9 @@ import {
   WriteFile,
   MovePath,
   ExportNoteToPdf,
-  ImportImageToNoteFolder
+  ImportImageToNoteFolder,
+  ListFreeAiModels,
+  GenerateWithAi
 } from '@shared/types'
 
 protocol.registerSchemesAsPrivileged([
@@ -106,6 +110,10 @@ app.whenReady().then(() => {
   ipcMain.handle('importImageToNoteFolder', (_, ...args: Parameters<ImportImageToNoteFolder>) =>
     importImageToNoteFolder(...args)
   )
+  ipcMain.handle('listFreeAiModels', (_, ...args: Parameters<ListFreeAiModels>) =>
+    listFreeAiModels(...args)
+  )
+  ipcMain.handle('generateWithAi', (_, ...args: Parameters<GenerateWithAi>) => generateWithAi(...args))
   
   protocol.handle('local-file', async (request) => {
     try {
