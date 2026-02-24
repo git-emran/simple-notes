@@ -162,7 +162,7 @@ export const FileTreeItem = ({
         className={twMerge(
           'group cursor-pointer py-[3px] flex items-center gap-1 transition-colors text-[12px] select-none relative rounded-sm mx-1',
           isSelected
-            ? 'bg-[var(--obsidian-accent-dim)] text-white'
+            ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
             : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]',
           className
         )}
@@ -188,13 +188,28 @@ export const FileTreeItem = ({
         <span className="flex-shrink-0">
           {node.type === 'folder' && (
             isExpanded ? (
-              <VscFolderOpened className="w-4 h-4 text-[var(--obsidian-accent)]" />
+              <VscFolderOpened
+                className={twMerge(
+                  'w-4 h-4',
+                  isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-accent)]'
+                )}
+              />
             ) : (
-              <VscFolder className="w-4 h-4 text-[var(--obsidian-accent)]" />
+              <VscFolder
+                className={twMerge(
+                  'w-4 h-4',
+                  isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-accent)]'
+                )}
+              />
             )
           )}
           {node.type === 'file' && !node.name.toLowerCase().endsWith('.md') && (
-            <VscFile className="w-4 h-4 text-[var(--obsidian-text-muted)]" />
+            <VscFile
+              className={twMerge(
+                'w-4 h-4',
+                isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-text-muted)]'
+              )}
+            />
           )}
         </span>
         

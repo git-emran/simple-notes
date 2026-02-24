@@ -9,10 +9,10 @@ import {
   openTabAtom
 } from '@renderer/store'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { ComponentProps, useState, useEffect } from 'react'
+import { ComponentProps, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
-import { VscNewFile, VscNewFolder, VscCollapseAll } from 'react-icons/vsc'
+import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll } from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 
 export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) => {
@@ -27,6 +27,18 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
   const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
+
+  const allFolderPaths = useMemo(() => {
+    const collectFolders = (nodes: FileNode[]): string[] => {
+      return nodes.flatMap((node) => {
+        if (node.type !== 'folder') return []
+        return [node.path, ...(node.children ? collectFolders(node.children) : [])]
+      })
+    }
+    return collectFolders(fileTree ?? [])
+  }, [fileTree])
+
+  const isAllExpanded = allFolderPaths.length > 0 && allFolderPaths.every((path) => expandedNodes.has(path))
 
   const handleToggleExpand = (path: string) => {
     setExpandedNodes((prev) => {
@@ -101,15 +113,27 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
             >
             <VscNewFolder className="w-4 h-4" />
             </button>
-             <button
-            onClick={() => {
-                setExpandedNodes(new Set())
-            }}
-            className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
-            title="Collapse All"
-            >
-            <VscCollapseAll className="w-4 h-4" />
-            </button>
+            {isAllExpanded ? (
+              <button
+                onClick={() => {
+                  setExpandedNodes(new Set())
+                }}
+                className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+                title="Collapse All"
+              >
+                <VscCollapseAll className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setExpandedNodes(new Set(allFolderPaths))
+                }}
+                className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+                title="Expand All"
+              >
+                <VscExpandAll className="w-4 h-4" />
+              </button>
+            )}
         </div>
       </div>
 

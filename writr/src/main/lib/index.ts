@@ -1,8 +1,22 @@
 import { appDirectoryName, fileEncoding, welcomeNoteFileName } from '@shared/constants'
 import { NoteInfo, FileNode } from '@shared/models'
-import { CreateNote, DeleteNote, GetNotes, ReadNote, WriteNote, GetFileTree, CreateNoteNew, CreateDirectory, DeletePath, ReadFile, WriteFile, MovePath } from '@shared/types'
-import { dialog } from 'electron'
-import { readFile, writeFile, move, pathExists } from 'fs-extra'
+import {
+  CreateNote,
+  DeleteNote,
+  GetNotes,
+  ReadNote,
+  WriteNote,
+  GetFileTree,
+  CreateNoteNew,
+  CreateDirectory,
+  DeletePath,
+  ReadFile,
+  WriteFile,
+  MovePath,
+  ImportImageToNoteFolder
+} from '@shared/types'
+import { BrowserWindow, dialog } from 'electron'
+import { copy, readFile, writeFile, move, pathExists } from 'fs-extra'
 import { ensureDir, readdir, stat } from 'fs-extra'
 import { remove } from 'fs-extra'
 import { isEmpty } from 'lodash'
@@ -251,5 +265,131 @@ export const movePath: MovePath = async (src, dest) => {
   } catch (e) {
       console.error(e)
       return false
+  }
+}
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+export const exportNoteToPdf = async (
+  parentWindow: BrowserWindow,
+  notePath: string,
+  noteTitle: string,
+  content: string
+): Promise<boolean> => {
+  try {
+    const noteDir = path.dirname(notePath)
+    const defaultSavePath = path.join(noteDir, `${noteTitle || 'Untitled'}.pdf`)
+
+    const { canceled, filePath } = await dialog.showSaveDialog(parentWindow, {
+      title: 'Export to PDF',
+      defaultPath: defaultSavePath,
+      buttonLabel: 'Export',
+      filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    })
+
+    if (canceled || !filePath) return false
+
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: true
+      }
+    })
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(noteTitle)}</title>
+  <style>
+    body {
+      margin: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #111827;
+      background: #ffffff;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(noteTitle || 'Untitled')}</h1>
+  <pre>${escapeHtml(content)}</pre>
+</body>
+</html>`
+
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    const pdf = await printWindow.webContents.printToPDF({
+      printBackground: true,
+      margins: {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      }
+    })
+    await writeFile(filePath, pdf)
+    printWindow.destroy()
+
+    return true
+  } catch (error) {
+    console.error('Failed to export PDF:', error)
+    return false
+  }
+}
+
+const imageExtensions = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.svg',
+  '.bmp'
+])
+
+export const importImageToNoteFolder: ImportImageToNoteFolder = async (notePath, sourceImagePath) => {
+  try {
+    const extension = path.extname(sourceImagePath).toLowerCase()
+    if (!imageExtensions.has(extension)) return null
+
+    const noteDir = path.dirname(notePath)
+    const sourceName = path.basename(sourceImagePath, extension).replace(/[^\w.-]+/g, '-')
+    let targetName = `${sourceName || 'image'}${extension}`
+    let counter = 1
+    let targetPath = path.join(noteDir, targetName)
+
+    while (await pathExists(targetPath)) {
+      targetName = `${sourceName || 'image'}-${counter}${extension}`
+      targetPath = path.join(noteDir, targetName)
+      counter++
+    }
+
+    await ensureDir(noteDir)
+    await copy(sourceImagePath, targetPath, { overwrite: false, errorOnExist: true })
+
+    return {
+      markdownPath: targetName,
+      absolutePath: targetPath
+    }
+  } catch (error) {
+    console.error('Failed to import image:', error)
+    return null
   }
 }

@@ -10,7 +10,9 @@ import {
   DeletePath,
   ReadFile,
   WriteFile,
-  MovePath
+  MovePath,
+  ExportNoteToPdf,
+  ImportImageToNoteFolder
 } from '@shared/types'
 import { contextBridge, ipcRenderer } from 'electron'
 
@@ -36,7 +38,11 @@ try {
     deletePath: (...args: Parameters<DeletePath>) => ipcRenderer.invoke('deletePath', ...args),
     readFileNew: (...args: Parameters<ReadFile>) => ipcRenderer.invoke('readFileNew', ...args),
     writeFileNew: (...args: Parameters<WriteFile>) => ipcRenderer.invoke('writeFileNew', ...args),
-    movePath: (...args: Parameters<MovePath>) => ipcRenderer.invoke('movePath', ...args)
+    movePath: (...args: Parameters<MovePath>) => ipcRenderer.invoke('movePath', ...args),
+    exportNoteToPdf: (...args: Parameters<ExportNoteToPdf>) =>
+      ipcRenderer.invoke('exportNoteToPdf', ...args),
+    importImageToNoteFolder: (...args: Parameters<ImportImageToNoteFolder>) =>
+      ipcRenderer.invoke('importImageToNoteFolder', ...args)
   })
 } catch (error) {
   console.error(error)

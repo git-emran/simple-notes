@@ -22,6 +22,7 @@
     --obsidian-table-row: rgba(28, 36, 51, 0.04);
     --obsidian-inline-code-bg: rgba(28, 36, 51, 0.1);
     --obsidian-inline-code-text: #6b4d00;
+    --obsidian-ribbon-active-fg: #1c2433;
   }
 
   .dark {
@@ -43,6 +44,7 @@
     --obsidian-table-row: rgba(0, 0, 0, 0.1);
     --obsidian-inline-code-bg: rgba(0, 0, 0, 0.25);
     --obsidian-inline-code-text: #f7cb6b;
+    --obsidian-ribbon-active-fg: #ffffff;
   }
 
   #root {
@@ -99,7 +101,7 @@ header {
 }
 
 .obsidian-ribbon-btn.is-active {
-  color: #ffffff;
+  color: var(--obsidian-ribbon-active-fg);
   background: var(--obsidian-accent-dim);
 }
 

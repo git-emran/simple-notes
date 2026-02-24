@@ -1,4 +1,19 @@
-import { GetNotes, ReadNote, WriteNote, CreateNote, DeleteNote, GetFileTree, CreateNoteNew, CreateDirectory, DeletePath, ReadFile, WriteFile, MovePath } from '@shared/types'
+import {
+  GetNotes,
+  ReadNote,
+  WriteNote,
+  CreateNote,
+  DeleteNote,
+  GetFileTree,
+  CreateNoteNew,
+  CreateDirectory,
+  DeletePath,
+  ReadFile,
+  WriteFile,
+  MovePath,
+  ExportNoteToPdf,
+  ImportImageToNoteFolder
+} from '@shared/types'
 
 declare global {
   interface Window {
@@ -16,6 +31,8 @@ declare global {
       readFileNew: ReadFile
       writeFileNew: WriteFile
       movePath: MovePath
+      exportNoteToPdf: ExportNoteToPdf
+      importImageToNoteFolder: ImportImageToNoteFolder
     }
   }
 }

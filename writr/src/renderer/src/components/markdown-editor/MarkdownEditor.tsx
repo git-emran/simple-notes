@@ -6,7 +6,7 @@ import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
 import { vim } from '@replit/codemirror-vim'
 import { throttle, debounce } from 'lodash'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { selectedNoteAtom, saveNoteAtom } from '@renderer/store'
+import { createNoteAtom, selectedNoteAtom, saveNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
@@ -52,11 +52,12 @@ import {
   FaListUl, FaListOl, FaCheckSquare, FaCode, 
   FaLink, FaImage, FaTable, FaHeading 
 } from 'react-icons/fa'
-import { MdHorizontalRule } from 'react-icons/md'
+import { MdHorizontalRule, MdPictureAsPdf } from 'react-icons/md'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
   const saveNote = useSetAtom(saveNoteAtom)
+  const createNote = useSetAtom(createNoteAtom)
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
 
@@ -72,6 +73,7 @@ export const MarkdownEditor = () => {
   const [currentContent, setCurrentContent] = useState('')
   const [debouncedContent, setDebouncedContent] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   // Save queue management
@@ -197,7 +199,7 @@ export const MarkdownEditor = () => {
   )
 
   const handleBlurSave = useCallback(async () => {
-    if (!selectedNote || !viewRef.current || isSwitchingRef.current) return
+    if (!selectedNote?.path || !viewRef.current || isSwitchingRef.current) return
     const content = viewRef.current.state.doc.toString()
     const noteTitle = selectedNote.title
     debouncedSave.cancel()
@@ -207,9 +209,63 @@ export const MarkdownEditor = () => {
     await queueSave(content, noteTitle)
   }, [selectedNote, queueSave, debouncedSave])
 
+  const insertTextAtCursor = useCallback((view: EditorView, text: string) => {
+    const selection = view.state.selection.main
+    view.dispatch({
+      changes: { from: selection.from, to: selection.to, insert: text },
+      selection: { anchor: selection.from + text.length }
+    })
+    view.focus()
+  }, [])
+
+  const handleEditorImageDrop = useCallback(
+    async (event: DragEvent, view: EditorView) => {
+      if (!selectedNote?.path) return false
+      if (!event.dataTransfer?.files?.length) return false
+
+      const imageFiles = Array.from(event.dataTransfer.files).filter((file) => {
+        const lowerName = file.name.toLowerCase()
+        return /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(lowerName)
+      })
+
+      if (imageFiles.length === 0) return false
+
+      event.preventDefault()
+
+      const insertedLinks: string[] = []
+      for (const file of imageFiles) {
+        const sourcePath = (file as File & { path?: string }).path
+        if (!sourcePath) continue
+
+        const result = await window.context.importImageToNoteFolder(selectedNote.path, sourcePath)
+        if (result?.markdownPath) {
+          insertedLinks.push(`![[${result.markdownPath}]]`)
+        }
+      }
+
+      if (insertedLinks.length > 0) {
+        insertTextAtCursor(view, `${insertedLinks.join('\n')}\n`)
+      }
+
+      return insertedLinks.length > 0
+    },
+    [insertTextAtCursor, selectedNote?.path]
+  )
+
+  const handleExportPdf = useCallback(async () => {
+    if (!selectedNote?.path) return
+    setIsExportingPdf(true)
+    try {
+      const latestContent = viewRef.current?.state.doc.toString() ?? currentContent
+      await window.context.exportNoteToPdf(selectedNote.path, selectedNote.title, latestContent)
+    } finally {
+      setIsExportingPdf(false)
+    }
+  }, [currentContent, selectedNote?.path, selectedNote?.title])
+
   // Initialize editor
   useEffect(() => {
-    if (!selectedNote || !editorRef.current) {
+    if (!selectedNote?.path || !editorRef.current) {
       setCurrentContent('')
       return
     }
@@ -241,6 +297,16 @@ export const MarkdownEditor = () => {
               handleBlurSave()
               return false
             },
+            dragover: (event) => {
+              if (!event.dataTransfer?.files?.length) return false
+              event.preventDefault()
+              return true
+            },
+            drop: (event, view) => {
+              if (!event.dataTransfer?.files?.length) return false
+              void handleEditorImageDrop(event, view)
+              return true
+            }
           }),
         ],
       })
@@ -254,11 +320,20 @@ export const MarkdownEditor = () => {
     return () => {
       debouncedSave.cancel()
     }
-  }, [selectedNote?.title, selectedNote?.content, baseExtensions, debouncedSave, selectedNote, handleBlurSave])
+  }, [
+    selectedNote?.path,
+    selectedNote?.title,
+    selectedNote?.content,
+    baseExtensions,
+    debouncedSave,
+    selectedNote,
+    handleBlurSave,
+    handleEditorImageDrop
+  ])
 
   // Update editor content if note changes
   useEffect(() => {
-    if (!viewRef.current || !selectedNote || isSwitchingRef.current) return
+    if (!viewRef.current || !selectedNote?.path || isSwitchingRef.current) return
     const editorContent = viewRef.current.state.doc.toString()
     if (editorContent !== selectedNote.content) {
       viewRef.current.dispatch({
@@ -340,10 +415,22 @@ export const MarkdownEditor = () => {
     }
   }
 
-  if (!selectedNote) {
+  if (!selectedNote?.path) {
     return (
-      <div className="flex items-center justify-center h-full text-[var(--obsidian-text-muted)]">
-        Select a note to start editing
+      <div className="flex items-center justify-center h-full bg-[var(--obsidian-workspace)]">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-[var(--obsidian-text)]">No note selected</h2>
+          <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">Create a note to start writing.</p>
+          <button
+            type="button"
+            onClick={() => {
+              void createNote('')
+            }}
+            className="mt-5 text-sm font-medium text-[var(--obsidian-accent)] hover:opacity-80 transition-opacity"
+          >
+            Create New Note
+          </button>
+        </div>
       </div>
     )
   }
@@ -379,6 +466,15 @@ export const MarkdownEditor = () => {
             title="Toggle Preview Mode"
           >
             <HiOutlineEye className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => void handleExportPdf()}
+            disabled={isExportingPdf}
+            className="p-1.5 rounded-md transition-all text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] disabled:opacity-50"
+            type="button"
+            title="Export to PDF"
+          >
+            <MdPictureAsPdf className="w-4 h-4" />
           </button>
         </div>
       </div>

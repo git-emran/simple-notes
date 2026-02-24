@@ -49,6 +49,18 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   set(selectedNodeAtom, node)
 })
 
+const createFileNodeFromPath = (filePath: string): FileNode => {
+  const normalized = filePath.replace(/\\/g, '/')
+  const name = normalized.substring(normalized.lastIndexOf('/') + 1)
+  return {
+    id: filePath,
+    name,
+    path: filePath,
+    type: 'file',
+    isExpanded: false
+  }
+}
+
 export const closeTabAtom = atom(null, (get, set, path: string) => {
   const tabs = get(tabsAtom)
   const activeTabPath = get(activeTabPathAtom)
@@ -129,6 +141,9 @@ export const createNoteAtom = atom(null, async (_, set, parentDir: string) => {
 
   // Refresh tree
   set(fileTreeAtom, await loadFileTree())
+  set(openTabAtom, createFileNodeFromPath(filePath))
+
+  return filePath
 })
 
 export const createDirectoryAtom = atom(null, async (_, set, parentDir: string) => {

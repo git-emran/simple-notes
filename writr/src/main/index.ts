@@ -3,8 +3,38 @@ import { join } from 'path'
 import { promises as fs } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { createNote, deleteNote, getNotes, readNote, writeNote, getFileTree, createNoteNew, createDirectory, deletePath, readFileNew, writeFileNew, movePath } from '@/lib'
-import { CreateNote, DeleteNote, GetNotes, ReadNote, WriteNote, GetFileTree, CreateNoteNew, CreateDirectory, DeletePath, ReadFile, WriteFile, MovePath } from '@shared/types'
+import {
+  createNote,
+  deleteNote,
+  getNotes,
+  readNote,
+  writeNote,
+  getFileTree,
+  createNoteNew,
+  createDirectory,
+  deletePath,
+  readFileNew,
+  writeFileNew,
+  movePath,
+  exportNoteToPdf,
+  importImageToNoteFolder
+} from '@/lib'
+import {
+  CreateNote,
+  DeleteNote,
+  GetNotes,
+  ReadNote,
+  WriteNote,
+  GetFileTree,
+  CreateNoteNew,
+  CreateDirectory,
+  DeletePath,
+  ReadFile,
+  WriteFile,
+  MovePath,
+  ExportNoteToPdf,
+  ImportImageToNoteFolder
+} from '@shared/types'
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'local-file', privileges: { standard: true, secure: true, supportFetchAPI: true } }
@@ -68,6 +98,14 @@ app.whenReady().then(() => {
   ipcMain.handle('readFileNew', (_, ...args: Parameters<ReadFile>) => readFileNew(...args))
   ipcMain.handle('writeFileNew', (_, ...args: Parameters<WriteFile>) => writeFileNew(...args))
   ipcMain.handle('movePath', (_, ...args: Parameters<MovePath>) => movePath(...args))
+  ipcMain.handle('exportNoteToPdf', (event, ...args: Parameters<ExportNoteToPdf>) => {
+    const parent = BrowserWindow.fromWebContents(event.sender)
+    if (!parent) return false
+    return exportNoteToPdf(parent, ...args)
+  })
+  ipcMain.handle('importImageToNoteFolder', (_, ...args: Parameters<ImportImageToNoteFolder>) =>
+    importImageToNoteFolder(...args)
+  )
   
   protocol.handle('local-file', async (request) => {
     try {
