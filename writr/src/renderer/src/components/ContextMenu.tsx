@@ -1,4 +1,4 @@
-import { ComponentProps, useEffect, useRef } from 'react'
+import { ComponentProps, useLayoutEffect, useEffect, useRef, useState } from 'react'
 
 export type ContextMenuProps = ComponentProps<'div'> & {
   x: number
@@ -8,6 +8,11 @@ export type ContextMenuProps = ComponentProps<'div'> & {
 
 export const ContextMenu = ({ x, y, onClose, children, ...props }: ContextMenuProps) => {
   const ref = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState<{ top: number; left: number; visible: boolean }>({
+    top: y,
+    left: x,
+    visible: false
+  })
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -21,11 +26,34 @@ export const ContextMenu = ({ x, y, onClose, children, ...props }: ContextMenuPr
     }
   }, [onClose])
 
+  useLayoutEffect(() => {
+    const menu = ref.current
+    if (!menu) return
+
+    const viewportPadding = 8
+    const rect = menu.getBoundingClientRect()
+    const maxLeft = window.innerWidth - rect.width - viewportPadding
+    const maxTop = window.innerHeight - rect.height - viewportPadding
+
+    const clampedLeft = Math.max(viewportPadding, Math.min(x, maxLeft))
+    const clampedTop = Math.max(viewportPadding, Math.min(y, maxTop))
+
+    setPosition({
+      left: clampedLeft,
+      top: clampedTop,
+      visible: true
+    })
+  }, [x, y, children])
+
   return (
     <div
       ref={ref}
       className="fixed z-50 rounded-md py-1 min-w-[150px] max-h-[400px] overflow-y-auto preview-scrollbar bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-lg"
-      style={{ top: y, left: x }}
+      style={{
+        top: position.top,
+        left: position.left,
+        visibility: position.visible ? 'visible' : 'hidden'
+      }}
       {...props}
     >
       {children}

@@ -31,7 +31,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   },
   '.cm-content': {
     minHeight: '100%',
-    padding: '20px 0'
+    padding: '20px 0 38vh 0'
   },
   '.cm-line': {
     paddingLeft: '24px',

@@ -85,6 +85,7 @@ export const MarkdownEditor = () => {
   const [aiApiKey, setAiApiKey] = useState('')
   const [isLoadingAiModels, setIsLoadingAiModels] = useState(false)
   const [isGeneratingWithAi, setIsGeneratingWithAi] = useState(false)
+  const [aiProgress, setAiProgress] = useState(0)
   const [aiError, setAiError] = useState<string | null>(null)
 
   // Save queue management
@@ -364,6 +365,23 @@ export const MarkdownEditor = () => {
       setIsGeneratingWithAi(false)
     }
   }, [aiApiKey, aiPrompt, insertAiText, selectedAiModel])
+
+  useEffect(() => {
+    if (!isGeneratingWithAi) {
+      setAiProgress(0)
+      return
+    }
+
+    setAiProgress(8)
+    const timer = window.setInterval(() => {
+      setAiProgress((prev) => {
+        if (prev >= 92) return prev
+        return prev + Math.max(1, Math.round((100 - prev) / 12))
+      })
+    }, 280)
+
+    return () => window.clearInterval(timer)
+  }, [isGeneratingWithAi])
 
   // Initialize editor
   useEffect(() => {
@@ -865,6 +883,21 @@ export const MarkdownEditor = () => {
                   className="w-full resize-y rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                 />
               </div>
+
+              {isGeneratingWithAi && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-[var(--obsidian-text-muted)]">
+                    <span>Generating with AI...</span>
+                    <span>{Math.min(aiProgress, 99)}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded bg-[var(--obsidian-border-soft)]">
+                    <div
+                      className="h-full rounded bg-[var(--obsidian-accent)] transition-all duration-300 ease-out"
+                      style={{ width: `${Math.min(aiProgress, 99)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {aiError && (
                 <div className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
