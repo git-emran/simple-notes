@@ -16,15 +16,16 @@ export const Sidebar = ({
   children,
   // onClose,
   width,
+  minWidth,
   ...props
-}: ComponentProps<'aside'> & { onClose?: () => void; width?: number }) => {
+}: ComponentProps<'aside'> & { onClose?: () => void; width?: number; minWidth?: number }) => {
   return (
     <aside
       className={twMerge(
         'h-full flex flex-col relative border-r border-[var(--obsidian-border)] bg-[var(--obsidian-sidebar)]',
         className
       )}
-      style={{ width }}
+      style={{ width, minWidth }}
       {...props}
     >
       <div className="flex-1 overflow-auto">{children}</div>

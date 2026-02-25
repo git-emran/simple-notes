@@ -20,11 +20,12 @@ import {
 } from 'react-icons/vsc'
 
 const App = () => {
+  const minSidebarWidth = 170
   const contentContainerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
-  const [sidebarWidth, setSidebarWidth] = useState(200) // default width
+  const [sidebarWidth, setSidebarWidth] = useState(220) // default width
   const isDragging = useRef(false)
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
@@ -52,7 +53,7 @@ const App = () => {
 
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging.current) {
-        setSidebarWidth(Math.max(120, e.clientX)) // min 120px
+        setSidebarWidth(Math.max(minSidebarWidth, e.clientX))
       }
     }
 
@@ -127,6 +128,7 @@ const App = () => {
         {!collapsed && (
           <Sidebar
             width={sidebarWidth}
+            minWidth={minSidebarWidth}
             onClose={() => setCollapsed(true)}
             className="mt-8"
           >

@@ -67,7 +67,7 @@ export const ContextMenuItem = ({ children, onClick, ...props }: ComponentProps<
             e.stopPropagation()
             onClick?.(e)
         }}
-        className="w-full text-left px-3 py-1.5 hover:bg-[var(--obsidian-accent-dim)] hover:text-white text-[13px] text-[var(--obsidian-text)] flex items-center gap-2"
+        className="w-full text-left px-3 py-1.5 text-[13px] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] flex items-center gap-2 transition-colors"
         {...props}
     >
         {children}

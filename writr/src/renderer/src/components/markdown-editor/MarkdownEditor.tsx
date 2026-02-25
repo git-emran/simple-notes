@@ -905,11 +905,11 @@ export const MarkdownEditor = () => {
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-end gap-2 border-t border-[var(--obsidian-border-soft)] px-4 py-3">
+            <div className="flex flex-col-reverse gap-2 border-t border-[var(--obsidian-border-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="button"
                 onClick={() => setIsAiModalOpen(false)}
-                className="rounded border border-[var(--obsidian-border)] px-3 py-1.5 text-xs text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]"
+                className="w-full rounded border border-[var(--obsidian-border)] px-3 py-1.5 text-xs text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] sm:w-auto"
               >
                 Cancel
               </button>
@@ -917,7 +917,7 @@ export const MarkdownEditor = () => {
                 type="button"
                 onClick={() => void handleGenerateWithAi()}
                 disabled={isGeneratingWithAi || isLoadingAiModels}
-                className="rounded bg-[var(--obsidian-accent)] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                className="w-full rounded bg-black px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-60 sm:w-auto"
               >
                 {isGeneratingWithAi ? 'Generating...' : 'Submit'}
               </button>

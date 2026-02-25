@@ -81,11 +81,11 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
       style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
       {...props}
     >
-      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
-        <span className="text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
+        <span className="min-w-0 truncate text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
           FILES
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
             <button
             onClick={() => {
                 const parent = getCreationParent()
