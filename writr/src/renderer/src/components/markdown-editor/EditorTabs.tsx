@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { tabsAtom, activeTabPathAtom, setActiveTabAtom, closeTabAtom } from '@renderer/store'
-import { VscClose, VscFile } from 'react-icons/vsc'
+import { VscClose } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 
 export const EditorTabs = () => {
@@ -41,11 +41,6 @@ export const EditorTabs = () => {
                 <div className="absolute right-0 top-2 bottom-2 w-[1px] bg-[var(--obsidian-border-soft)]" />
             )}
 
-            <VscFile className={twMerge(
-                "w-3.5 h-3.5 mr-2.5 flex-shrink-0 transition-colors",
-                isActive ? "text-[var(--obsidian-accent)]" : "text-[var(--obsidian-text-muted)]"
-            )} />
-            
             <span className={twMerge(
                 "text-[11px] font-medium truncate flex-1 tracking-tight",
                 isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100"

@@ -131,12 +131,13 @@ export const selectedNoteAtom = unwrap(
     }
 )
 
-export const saveNoteAtom = atom(null, async (get, _set, newContent: NoteContent) => {
+export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent) => {
   const selectedNote = get(selectedNoteAtom)
 
   if (!selectedNote || !selectedNote.path) return
 
   await window.context.writeFileNew(selectedNote.path, newContent)
+  set(fileTreeAtom, await loadFileTree())
 
 })
 
@@ -206,4 +207,63 @@ export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: st
         set(selectedNodeAtom, { ...selectedNode, path: dest, name })
     }
   }
+})
+
+const toLocalDateFileName = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}.md`
+}
+
+const inferRootDirFromTree = (nodes: FileNode[]) => {
+  if (!nodes.length) return null
+  const firstPath = nodes[0].path
+  const lastSlash = firstPath.lastIndexOf('/')
+  const lastBackslash = firstPath.lastIndexOf('\\')
+  const maxIndex = Math.max(lastSlash, lastBackslash)
+  if (maxIndex === -1) return null
+  return firstPath.substring(0, maxIndex)
+}
+
+export const createDailyNoteAtom = atom(null, async (get, set) => {
+  const fileName = toLocalDateFileName()
+  const tree = get(fileTreeAtom) ?? (await loadFileTree())
+  const rootDir = inferRootDirFromTree(tree)
+
+  if (rootDir) {
+    const separator = rootDir.includes('\\') ? '\\' : '/'
+    const filePath = `${rootDir}${separator}${fileName}`
+
+    try {
+      await window.context.readFileNew(filePath)
+    } catch {
+      await window.context.writeFileNew(filePath, '')
+    }
+
+    set(fileTreeAtom, await loadFileTree())
+    set(openTabAtom, createFileNodeFromPath(filePath))
+    return filePath
+  }
+
+  const createdPath = await window.context.createNoteNew('')
+  if (!createdPath) return null
+
+  const lastSlash = createdPath.lastIndexOf('/')
+  const lastBackslash = createdPath.lastIndexOf('\\')
+  const maxIndex = Math.max(lastSlash, lastBackslash)
+  const parentDir = maxIndex === -1 ? '' : createdPath.substring(0, maxIndex)
+  const separator = createdPath.includes('\\') ? '\\' : '/'
+
+  let nextPath = `${parentDir}${separator}${fileName}`
+  let counter = 1
+  while (!(await window.context.movePath(createdPath, nextPath))) {
+    nextPath = `${parentDir}${separator}${fileName.replace('.md', ` (${counter}).md`)}`
+    counter += 1
+  }
+
+  set(fileTreeAtom, await loadFileTree())
+  set(openTabAtom, createFileNodeFromPath(nextPath))
+  return nextPath
 })

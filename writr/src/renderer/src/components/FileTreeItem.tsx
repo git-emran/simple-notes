@@ -35,6 +35,9 @@ export const FileTreeItem = ({
   const isSelected = selectedNode?.path === node.path
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
+  const todoTotal = node.todoTotal ?? 0
+  const todoCompleted = node.todoCompleted ?? 0
+  const todoProgress = todoTotal > 0 ? Math.round((todoCompleted / todoTotal) * 100) : 0
   
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(node.name)
@@ -161,11 +164,26 @@ export const FileTreeItem = ({
       e.stopPropagation() 
   }
 
+  const formatRelativeEditedTime = (timeMs?: number) => {
+    if (!timeMs) return ''
+    const diffMs = Date.now() - timeMs
+    const minute = 60 * 1000
+    const hour = 60 * minute
+    const day = 24 * hour
+    const month = 30 * day
+
+    if (diffMs < minute) return 'just now'
+    if (diffMs < hour) return `${Math.max(1, Math.floor(diffMs / minute))} min`
+    if (diffMs < day) return `${Math.floor(diffMs / hour)} hr${diffMs >= 2 * hour ? 's' : ''}`
+    if (diffMs < month) return `${Math.floor(diffMs / day)} day${diffMs >= 2 * day ? 's' : ''}`
+    return `${Math.floor(diffMs / month)} mo`
+  }
+
   return (
     <>
       <li
         className={twMerge(
-          'group cursor-pointer py-[3px] flex items-center gap-1 transition-colors text-[12px] select-none relative rounded-sm mx-1',
+          'group cursor-pointer py-[3px] flex items-start gap-1 transition-colors text-[12px] select-none relative rounded-sm mx-1',
           isSelected
             ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
             : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]',
@@ -234,24 +252,44 @@ export const FileTreeItem = ({
         ) : (
             <div
               className={twMerge(
-                'flex flex-1 min-w-0 items-center gap-2',
+                'flex flex-1 min-w-0 flex-col gap-0.5',
                 node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1'
               )}
             >
-              <span
-                className={twMerge(
-                  'truncate',
-                  node.type === 'folder' && 'font-medium text-[var(--obsidian-text)]'
-                )}
-              >
-                {node.name}
-              </span>
-              {noteStatus && (
-                <span
-                  className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${NOTE_STATUS_META[noteStatus].className}`}
-                >
-                  {NOTE_STATUS_META[noteStatus].label}
+              {node.type === 'file' && node.lastEditTime && (
+                <span className="text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
+                  {formatRelativeEditedTime(node.lastEditTime)}
                 </span>
+              )}
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className={twMerge(
+                    'truncate',
+                    node.type === 'folder' && 'font-medium text-[var(--obsidian-text)]'
+                  )}
+                >
+                  {node.name}
+                </span>
+                {noteStatus && (
+                  <span
+                    className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${NOTE_STATUS_META[noteStatus].className}`}
+                  >
+                    {NOTE_STATUS_META[noteStatus].label}
+                  </span>
+                )}
+              </div>
+              {node.type === 'file' && todoTotal > 0 && (
+                <div className="flex items-center gap-1.5 pr-2">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--obsidian-border-soft)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--obsidian-accent)] transition-all"
+                      style={{ width: `${todoProgress}%` }}
+                    />
+                  </div>
+                  <span className="shrink-0 text-[9px] text-[var(--obsidian-text-muted)]">
+                    {todoCompleted}/{todoTotal}
+                  </span>
+                </div>
               )}
             </div>
         )}

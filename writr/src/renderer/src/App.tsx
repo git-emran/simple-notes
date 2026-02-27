@@ -10,10 +10,11 @@ import { SidebarSearch } from './components/SidebarSearch'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { useRef, useState, useEffect } from 'react'
 import { useSetAtom } from 'jotai'
-import { switchTabByIndexAtom } from '@renderer/store'
+import { createDailyNoteAtom, switchTabByIndexAtom } from '@renderer/store'
 import {
   VscFiles,
   VscSearch,
+  VscCalendar,
   VscChevronLeft,
   VscChevronRight
 } from 'react-icons/vsc'
@@ -27,6 +28,7 @@ const App = () => {
   const isDragging = useRef(false)
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
+  const createDailyNote = useSetAtom(createDailyNoteAtom)
 
   const applyTheme = (mode: 'light' | 'dark') => {
     document.documentElement.classList.toggle('dark', mode === 'dark')
@@ -117,6 +119,16 @@ const App = () => {
             }}
           >
             <VscSearch />
+          </button>
+          <button
+            className="obsidian-ribbon-btn"
+            title="Daily note"
+            onClick={() => {
+              setCollapsed(false)
+              void createDailyNote()
+            }}
+          >
+            <VscCalendar />
           </button>
         </aside>
 

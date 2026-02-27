@@ -153,12 +153,22 @@ export const getFileTree: GetFileTree = async () => {
           } as FileNode
         } else {
           if (!dirent.name.endsWith('.md')) return null
+          const [fileStats, content] = await Promise.all([
+            stat(res),
+            readFile(res, { encoding: fileEncoding }),
+          ])
+
+          const todoMatches = content.match(/^\s*[-*]\s+\[( |x|X)\]\s+/gm) ?? []
+          const completedMatches = content.match(/^\s*[-*]\s+\[(x|X)\]\s+/gm) ?? []
 
           return {
             id: res,
             name: dirent.name,
             path: res,
             type: 'file',
+            lastEditTime: fileStats.mtimeMs,
+            todoTotal: todoMatches.length,
+            todoCompleted: completedMatches.length,
             isExpanded: false
           } as FileNode
         }

@@ -9,6 +9,9 @@ export type FileNode = {
   path: string
   type: 'file' | 'folder'
   children?: FileNode[]
+  lastEditTime?: number
+  todoTotal?: number
+  todoCompleted?: number
 
   isExpanded: boolean
 }
