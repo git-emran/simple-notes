@@ -57,7 +57,7 @@ function getDecorations(view: EditorView, notePath?: string) {
     // Markdown Images / Links
     let match
     while ((match = imageRegex.exec(text)) !== null) {
-      const [fullMatch, hasExclamation, alt, url] = match
+      const [, hasExclamation, alt, url] = match
       const start = from + match.index
       const line = view.state.doc.lineAt(start)
       
@@ -75,7 +75,7 @@ function getDecorations(view: EditorView, notePath?: string) {
 
     // Wikilink Images / Links
     while ((match = wikilinkImageRegex.exec(text)) !== null) {
-      const [fullMatch, hasExclamation, url] = match
+      const [, hasExclamation, url] = match
       const start = from + match.index
       const line = view.state.doc.lineAt(start)
       

@@ -1,4 +1,4 @@
-import { NoteContent, NoteInfo, FileNode } from '@shared/models'
+import { NoteContent, FileNode } from '@shared/models'
 import { atom } from 'jotai'
 import { atomWithStorage, unwrap } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
@@ -62,6 +62,32 @@ const createFileNodeFromPath = (filePath: string): FileNode => {
   }
 }
 
+const getTodoStats = (content: string) => {
+  const todoMatches = content.match(/^\s*[-*]\s+\[( |x|X)\]\s+/gm) ?? []
+  const completedMatches = content.match(/^\s*[-*]\s+\[(x|X)\]\s+/gm) ?? []
+  return {
+    todoTotal: todoMatches.length,
+    todoCompleted: completedMatches.length
+  }
+}
+
+const updateFileNodeInTree = (
+  nodes: FileNode[],
+  targetPath: string,
+  patch: Partial<FileNode>
+): FileNode[] =>
+  nodes.map((node) => {
+    if (node.path === targetPath) {
+      return { ...node, ...patch }
+    }
+
+    if (node.children?.length) {
+      return { ...node, children: updateFileNodeInTree(node.children, targetPath, patch) }
+    }
+
+    return node
+  })
+
 export const closeTabAtom = atom(null, (get, set, path: string) => {
   const tabs = get(tabsAtom)
   const activeTabPath = get(activeTabPathAtom)
@@ -83,6 +109,10 @@ export const closeTabAtom = atom(null, (get, set, path: string) => {
 export const isDarkModeAtom = atom(false)
 export const noteStatusByPathAtom = atomWithStorage<Record<string, NoteStatus>>(
   'writr-note-status-by-path',
+  {}
+)
+export const noteTagByPathAtom = atomWithStorage<Record<string, string>>(
+  'writr-note-tag-by-path',
   {}
 )
 
@@ -137,17 +167,66 @@ export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent)
   if (!selectedNote || !selectedNote.path) return
 
   await window.context.writeFileNew(selectedNote.path, newContent)
+  const currentTree = get(fileTreeAtom) ?? []
+  if (currentTree.length > 0) {
+    const todoStats = getTodoStats(newContent)
+    set(
+      fileTreeAtom,
+      updateFileNodeInTree(currentTree, selectedNote.path, {
+        lastEditTime: Date.now(),
+        todoTotal: todoStats.todoTotal,
+        todoCompleted: todoStats.todoCompleted
+      })
+    )
+    return
+  }
+
   set(fileTreeAtom, await loadFileTree())
 
 })
 
-export const createNoteAtom = atom(null, async (_, set, parentDir: string) => {
+export const createNoteAtom = atom(null, async (get, set, parentDir: string) => {
   const filePath = await window.context.createNoteNew(parentDir)
   if (!filePath) return
 
-  // Refresh tree
-  set(fileTreeAtom, await loadFileTree())
-  set(openTabAtom, createFileNodeFromPath(filePath))
+  const newNode = createFileNodeFromPath(filePath)
+  const currentTree = get(fileTreeAtom) ?? []
+
+  const addNodeToTree = (nodes: FileNode[], targetDir: string, node: FileNode): FileNode[] => {
+    if (!targetDir) return [...nodes, node].sort((a, b) => {
+        if (a.type === b.type) return a.name.localeCompare(b.name)
+        return a.type === 'folder' ? -1 : 1
+    })
+
+    return nodes.map(n => {
+      if (n.path === targetDir && n.type === 'folder') {
+        const children = [...(n.children ?? []), node].sort((a, b) => {
+            if (a.type === b.type) return a.name.localeCompare(b.name)
+            return a.type === 'folder' ? -1 : 1
+        })
+        return { ...n, children }
+      }
+      if (n.children) {
+        return { ...n, children: addNodeToTree(n.children, targetDir, node) }
+      }
+      return n
+    })
+  }
+
+  // If parentDir is empty string, getRootDir() might be relevant, but Main returns absolute path.
+  // We need to know where it was created. main/lib/index.ts:237 returns absolute filePath.
+  // Extracting parent path from filePath:
+  const lastSlash = filePath.lastIndexOf('/')
+  const lastBackslash = filePath.lastIndexOf('\\')
+  const maxIndex = Math.max(lastSlash, lastBackslash)
+  const actualParent = maxIndex === -1 ? '' : filePath.substring(0, maxIndex)
+
+  // Find root path from tree if not provided
+  const root = inferRootDirFromTree(currentTree)
+  const targetPath = actualParent === root ? '' : actualParent
+
+  set(fileTreeAtom, addNodeToTree([...currentTree], targetPath, newNode))
+  set(openTabAtom, newNode)
 
   return filePath
 })
@@ -164,8 +243,20 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   const isDeleted = await window.context.deletePath(path)
   if (!isDeleted) return
 
+  const currentTree = get(fileTreeAtom) ?? []
+  
+  const removeNodeFromTree = (nodes: FileNode[], targetPath: string): FileNode[] => {
+    return nodes.filter(node => {
+      if (node.path === targetPath) return false
+      if (node.children) {
+        node.children = removeNodeFromTree(node.children, targetPath)
+      }
+      return true
+    })
+  }
+
+  set(fileTreeAtom, removeNodeFromTree([...currentTree], path))
   set(selectedNodeAtom, null)
-  set(fileTreeAtom, await loadFileTree())
   
   // Close tab if it was open
   const tabs = get(tabsAtom)
@@ -258,12 +349,18 @@ export const createDailyNoteAtom = atom(null, async (get, set) => {
 
   let nextPath = `${parentDir}${separator}${fileName}`
   let counter = 1
-  while (!(await window.context.movePath(createdPath, nextPath))) {
+  let finalPath = createdPath
+
+  while (counter <= 100) {
+    if (await window.context.movePath(createdPath, nextPath)) {
+      finalPath = nextPath
+      break
+    }
     nextPath = `${parentDir}${separator}${fileName.replace('.md', ` (${counter}).md`)}`
     counter += 1
   }
 
   set(fileTreeAtom, await loadFileTree())
-  set(openTabAtom, createFileNodeFromPath(nextPath))
-  return nextPath
+  set(openTabAtom, createFileNodeFromPath(finalPath))
+  return finalPath
 })

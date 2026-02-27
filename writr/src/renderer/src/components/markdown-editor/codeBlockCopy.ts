@@ -1,4 +1,3 @@
-import { Extension } from '@codemirror/state'
 import { EditorView, ViewPlugin, ViewUpdate, Decoration, DecorationSet, WidgetType } from '@codemirror/view'
 import { syntaxTree } from '@codemirror/language'
 

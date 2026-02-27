@@ -92,6 +92,14 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     marginTop: '1.0em',
     marginBottom: '0.3em'
   },
+  '.cm-quote-line': {
+    color: 'var(--obsidian-quote-text)',
+    fontStyle: 'italic'
+  },
+  '.cm-quote-line, .cm-quote-line span': {
+    color: 'var(--obsidian-quote-text) !important',
+    fontStyle: 'italic'
+  },
   // Hide/dim backtick markers for inline code in the editor
   '.cm-code-punctuation': {
     opacity: '0.3',
@@ -176,12 +184,9 @@ export const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.list, color: '#374151' },
   {
     tag: tags.quote,
-    color: '#374151',
+    color: 'var(--obsidian-quote-text)',
     fontStyle: 'italic',
-    borderLeft: '4px solid #d1d5db',
-    paddingLeft: '12px',
-    padding: '4px',
-    backgroundColor: 'rgba(288, 255, 0, 0.19)'
+    paddingLeft: '6px'
   },
   { tag: tags.meta, color: '#9ca3af', opacity: '0.7' },
   { tag: tags.contentSeparator, color: '#9ca3af' },
@@ -234,13 +239,9 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
   { tag: tags.list, color: '#60a5fa' },
   {
     tag: tags.quote,
-    color: '#9ca3af',
+    color: 'var(--obsidian-quote-text)',
     fontStyle: 'italic',
-    borderLeft: '4px solid #4b5563',
-    paddingLeft: '12px',
-    padding: '4px',
-    borderRadius: '3px',
-    backgroundColor: 'rgba(288, 255, 0, 0.19)'
+    paddingLeft: '6px'
   },
   { tag: tags.meta, color: '#6b7280', opacity: '0.7' },
   { tag: tags.contentSeparator, color: '#ffffff' },

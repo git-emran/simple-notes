@@ -30,6 +30,24 @@ export const getRootDir = () => {
   return `${homedir()}/${appDirectoryName}`
 }
 
+const ensurePathWithinRoot = (candidatePath: string, options?: { allowRoot?: boolean }) => {
+  const rootDir = path.resolve(getRootDir())
+  const resolvedCandidate = path.resolve(candidatePath)
+  const relativePath = path.relative(rootDir, resolvedCandidate)
+  const isInsideRoot =
+    relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))
+
+  if (!isInsideRoot) {
+    throw new Error(`Path is outside notes root: ${candidatePath}`)
+  }
+
+  if (options?.allowRoot === false && resolvedCandidate === rootDir) {
+    throw new Error('Operation on root directory is not allowed')
+  }
+
+  return resolvedCandidate
+}
+
 export const getNotes: GetNotes = async () => {
   const rootDir = getRootDir()
 
@@ -137,7 +155,7 @@ export const getFileTree: GetFileTree = async () => {
   const buildTree = async (currentDir: string): Promise<FileNode[]> => {
     const dirents = await readdir(currentDir, { withFileTypes: true })
 
-    const nodes = await Promise.all(
+    const nodesWithPotentialDuplicates = await Promise.all(
       dirents.map(async (dirent) => {
         const res = path.resolve(currentDir, dirent.name)
         const isDirectory = dirent.isDirectory()
@@ -153,54 +171,76 @@ export const getFileTree: GetFileTree = async () => {
           } as FileNode
         } else {
           if (!dirent.name.endsWith('.md')) return null
-          const [fileStats, content] = await Promise.all([
-            stat(res),
-            readFile(res, { encoding: fileEncoding }),
-          ])
-
-          const todoMatches = content.match(/^\s*[-*]\s+\[( |x|X)\]\s+/gm) ?? []
-          const completedMatches = content.match(/^\s*[-*]\s+\[(x|X)\]\s+/gm) ?? []
-
+          
           return {
             id: res,
             name: dirent.name,
             path: res,
             type: 'file',
-            lastEditTime: fileStats.mtimeMs,
-            todoTotal: todoMatches.length,
-            todoCompleted: completedMatches.length,
             isExpanded: false
           } as FileNode
         }
       })
     )
 
-    return nodes.filter(Boolean).sort((a, b) => {
-      if (a!.type === b!.type) return a!.name.localeCompare(b!.name)
-      return a!.type === 'folder' ? -1 : 1
-    }) as FileNode[]
+    const nodes = nodesWithPotentialDuplicates.filter((n): n is FileNode => n !== null)
+
+    // Process file stats and todos in chunks to avoid slamming the disk/RAM
+    const fileNodes = nodes.filter(n => n.type === 'file')
+    const CHUNK_SIZE = 5
+    for (let i = 0; i < fileNodes.length; i += CHUNK_SIZE) {
+      const chunk = fileNodes.slice(i, i + CHUNK_SIZE)
+      await Promise.all(chunk.map(async (node) => {
+        try {
+          const fileStats = await stat(node.path)
+          node.lastEditTime = fileStats.mtimeMs
+          
+          // Only read if item is a file and not too large (e.g. > 1MB)
+          if (fileStats.size < 1024 * 1024) {
+            const content = await readFile(node.path, { encoding: fileEncoding })
+            const todoMatches = content.match(/^\s*[-*]\s+\[( |x|X)\]\s+/gm) ?? []
+            const completedMatches = content.match(/^\s*[-*]\s+\[(x|X)\]\s+/gm) ?? []
+            node.todoTotal = todoMatches.length
+            node.todoCompleted = completedMatches.length
+          } else {
+             node.todoTotal = 0
+             node.todoCompleted = 0
+          }
+        } catch (e) {
+          console.error(`Failed to read stats for ${node.path}:`, e)
+        }
+      }))
+    }
+
+    return nodes.sort((a, b) => {
+      if (a.type === b.type) return a.name.localeCompare(b.name)
+      return a.type === 'folder' ? -1 : 1
+    })
   }
 
   return buildTree(rootDir)
 }
 
 export const readFileNew: ReadFile = async (filePath) => {
-  return readFile(filePath, { encoding: fileEncoding })
+  const safePath = ensurePathWithinRoot(filePath)
+  return readFile(safePath, { encoding: fileEncoding })
 }
 
 export const writeFileNew: WriteFile = async (filePath, content) => {
-  return writeFile(filePath, content, { encoding: fileEncoding })
+  const safePath = ensurePathWithinRoot(filePath)
+  return writeFile(safePath, content, { encoding: fileEncoding })
 }
 
 export const createNoteNew: CreateNoteNew = async (parentDir) => {
-  const dir = parentDir || getRootDir()
+  const dir = parentDir ? ensurePathWithinRoot(parentDir) : path.resolve(getRootDir())
   await ensureDir(dir)
 
   let name = 'Untitled'
   let counter = 0
   let filePath = ''
+  let availablePathFound = false
 
-  while (true) {
+  while (!availablePathFound) {
     const fileName = counter === 0 ? `${name}.md` : `${name} (${counter}).md`
     filePath = path.join(dir, fileName)
 
@@ -208,7 +248,7 @@ export const createNoteNew: CreateNoteNew = async (parentDir) => {
       await stat(filePath)
       counter++
     } catch {
-      break
+      availablePathFound = true
     }
   }
 
@@ -217,14 +257,15 @@ export const createNoteNew: CreateNoteNew = async (parentDir) => {
 }
 
 export const createDirectory: CreateDirectory = async (parentDir) => {
-  const dir = parentDir || getRootDir()
+  const dir = parentDir ? ensurePathWithinRoot(parentDir) : path.resolve(getRootDir())
   await ensureDir(dir)
 
   let name = 'New Folder'
   let counter = 0
   let dirPath = ''
+  let availableDirFound = false
 
-  while (true) {
+  while (!availableDirFound) {
     const dirName = counter === 0 ? name : `${name} (${counter})`
     dirPath = path.join(dir, dirName)
 
@@ -232,7 +273,7 @@ export const createDirectory: CreateDirectory = async (parentDir) => {
       await stat(dirPath)
       counter++
     } catch {
-      break
+      availableDirFound = true
     }
   }
 
@@ -242,10 +283,11 @@ export const createDirectory: CreateDirectory = async (parentDir) => {
 
 export const deletePath: DeletePath = async (filePath) => {
   try {
+    const safePath = ensurePathWithinRoot(filePath, { allowRoot: false })
     const { response } = await dialog.showMessageBox({
       type: 'warning',
       title: 'Delete',
-      message: `Are you sure you want to delete ${path.basename(filePath)}?`,
+      message: `Are you sure you want to delete ${path.basename(safePath)}?`,
       buttons: ['Delete', 'Cancel'],
       defaultId: 1,
       cancelId: 1
@@ -253,7 +295,7 @@ export const deletePath: DeletePath = async (filePath) => {
 
     if (response === 1) return false
 
-    await remove(filePath)
+    await remove(safePath)
     return true
   } catch (error) {
     console.error(error)
@@ -263,16 +305,18 @@ export const deletePath: DeletePath = async (filePath) => {
 
 export const movePath: MovePath = async (src, dest) => {
   try {
-     const exists = await pathExists(dest)
+     const safeSrc = ensurePathWithinRoot(src, { allowRoot: false })
+     const safeDest = ensurePathWithinRoot(dest, { allowRoot: false })
+     const exists = await pathExists(safeDest)
      if (exists) {
          // Should we support overwrite? For now, no.
          // Or strictly speaking, if it's DnD, we might be moving into a folder, 
          // but the caller sends the full destination path.
-         console.warn(`Destination ${dest} already exists`)
+         console.warn(`Destination ${safeDest} already exists`)
          return false
      }
      
-     await move(src, dest)
+     await move(safeSrc, safeDest)
      return true
   } catch (e) {
       console.error(e)
@@ -294,8 +338,10 @@ export const exportNoteToPdf = async (
   noteTitle: string,
   content: string
 ): Promise<boolean> => {
+  let printWindow: BrowserWindow | null = null
   try {
-    const noteDir = path.dirname(notePath)
+    const safeNotePath = ensurePathWithinRoot(notePath)
+    const noteDir = path.dirname(safeNotePath)
     const defaultSavePath = path.join(noteDir, `${noteTitle || 'Untitled'}.pdf`)
 
     const { canceled, filePath } = await dialog.showSaveDialog(parentWindow, {
@@ -307,7 +353,7 @@ export const exportNoteToPdf = async (
 
     if (canceled || !filePath) return false
 
-    const printWindow = new BrowserWindow({
+    printWindow = new BrowserWindow({
       show: false,
       webPreferences: {
         sandbox: true
@@ -357,12 +403,15 @@ export const exportNoteToPdf = async (
       }
     })
     await writeFile(filePath, pdf)
-    printWindow.destroy()
 
     return true
   } catch (error) {
     console.error('Failed to export PDF:', error)
     return false
+  } finally {
+    if (printWindow && !printWindow.isDestroyed()) {
+      printWindow.destroy()
+    }
   }
 }
 
@@ -381,7 +430,9 @@ export const importImageToNoteFolder: ImportImageToNoteFolder = async (notePath,
     const extension = path.extname(sourceImagePath).toLowerCase()
     if (!imageExtensions.has(extension)) return null
 
-    const noteDir = path.dirname(notePath)
+    const safeNotePath = ensurePathWithinRoot(notePath)
+    const noteDir = path.dirname(safeNotePath)
+    ensurePathWithinRoot(noteDir)
     const sourceName = path.basename(sourceImagePath, extension).replace(/[^\w.-]+/g, '-')
     let targetName = `${sourceName || 'image'}${extension}`
     let counter = 1

@@ -1,7 +1,8 @@
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
 import { tabsAtom, activeTabPathAtom, setActiveTabAtom, closeTabAtom } from '@renderer/store'
 import { VscClose } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
+import { type CSSProperties } from 'react'
 
 export const EditorTabs = () => {
   const tabs = useAtomValue(tabsAtom)
@@ -17,7 +18,7 @@ export const EditorTabs = () => {
       style={{ 
           WebkitAppRegion: 'drag',
           fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-      } as React.CSSProperties}
+      } as CSSProperties}
     >
       {tabs.map((tab) => {
         const isActive = activeTabPath === tab.path
@@ -25,7 +26,7 @@ export const EditorTabs = () => {
           <div
             key={tab.path}
             onClick={() => setActiveTab(tab.path)}
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
             className={twMerge(
               'group relative flex items-center min-w-[130px] max-w-[230px] h-9 px-3 cursor-pointer select-none transition-all',
               isActive
@@ -53,7 +54,7 @@ export const EditorTabs = () => {
                 e.stopPropagation()
                 closeTab(tab.path)
               }}
-              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+              style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
               className={twMerge(
                 'ml-2 p-1 rounded-md hover:bg-[var(--obsidian-hover)] transition-all invisible group-hover:visible',
                 isActive && 'visible text-[var(--obsidian-text-muted)]'

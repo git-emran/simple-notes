@@ -1,10 +1,11 @@
 import { FileNode } from '@shared/models'
-import { ComponentProps, useState, useEffect, useRef } from 'react'
+import { ComponentProps, useState, useEffect, useRef, type MouseEvent, type DragEvent, type KeyboardEvent } from 'react'
 import { VscChevronRight, VscChevronDown, VscFolder, VscFolderOpened, VscFile, VscTrash } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { useAtomValue } from 'jotai'
-import { noteStatusByPathAtom } from '@renderer/store'
+import { noteStatusByPathAtom, noteTagByPathAtom } from '@renderer/store'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
+import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
 
 export type FileTreeItemProps = ComponentProps<'li'> & {
   node: FileNode
@@ -15,7 +16,7 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   onToggleExpand: (nodeId: string) => void
   onDelete?: (path: string) => void
   onDropNode?: (src: string, dest: string) => void
-  onNodeContextMenu?: (node: FileNode, e: React.MouseEvent) => void
+  onNodeContextMenu?: (node: FileNode, e: MouseEvent) => void
 }
 
 export const FileTreeItem = ({
@@ -34,7 +35,9 @@ export const FileTreeItem = ({
   const isExpanded = expandedNodes.has(node.path)
   const isSelected = selectedNode?.path === node.path
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
+  const noteTags = useAtomValue(noteTagByPathAtom)
   const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
+  const noteTag = node.type === 'file' ? noteTags[node.path] : undefined
   const todoTotal = node.todoTotal ?? 0
   const todoCompleted = node.todoCompleted ?? 0
   const todoProgress = todoTotal > 0 ? Math.round((todoCompleted / todoTotal) * 100) : 0
@@ -52,7 +55,7 @@ export const FileTreeItem = ({
     }
   }, [isEditing])
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: MouseEvent) => {
     e.stopPropagation()
     if (node.type === 'folder') {
       onToggleExpand(node.path)
@@ -60,7 +63,7 @@ export const FileTreeItem = ({
     onNodeSelect(node)
   }
   
-  const handleDoubleClick = (e: React.MouseEvent) => {
+  const handleDoubleClick = (e: MouseEvent) => {
       e.stopPropagation()
       setIsEditing(true)
       
@@ -79,19 +82,19 @@ export const FileTreeItem = ({
       }
   }
   
-  const handleContextMenu = (e: React.MouseEvent) => {
+  const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault()
       e.stopPropagation()
       onNodeContextMenu?.(node, e)
   }
 
   
-  const handleDragStart = (e: React.DragEvent) => {
+  const handleDragStart = (e: DragEvent) => {
       e.dataTransfer.setData('text/plain', node.path)
       e.dataTransfer.effectAllowed = 'move'
   }
   
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent) => {
       e.preventDefault() // Essential to allow dropping
       e.stopPropagation()
       
@@ -100,11 +103,11 @@ export const FileTreeItem = ({
       e.currentTarget.classList.add('obsidian-tree-drop')
   }
   
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: DragEvent) => {
        e.currentTarget.classList.remove('obsidian-tree-drop')
   }
   
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
       e.currentTarget.classList.remove('obsidian-tree-drop')
@@ -146,7 +149,7 @@ export const FileTreeItem = ({
       }
   }
   
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
           handleSubmitRename()
       } else if (e.key === 'Escape') {
@@ -257,9 +260,25 @@ export const FileTreeItem = ({
               )}
             >
               {node.type === 'file' && node.lastEditTime && (
-                <span className="text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
-                  {formatRelativeEditedTime(node.lastEditTime)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
+                    {formatRelativeEditedTime(node.lastEditTime)}
+                  </span>
+                  {noteStatus && (
+                    <span
+                      className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${NOTE_STATUS_META[noteStatus].className}`}
+                    >
+                      {NOTE_STATUS_META[noteStatus].label}
+                    </span>
+                  )}
+                  {noteTag && (
+                    <span
+                      className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${CUSTOM_TAG_STYLE}`}
+                    >
+                      {noteTag}
+                    </span>
+                  )}
+                </div>
               )}
               <div className="flex min-w-0 items-center gap-2">
                 <span
@@ -270,13 +289,6 @@ export const FileTreeItem = ({
                 >
                   {node.name}
                 </span>
-                {noteStatus && (
-                  <span
-                    className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${NOTE_STATUS_META[noteStatus].className}`}
-                  >
-                    {NOTE_STATUS_META[noteStatus].label}
-                  </span>
-                )}
               </div>
               {node.type === 'file' && todoTotal > 0 && (
                 <div className="flex items-center gap-1.5 pr-2">
@@ -301,7 +313,7 @@ export const FileTreeItem = ({
                     e.stopPropagation()
                     onDelete?.(node.path)
                 }}
-                className="invisible group-hover:visible p-0.5 hover:bg-[var(--obsidian-hover)] rounded mr-2 text-[var(--obsidian-text-muted)] hover:text-red-400 transition-colors"
+                className="invisible group-hover:visible self-center p-0.5 hover:bg-[var(--obsidian-hover)] rounded mr-2 text-[var(--obsidian-text-muted)] hover:text-red-400 transition-colors"
                 title="Delete"
             >
                 <VscTrash className="w-3.5 h-3.5" />

@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
 import { join } from 'path'
+import path from 'path'
 import { promises as fs } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -18,6 +19,7 @@ import {
   movePath,
   exportNoteToPdf,
   importImageToNoteFolder,
+  getRootDir,
   listFreeAiModels,
   generateWithAi
 } from '@/lib'
@@ -71,7 +73,14 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    try {
+      const url = new URL(details.url)
+      if (url.protocol === 'https:' || url.protocol === 'http:') {
+        shell.openExternal(details.url)
+      }
+    } catch {
+      // ignore invalid URLs
+    }
     return { action: 'deny' }
   })
 
@@ -141,13 +150,26 @@ app.whenReady().then(() => {
           filePath = filePath.slice(1);
       }
 
-      const fileStat = await fs.stat(filePath)
+      const resolvedFilePath = path.resolve(filePath)
+      const resolvedRootPath = path.resolve(getRootDir())
+      const relativePath = path.relative(resolvedRootPath, resolvedFilePath)
+      const isInsideRoot =
+        relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))
+
+      if (!isInsideRoot) {
+        return new Response('Not Found', { status: 404 })
+      }
+
+      const fileStat = await fs.stat(resolvedFilePath)
       if (!fileStat.isFile()) {
         return new Response('Not Found', { status: 404 })
       }
       
-      const data = await fs.readFile(filePath)
-      return new Response(data as any)
+      const { Readable } = await import('stream')
+      const { createReadStream } = await import('fs')
+      const stream = createReadStream(resolvedFilePath)
+      
+      return new Response(Readable.toWeb(stream) as any)
     } catch (e) {
       console.error('Failed to serve local file:', e)
       return new Response('Not Found', { status: 404 })

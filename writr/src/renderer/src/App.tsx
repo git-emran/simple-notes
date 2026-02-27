@@ -3,7 +3,8 @@ import {
   RootLayout,
   Sidebar,
   DraggableTopBar,
-  EditorTabs
+  EditorTabs,
+  ErrorBoundary
 } from './components'
 import { FileExplorer } from './components/FileExplorer'
 import { SidebarSearch } from './components/SidebarSearch'
@@ -88,7 +89,7 @@ const App = () => {
   }, [switchTabByIndex])
 
   return (
-    <>
+    <ErrorBoundary>
       <DraggableTopBar />
 
       <RootLayout className="obsidian-shell">
@@ -153,7 +154,7 @@ const App = () => {
           </div>
         </Content>
       </RootLayout>
-    </>
+    </ErrorBoundary>
   )
 }
 

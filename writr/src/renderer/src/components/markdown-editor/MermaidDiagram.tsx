@@ -5,8 +5,39 @@ let mermaidInstance: typeof import('mermaid').default | null = null
 const getMermaid = async () => {
   if (!mermaidInstance) {
     mermaidInstance = (await import('mermaid')).default
+    mermaidInstance.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+    })
   }
   return mermaidInstance
+}
+
+const sanitizeSvg = (svgMarkup: string): string => {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(svgMarkup, 'image/svg+xml')
+
+  doc.querySelectorAll('script, foreignObject').forEach((node) => node.remove())
+
+  const allElements = doc.querySelectorAll('*')
+  for (const element of allElements) {
+    const attributes = Array.from(element.attributes)
+    for (const attribute of attributes) {
+      const name = attribute.name.toLowerCase()
+      const value = attribute.value.trim().toLowerCase()
+
+      if (name.startsWith('on')) {
+        element.removeAttribute(attribute.name)
+        continue
+      }
+
+      if ((name === 'href' || name === 'xlink:href') && value.startsWith('javascript:')) {
+        element.removeAttribute(attribute.name)
+      }
+    }
+  }
+
+  return new XMLSerializer().serializeToString(doc)
 }
 
 export const MermaidDiagram = ({ chart }: { chart: string, }) => {
@@ -33,7 +64,7 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
         const { svg: renderedSvg } = await mermaid.render(id, chart)
 
         if (isMounted) {
-          setSvg(renderedSvg)
+          setSvg(sanitizeSvg(renderedSvg))
           setError('')
         }
       } catch (err: any) {
@@ -80,4 +111,3 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
     />
   )
 }
-

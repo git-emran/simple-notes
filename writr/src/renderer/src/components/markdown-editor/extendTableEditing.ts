@@ -90,20 +90,11 @@ function formatTableCommand(view: EditorView): boolean {
   const text = state.doc.sliceString(from, to)
   const formatted = formatTableString(text)
 
-  // Calculate relative cursor position
-  const currentLine = state.doc.lineAt(state.selection.main.head)
-  const colIndex = currentLine.text.slice(0, state.selection.main.head - currentLine.from).split('|').length - 1
-  const lineInTable = currentLine.number - start
-
   view.dispatch({
     changes: { from, to, insert: formatted }
   })
 
-  // Restore cursor roughly to the same cell
-  const newDoc = view.state.doc
-  const newTableLine = newDoc.line(start + (lineInTable > 0 && formatted.includes('---') && lineInTable >= 1 ? (lineInTable >= 1 ? lineInTable : lineInTable) : lineInTable))
-  // Wait, the separator insertion shift lines. 
-  // If we formatted a new table, line 1 is header, line 2 is separator.
+  // Restore cursor roughly to the same cell can be improved later if needed.
   
   return true
 }
@@ -326,7 +317,6 @@ const tableHighlight = ViewPlugin.fromClass(
               builder.add(line.from, line.to, Decoration.replace({}))
             } else {
               // Hide pipes in normal table rows
-              let pos = line.from
               const text = line.text
               for (let j = 0; j < text.length; j++) {
                 if (text[j] === '|') {

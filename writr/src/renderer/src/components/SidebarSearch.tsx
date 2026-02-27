@@ -1,10 +1,11 @@
 import { useMemo, useState, type ComponentProps } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { fileTreeAtom, noteStatusByPathAtom, openTabAtom } from '@renderer/store'
+import { fileTreeAtom, noteStatusByPathAtom, noteTagByPathAtom, openTabAtom } from '@renderer/store'
 import { FileNode } from '@shared/models'
 import { VscFile, VscSearch } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
+import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
 
 const flattenFiles = (nodes: FileNode[]): FileNode[] => {
   const output: FileNode[] = []
@@ -23,6 +24,7 @@ const flattenFiles = (nodes: FileNode[]): FileNode[] => {
 export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) => {
   const fileTree = useAtomValue(fileTreeAtom)
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
+  const noteTags = useAtomValue(noteTagByPathAtom)
   const openTab = useSetAtom(openTabAtom)
   const [query, setQuery] = useState('')
 
@@ -34,14 +36,18 @@ export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) 
 
     return files.filter((node) => {
       const status = noteStatuses[node.path]
+      const tag = noteTags[node.path]
       const normalizedStatus = status ? NOTE_STATUS_META[status].label.toLowerCase() : ''
+      const normalizedTag = tag ? tag.toLowerCase() : ''
+      
       return (
         node.name.toLowerCase().includes(normalizedQuery) ||
         node.path.toLowerCase().includes(normalizedQuery) ||
-        normalizedStatus.includes(normalizedQuery)
+        normalizedStatus.includes(normalizedQuery) ||
+        normalizedTag.includes(normalizedQuery)
       )
     })
-  }, [files, noteStatuses, query])
+  }, [files, noteStatuses, noteTags, query])
 
   return (
     <aside
@@ -61,7 +67,7 @@ export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) 
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search files or status..."
+            placeholder="Search files, status or tags..."
             className="w-full pl-8 pr-2 py-1.5 text-xs rounded bg-[var(--obsidian-workspace)] border border-[var(--obsidian-border)] text-[var(--obsidian-text)] placeholder:text-[var(--obsidian-text-muted)] outline-none focus:border-[var(--obsidian-accent)]"
           />
         </div>
@@ -91,6 +97,13 @@ export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) 
                           className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${NOTE_STATUS_META[status].className}`}
                         >
                           {NOTE_STATUS_META[status].label}
+                        </span>
+                      )}
+                      {noteTags[node.path] && (
+                        <span
+                          className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${CUSTOM_TAG_STYLE}`}
+                        >
+                          {noteTags[node.path]}
                         </span>
                       )}
                     </div>

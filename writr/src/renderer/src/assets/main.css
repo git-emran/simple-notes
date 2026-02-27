@@ -22,6 +22,8 @@
     --obsidian-table-row: rgba(28, 36, 51, 0.04);
     --obsidian-inline-code-bg: #f1f3f7;
     --obsidian-inline-code-text: #344155;
+    --obsidian-quote-text: #a21caf;
+    --obsidian-quote-border: #d946ef;
     --obsidian-ribbon-active-fg: #1c2433;
   }
 
@@ -44,6 +46,8 @@
     --obsidian-table-row: rgba(0, 0, 0, 0.1);
     --obsidian-inline-code-bg: #2d313d;
     --obsidian-inline-code-text: #e5ecff;
+    --obsidian-quote-text: #f0abfc;
+    --obsidian-quote-border: #e879f9;
     --obsidian-ribbon-active-fg: #ffffff;
   }
 

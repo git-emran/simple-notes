@@ -42,7 +42,6 @@
     "@electron-toolkit/preload": "^2.0.0",
     "@electron-toolkit/utils": "^2.0.0",
     "@lezer/highlight": "^1.2.1",
-    "@myriaddreamin/typst.ts": "^0.6.1-rc3",
     "@radix-ui/themes": "^3.2.1",
     "@replit/codemirror-indentation-markers": "^6.5.3",
     "@replit/codemirror-vim": "^6.3.0",
