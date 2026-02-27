@@ -4,48 +4,34 @@
 
 Welcome to **Writer**. This is a _markdown_ Text editor. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
 
-[⬇️ Download latest macOS App](https://drive.google.com/drive/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1?usp=drive_link)
+<img width="1032" height="794" alt="writer_new" src="https://github.com/user-attachments/assets/b7f4bc53-a0f5-4354-bbb4-3bf2b11ec1bc" />
 
-<img width="3000" height="2250" alt="writer1" src="https://github.com/user-attachments/assets/29668099-de29-42bb-a859-629715c1994f" />
 
 # Use Features like
 
+### Write with AI
+Although right now the AI will only write new content, soon it will have context of your written note to add or substract based on the direction.
+
+![write_with_ai_writer](https://github.com/user-attachments/assets/8973d139-258e-4b05-a81e-07903bf99f31)
+
+
 ### "Flowchart creation" using Mermaidjs
 
-https://github.com/user-attachments/assets/343c8956-26da-4506-9fe6-23691dcf8c11
+![mermaidjs](https://github.com/user-attachments/assets/bc8f467a-52fd-433e-ade6-31614fe8c235)
 
-### Custom Syntax to insert Tables, CodeBlocks etc.
-
-https://github.com/user-attachments/assets/7fd53de5-eb8a-4d7f-86e7-78e607bdd730
 
 ### Code Completions
-
-<img width="1772" height="1498" alt="Screenshot 2025-09-09 at 3 36 27 PM" src="https://github.com/user-attachments/assets/211672a2-34f2-44e5-8563-1dda9c679dfc" />
-
-## Version 1.0.5
+<img width="887" height="660" alt="lsp" src="https://github.com/user-attachments/assets/8d151180-8be6-44fb-9c91-04c879025f54" />
 
 ##### New Release:
+## Version 2.0:
 
-- 🔥 **File Explorer**. File explorer with drag and drop re-arrangement like vscode, cursor etc.
-- 🔥 **Tabs**. New tabs for each note and move between tabs with `cmd/ctrl + 1` `cmd + 2` and so on.
+- 🔥 **Redesigned UI**. Redesigned color scheme and UI components that looks good and soothing for the eye for both light and dark mode.
+- 🔥 **Write with AI mode**. Writing with AI is here. With the power of the Open-router models and all the other available open-source LLM's, writing with AI remains free as long as you have the API key from the respective model, Which wouldn't cost any money because they are free to use. 
+- 🔥 **File Search**. Better late than never, file search is now available on Writer. 
 
-## Version 1.0.4
 
-##### Features of Writer:
 
-- 🔥 **Vim motions**. Since I use vim for everything, I decided to add vim motions by default. No other way to write lol.
-- 🔥 LSP support for 10+ languages inside the `Code Block`.
-- 🔥 Relative Line numbers to jump around like a spider.
-- 🔥 Split preview and Reader mode.
-- 🔥 Create Flow charts.
-- 🔥 Markdown shortcuts support for faster text editing.
-- CodeMirror 6 under the hood.
-- Native Preview mode.
-- Syntax Highlighting and Auto-Completions for 10+ Languages.
-- Draggable sidebar.
-- Default Transparent Background.
-
----
 
 # What is Writer
 
