@@ -11,18 +11,22 @@ export const NOTE_STATUS_META: Record<
 > = {
   active: {
     label: 'Active',
-    className: 'border-emerald-500/35 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    className:
+      'border-emerald-300 bg-emerald-100 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-100',
   },
   'on hold': {
     label: 'On Hold',
-    className: 'border-amber-500/35 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    className:
+      'border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-900/35 dark:text-amber-100',
   },
   completed: {
     label: 'Completed',
-    className: 'border-sky-500/35 bg-sky-500/15 text-sky-700 dark:text-sky-300',
+    className:
+      'border-sky-300 bg-sky-100 text-sky-900 dark:border-sky-700 dark:bg-sky-900/35 dark:text-sky-100',
   },
   dropped: {
     label: 'Dropped',
-    className: 'border-rose-500/35 bg-rose-500/15 text-rose-700 dark:text-rose-300',
+    className:
+      'border-rose-300 bg-rose-100 text-rose-900 dark:border-rose-700 dark:bg-rose-900/35 dark:text-rose-100',
   },
 }

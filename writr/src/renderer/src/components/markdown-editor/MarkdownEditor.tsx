@@ -587,27 +587,29 @@ export const MarkdownEditor = () => {
           <span>{selectedNote.path}</span>
         </div>
         <div className='flex items-center gap-1.5'>
-          <div className="relative">
-            <VscTag className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
-            <select
-              value={currentNoteStatus ?? ''}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className={`h-7 min-w-[128px] appearance-none rounded-full border pl-8 pr-8 text-[11px] font-medium outline-none transition-colors focus:border-[var(--obsidian-accent)] ${
-                currentNoteStatus
-                  ? NOTE_STATUS_META[currentNoteStatus].className
-                  : 'border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]'
-              }`}
-              title="Set note status"
-            >
-              <option value="">No Status</option>
-              {NOTE_STATUS_VALUES.map((statusValue) => (
-                <option key={statusValue} value={statusValue}>
-                  {NOTE_STATUS_META[statusValue].label}
-                </option>
-              ))}
-            </select>
-            <VscChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
-          </div>
+          {!isPreview && (
+            <div className="relative">
+              <VscTag className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
+              <select
+                value={currentNoteStatus ?? ''}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                className={`h-7 min-w-[128px] appearance-none rounded-full border pl-8 pr-8 text-[11px] font-medium outline-none transition-colors focus:border-[var(--obsidian-accent)] ${
+                  currentNoteStatus
+                    ? NOTE_STATUS_META[currentNoteStatus].className
+                    : 'border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]'
+                }`}
+                title="Set note status"
+              >
+                <option value="">No Status</option>
+                {NOTE_STATUS_VALUES.map((statusValue) => (
+                  <option key={statusValue} value={statusValue}>
+                    {NOTE_STATUS_META[statusValue].label}
+                  </option>
+                ))}
+              </select>
+              <VscChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
+            </div>
+          )}
           {!isFullPreview && (
             <button
               onClick={handleSplitViewToggle}

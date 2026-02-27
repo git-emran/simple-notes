@@ -15,8 +15,7 @@ import {
   VscFiles,
   VscSearch,
   VscChevronLeft,
-  VscChevronRight,
-  VscColorMode
+  VscChevronRight
 } from 'react-icons/vsc'
 
 const App = () => {
@@ -24,7 +23,6 @@ const App = () => {
   const contentContainerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [sidebarWidth, setSidebarWidth] = useState(220) // default width
   const isDragging = useRef(false)
 
@@ -33,14 +31,18 @@ const App = () => {
   const applyTheme = (mode: 'light' | 'dark') => {
     document.documentElement.classList.toggle('dark', mode === 'dark')
     document.documentElement.classList.toggle('light', mode === 'light')
-    localStorage.setItem('writr-theme', mode)
-    setTheme(mode)
   }
 
   useEffect(() => {
-    const storedTheme = localStorage.getItem('writr-theme') as 'light' | 'dark' | null
-    const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    applyTheme(storedTheme ?? (preferredDark ? 'dark' : 'light'))
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const applySystemTheme = () => applyTheme(mediaQuery.matches ? 'dark' : 'light')
+
+    applySystemTheme()
+    mediaQuery.addEventListener('change', applySystemTheme)
+
+    return () => {
+      mediaQuery.removeEventListener('change', applySystemTheme)
+    }
   }, [])
 
   // Drag to resize logic
@@ -115,13 +117,6 @@ const App = () => {
             }}
           >
             <VscSearch />
-          </button>
-          <button
-            className="obsidian-ribbon-btn mt-auto"
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            onClick={() => applyTheme(theme === 'dark' ? 'light' : 'dark')}
-          >
-            <VscColorMode />
           </button>
         </aside>
 

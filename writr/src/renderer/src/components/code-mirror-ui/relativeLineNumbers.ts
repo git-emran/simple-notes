@@ -28,6 +28,9 @@ function getMarker(text: string, isCurrentLine: boolean): GutterMarker {
     toDOM() {
       const span = document.createElement('span')
       span.textContent = text
+      span.style.display = 'inline-block'
+      span.style.width = '100%'
+      span.style.paddingLeft = '6px'
       span.className = isCurrentLine
         ? 'cm-lineNumber cm-current-line transition-colors duration-200 font-bold text-gray-800 dark:text-white'
         : 'cm-lineNumber transition-colors duration-200 text-gray-400 dark:text-gray-500'

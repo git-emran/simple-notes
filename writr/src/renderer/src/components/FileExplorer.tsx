@@ -1,15 +1,16 @@
 import { FileNode } from '@shared/models'
 import {
+  activeTabPathAtom,
   createDirectoryAtom,
   createNoteAtom,
   deleteNodeAtom,
   fileTreeAtom,
-  selectedNodeAtom,
   movePathAtom,
-  openTabAtom
+  openTabAtom,
+  selectedNodeAtom
 } from '@renderer/store'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { ComponentProps, useMemo, useState } from 'react'
+import { ComponentProps, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
 import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll } from 'react-icons/vsc'
@@ -17,6 +18,7 @@ import { ContextMenu, ContextMenuItem } from './ContextMenu'
 
 export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) => {
   const fileTree = useAtomValue(fileTreeAtom)
+  const activeTabPath = useAtomValue(activeTabPathAtom)
   const [selectedNode, setSelectedNode] = useAtom(selectedNodeAtom)
   const createNote = useSetAtom(createNoteAtom)
   const createDirectory = useSetAtom(createDirectoryAtom)
@@ -39,6 +41,39 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   }, [fileTree])
 
   const isAllExpanded = allFolderPaths.length > 0 && allFolderPaths.every((path) => expandedNodes.has(path))
+
+  useEffect(() => {
+    if (!activeTabPath) return
+
+    const findNodeByPath = (nodes: FileNode[], path: string): FileNode | null => {
+      for (const node of nodes) {
+        if (node.path === path) return node
+        if (node.children?.length) {
+          const found = findNodeByPath(node.children, path)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    const treeMatch = findNodeByPath(fileTree ?? [], activeTabPath)
+    if (treeMatch) {
+      setSelectedNode(treeMatch)
+      return
+    }
+
+    setSelectedNode((prev) => {
+      if (prev?.path === activeTabPath) return prev
+      const name = activeTabPath.substring(Math.max(activeTabPath.lastIndexOf('/'), activeTabPath.lastIndexOf('\\')) + 1)
+      return {
+        id: activeTabPath,
+        name,
+        path: activeTabPath,
+        type: 'file',
+        isExpanded: false
+      }
+    })
+  }, [activeTabPath, fileTree, setSelectedNode])
 
   const handleNodeSelect = (node: FileNode) => {
     setSelectedNode(node)
