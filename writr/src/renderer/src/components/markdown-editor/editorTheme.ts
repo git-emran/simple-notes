@@ -142,8 +142,8 @@ export const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#6b7280' },
   {
     tag: tags.monospace,
-    backgroundColor: '#9AC1DC',
-    color: '#0C5A91',
+    backgroundColor: 'var(--obsidian-inline-code-bg)',
+    color: 'var(--obsidian-inline-code-text)',
     fontFamily: 'JetBrains Mono',
     padding: '2px 4px',
     borderRadius: '3px'
@@ -200,8 +200,8 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#9ca3af' },
   {
     tag: tags.monospace,
-    backgroundColor: '#374151',
-    color: '#fbbf24',
+    backgroundColor: 'var(--obsidian-inline-code-bg)',
+    color: 'var(--obsidian-inline-code-text)',
     fontFamily: 'JetBrains Mono',
     padding: '2px 4px',
     borderRadius: '3px'

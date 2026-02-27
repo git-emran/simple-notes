@@ -5,8 +5,8 @@ import { EditorView, keymap, drawSelection } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
 import { vim } from '@replit/codemirror-vim'
 import { throttle, debounce } from 'lodash'
-import { useAtomValue, useSetAtom } from 'jotai'
-import { createNoteAtom, selectedNoteAtom, saveNoteAtom } from '@renderer/store'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { createNoteAtom, noteStatusByPathAtom, saveNoteAtom, selectedNoteAtom } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
@@ -54,10 +54,13 @@ import {
 } from 'react-icons/fa'
 import { MdHorizontalRule, MdPictureAsPdf } from 'react-icons/md'
 import { VscSparkle } from 'react-icons/vsc'
+import { VscTag, VscChevronDown } from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
+import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
+  const [noteStatuses, setNoteStatuses] = useAtom(noteStatusByPathAtom)
   const saveNote = useSetAtom(saveNoteAtom)
   const createNote = useSetAtom(createNoteAtom)
   const editorRef = useRef<HTMLDivElement>(null)
@@ -91,6 +94,8 @@ export const MarkdownEditor = () => {
   // Save queue management
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
   const isSavingRef = useRef(false)
+
+  const currentNoteStatus = selectedNote?.path ? noteStatuses[selectedNote.path] : undefined
 
   useEffect(() => {
     const getIsDarkMode = () => {
@@ -535,6 +540,21 @@ export const MarkdownEditor = () => {
     }
   }
 
+  const handleStatusChange = (status: string) => {
+    const notePath = selectedNote?.path
+    if (!notePath) return
+
+    setNoteStatuses((prev) => {
+      const next = { ...prev }
+      if (!status) {
+        delete next[notePath]
+        return next
+      }
+      next[notePath] = status as (typeof NOTE_STATUS_VALUES)[number]
+      return next
+    })
+  }
+
   if (!selectedNote?.path) {
     return (
       <div className="flex items-center justify-center h-full bg-[var(--obsidian-workspace)]">
@@ -566,7 +586,28 @@ export const MarkdownEditor = () => {
         <div className="text-[11px] font-sans text-[var(--obsidian-text-muted)] truncate">
           <span>{selectedNote.path}</span>
         </div>
-        <div className='flex gap-1.5'>
+        <div className='flex items-center gap-1.5'>
+          <div className="relative">
+            <VscTag className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
+            <select
+              value={currentNoteStatus ?? ''}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className={`h-7 min-w-[128px] appearance-none rounded-full border pl-8 pr-8 text-[11px] font-medium outline-none transition-colors focus:border-[var(--obsidian-accent)] ${
+                currentNoteStatus
+                  ? NOTE_STATUS_META[currentNoteStatus].className
+                  : 'border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]'
+              }`}
+              title="Set note status"
+            >
+              <option value="">No Status</option>
+              {NOTE_STATUS_VALUES.map((statusValue) => (
+                <option key={statusValue} value={statusValue}>
+                  {NOTE_STATUS_META[statusValue].label}
+                </option>
+              ))}
+            </select>
+            <VscChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
+          </div>
           {!isFullPreview && (
             <button
               onClick={handleSplitViewToggle}

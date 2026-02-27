@@ -40,6 +40,13 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
 
   const isAllExpanded = allFolderPaths.length > 0 && allFolderPaths.every((path) => expandedNodes.has(path))
 
+  const handleNodeSelect = (node: FileNode) => {
+    setSelectedNode(node)
+    if (node.type === 'file') {
+      openTab(node)
+    }
+  }
+
   const handleToggleExpand = (path: string) => {
     setExpandedNodes((prev) => {
       const next = new Set(prev)
@@ -200,7 +207,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
               <FileTreeItem
                 key={node.path}
                 node={node}
-                onNodeSelect={openTab}
+                onNodeSelect={handleNodeSelect}
                 selectedNode={selectedNode}
                 expandedNodes={expandedNodes}
                 onToggleExpand={handleToggleExpand}

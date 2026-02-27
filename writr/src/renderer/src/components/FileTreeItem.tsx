@@ -2,6 +2,9 @@ import { FileNode } from '@shared/models'
 import { ComponentProps, useState, useEffect, useRef } from 'react'
 import { VscChevronRight, VscChevronDown, VscFolder, VscFolderOpened, VscFile, VscTrash } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
+import { useAtomValue } from 'jotai'
+import { noteStatusByPathAtom } from '@renderer/store'
+import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
 
 export type FileTreeItemProps = ComponentProps<'li'> & {
   node: FileNode
@@ -30,6 +33,8 @@ export const FileTreeItem = ({
 }: FileTreeItemProps) => {
   const isExpanded = expandedNodes.has(node.path)
   const isSelected = selectedNode?.path === node.path
+  const noteStatuses = useAtomValue(noteStatusByPathAtom)
+  const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
   
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState(node.name)
@@ -227,13 +232,28 @@ export const FileTreeItem = ({
                 <span className="text-[var(--obsidian-text-muted)] whitespace-pre">{extension}</span>
             </div>
         ) : (
-            <span className={twMerge(
-                "truncate flex-1",
-                node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1',
-                node.type === 'folder' && 'font-medium text-[var(--obsidian-text)]'
-            )}>
+            <div
+              className={twMerge(
+                'flex flex-1 min-w-0 items-center gap-2',
+                node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1'
+              )}
+            >
+              <span
+                className={twMerge(
+                  'truncate',
+                  node.type === 'folder' && 'font-medium text-[var(--obsidian-text)]'
+                )}
+              >
                 {node.name}
-            </span>
+              </span>
+              {noteStatus && (
+                <span
+                  className={`shrink-0 rounded-full border px-1.5 py-[1px] text-[9px] font-semibold ${NOTE_STATUS_META[noteStatus].className}`}
+                >
+                  {NOTE_STATUS_META[noteStatus].label}
+                </span>
+              )}
+            </div>
         )}
         
         {/* Delete on Hover (only when not editing) */}

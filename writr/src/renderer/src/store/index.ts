@@ -1,6 +1,7 @@
 import { NoteContent, NoteInfo, FileNode } from '@shared/models'
 import { atom } from 'jotai'
-import { unwrap } from 'jotai/utils'
+import { atomWithStorage, unwrap } from 'jotai/utils'
+import { NoteStatus } from '@renderer/constants/noteStatus'
 
 // File Tree Atoms
 const loadFileTree = async () => {
@@ -80,6 +81,10 @@ export const closeTabAtom = atom(null, (get, set, path: string) => {
 })
 
 export const isDarkModeAtom = atom(false)
+export const noteStatusByPathAtom = atomWithStorage<Record<string, NoteStatus>>(
+  'writr-note-status-by-path',
+  {}
+)
 
 // Notes Atoms (derived from selectedNode)
 export const selectedNoteAtomAsync = atom(async (get) => {

@@ -20,8 +20,8 @@
     --obsidian-hover-soft: rgba(28, 36, 51, 0.05);
     --obsidian-table-head: rgba(28, 36, 51, 0.08);
     --obsidian-table-row: rgba(28, 36, 51, 0.04);
-    --obsidian-inline-code-bg: rgba(28, 36, 51, 0.1);
-    --obsidian-inline-code-text: #6b4d00;
+    --obsidian-inline-code-bg: #f1f3f7;
+    --obsidian-inline-code-text: #344155;
     --obsidian-ribbon-active-fg: #1c2433;
   }
 
@@ -42,8 +42,8 @@
     --obsidian-hover-soft: rgba(255, 255, 255, 0.05);
     --obsidian-table-head: rgba(0, 0, 0, 0.15);
     --obsidian-table-row: rgba(0, 0, 0, 0.1);
-    --obsidian-inline-code-bg: rgba(0, 0, 0, 0.25);
-    --obsidian-inline-code-text: #f7cb6b;
+    --obsidian-inline-code-bg: #2d313d;
+    --obsidian-inline-code-text: #e5ecff;
     --obsidian-ribbon-active-fg: #ffffff;
   }
 
