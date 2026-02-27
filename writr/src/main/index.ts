@@ -117,7 +117,6 @@ app.whenReady().then(() => {
   
   protocol.handle('local-file', async (request) => {
     try {
-      console.log('Main: local-file request:', request.url)
       const url = new URL(request.url)
       const hostPart = decodeURIComponent(url.host || '')
       const pathPart = decodeURIComponent(url.pathname || '')
@@ -147,7 +146,6 @@ app.whenReady().then(() => {
         return new Response('Not Found', { status: 404 })
       }
       
-      console.log('Main: serving file:', filePath)
       const data = await fs.readFile(filePath)
       return new Response(data as any)
     } catch (e) {

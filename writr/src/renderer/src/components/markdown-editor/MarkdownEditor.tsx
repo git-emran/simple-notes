@@ -693,7 +693,7 @@ export const MarkdownEditor = () => {
                       </li>
                     ),
                     strong: ({ children }) => (
-                      <strong className="font-semibold text-white">
+                      <strong className="font-semibold text-[var(--obsidian-text)]">
                         {children}
                       </strong>
                     ),
