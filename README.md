@@ -2,8 +2,8 @@
 
 > Built with love by A passionate Vim enthusiast, Emran Hossain.
 
-#### Download macOS applications:
-https://drive.google.com/drive/u/0/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1
+#### Download macOS application:
+[Writer macOS](https://drive.google.com/drive/u/0/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1)
 
 Welcome to **Writer**. This is a _markdown_ Text editor, a Desktop app for macOS. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
 
