@@ -2,7 +2,10 @@
 
 > Built with love by A passionate Vim enthusiast, Emran Hossain.
 
-Welcome to **Writer**. This is a _markdown_ Text editor. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
+#### Download macOS applications:
+https://drive.google.com/drive/u/0/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1
+
+Welcome to **Writer**. This is a _markdown_ Text editor, a Desktop app for macOS. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
 
 <img width="1032" height="794" alt="writer_new" src="https://github.com/user-attachments/assets/b7f4bc53-a0f5-4354-bbb4-3bf2b11ec1bc" />
 
