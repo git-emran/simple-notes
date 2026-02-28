@@ -77,6 +77,7 @@ export const MarkdownEditor = () => {
 
   const currentNoteTitleRef = useRef<string>('')
   const isSwitchingRef = useRef(false)
+  const lastScrollPercentageRef = useRef<number>(0)
   const [isPreview, setIsPreview] = useState(false)
   const [isFullPreview, setIsFullPreview] = useState(false) // New state for full preview
   const [currentContent, setCurrentContent] = useState('')
@@ -586,7 +587,56 @@ export const MarkdownEditor = () => {
       setShowFAB(false)
   }, [selectedNote?.path])
 
+  const captureScrollPercentage = useCallback(() => {
+    if (isFullPreview) {
+      if (previewContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = previewContainerRef.current
+        if (scrollHeight > clientHeight) {
+          lastScrollPercentageRef.current = scrollTop / (scrollHeight - clientHeight)
+        }
+      }
+    } else {
+      if (viewRef.current) {
+        const { scrollDOM } = viewRef.current
+        const { scrollTop, scrollHeight, clientHeight } = scrollDOM
+        if (scrollHeight > clientHeight) {
+          lastScrollPercentageRef.current = scrollTop / (scrollHeight - clientHeight)
+        }
+      }
+    }
+  }, [isFullPreview])
+
+  const restoreScrollPosition = useCallback(() => {
+    const percentage = lastScrollPercentageRef.current
+    if (percentage <= 0) return
+
+    // Restore Editor Scroll
+    if (viewRef.current) {
+      const { scrollDOM } = viewRef.current
+      const { scrollHeight, clientHeight } = scrollDOM
+      if (scrollHeight > clientHeight) {
+        scrollDOM.scrollTop = percentage * (scrollHeight - clientHeight)
+      }
+    }
+
+    // Restore Preview Scroll
+    if (previewContainerRef.current) {
+      const { scrollHeight, clientHeight } = previewContainerRef.current
+      if (scrollHeight > clientHeight) {
+        previewContainerRef.current.scrollTop = percentage * (scrollHeight - clientHeight)
+      }
+    }
+  }, [])
+
+  // Restore scroll when mode changes
+  useEffect(() => {
+    // Small delay to ensure render is complete and scroll heights are correct
+    const timer = setTimeout(restoreScrollPosition, 50)
+    return () => clearTimeout(timer)
+  }, [isPreview, isFullPreview, restoreScrollPosition])
+
   const handleFullPreviewToggle = () => {
+    captureScrollPercentage()
     // If already in full preview, switch to edit mode.
     // Otherwise, switch to full preview mode.
     if (isFullPreview) {
@@ -599,6 +649,7 @@ export const MarkdownEditor = () => {
   }
 
   const handleSplitViewToggle = () => {
+    captureScrollPercentage()
     if (isFullPreview) {
       setIsFullPreview(false)
       setIsPreview(true)
