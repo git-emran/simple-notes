@@ -101,35 +101,43 @@ export const StickyNoteNode = ({ data, selected }: CustomNodeProps) => {
   };
 
   return (
-    <div
-      className={`p-4 shadow-lg transition-all ${selected ? 'ring-2 ring-[var(--obsidian-accent)] scale-[1.02]' : ''}`}
-      style={{
-        minWidth: 160,
-        minHeight: 160,
-        background: 'linear-gradient(135deg, #fef08a 0%, #fde047 100%)', // Yellow sticky gradient
-        borderRadius: '2px 2px 2px 24px', // Folded corner effect
-        transform: 'rotate(-1deg)', // Slight casual rotation
-        color: '#3f3f46' // Dark gray text for contrast
-      }}
-    >
-      <div className="absolute bottom-0 right-0 w-8 h-8 bg-black/5 rounded-tl-full rounded-br-sm" />
-      <Handle type="target" position={Position.Top} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
+    <div className='relative w-full h-full'>
+      <NodeResizer
+        isVisible={!!selected}
+        minWidth={80}
+        minHeight={80}
+      />
+      <div
+        className={`p-4 w-full h-full shadow-lg transition-all ${selected ? 'ring-2 ring-[var(--obsidian-accent)] scale-[1.02]' : ''}`}
+        style={{
+          minHeight: '80',
+          minWidth: '80',
+          background: 'linear-gradient(135deg, #fef08a 0%, #fde047 100%)', // Yellow sticky gradient
+          borderRadius: '2px 2px 2px 24px', // Folded corner effect
+          transform: 'rotate(-1deg)', // Slight casual rotation
+          color: '#3f3f46' // Dark gray text for contrast
+        }}
+      >
+        <div className="absolute bottom-0 right-0 w-8 h-8 bg-black/5 rounded-tl-full rounded-br-sm" />
+        <Handle type="target" position={Position.Top} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
 
-      <div className="h-full w-full">
-        <textarea
-          value={label}
-          onChange={onChange}
-          className="w-full h-full bg-transparent border-none text-[#3f3f46] resize-none text-sm font-medium outline-none"
-          style={{
-            fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif"
-          }}
-          placeholder="Note..."
-          spellCheck={false}
-        />
+        <div className="h-full w-full">
+          <textarea
+            value={label}
+            onChange={onChange}
+            className="w-full h-full bg-transparent border-none text-[#3f3f46] resize-none text-sm font-medium outline-none"
+            style={{
+              fontFamily: "'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif"
+            }}
+            placeholder="Note..."
+            spellCheck={false}
+          />
+        </div>
+        <Handle type="source" position={Position.Bottom} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
+        <Handle type="source" position={Position.Right} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
+        <Handle type="target" position={Position.Left} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
       </div>
-      <Handle type="source" position={Position.Bottom} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
-      <Handle type="source" position={Position.Right} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
-      <Handle type="target" position={Position.Left} style={{ ...commonHandleStyle, border: '2px solid #fde047' }} />
+
     </div>
   );
 };
