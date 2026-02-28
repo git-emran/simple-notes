@@ -176,7 +176,7 @@ export const getFileTree: GetFileTree = async () => {
             isExpanded: false
           } as FileNode
         } else {
-          if (!dirent.name.endsWith('.md')) return null
+          if (!dirent.name.endsWith('.md') && !dirent.name.endsWith('.canvas')) return null
           
           return {
             id: res,
@@ -249,6 +249,33 @@ export const createNoteNew: CreateNoteNew = async (parentDir) => {
   }
 
   await writeFile(filePath, '')
+  return filePath
+}
+
+export const createCanvasNew = async (parentDir?: string) => {
+  const dir = parentDir ? ensurePathWithinRoot(parentDir) : path.resolve(getRootDir())
+  await ensureDir(dir)
+
+  let name = 'Untitled'
+  let counter = 0
+  let filePath = ''
+  let availablePathFound = false
+
+  while (!availablePathFound) {
+    const fileName = counter === 0 ? `${name}.canvas` : `${name} (${counter}).canvas`
+    filePath = path.join(dir, fileName)
+
+    try {
+      await stat(filePath)
+      counter++
+    } catch {
+      availablePathFound = true
+    }
+  }
+
+  // Initialize with an empty canvas structure
+  const emptyCanvas = { nodes: [], edges: [] }
+  await writeFile(filePath, JSON.stringify(emptyCanvas, null, 2))
   return filePath
 }
 

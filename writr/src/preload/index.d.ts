@@ -6,6 +6,7 @@ import {
   DeleteNote,
   GetFileTree,
   CreateNoteNew,
+  CreateCanvasNew,
   CreateDirectory,
   DeletePath,
   ReadFile,
@@ -27,11 +28,12 @@ declare global {
       createNote: CreateNote
       deleteNote: DeleteNote
       getFileTree: GetFileTree
-      createNoteNew: CreateNoteNew
-      createDirectory: CreateDirectory
-      deletePath: DeletePath
       readFileNew: ReadFile
       writeFileNew: WriteFile
+      createNoteNew: CreateNoteNew
+      createCanvasNew: CreateCanvasNew
+      deletePath: DeletePath
+      createDirectory: CreateDirectory
       movePath: MovePath
       exportNoteToPdf: ExportNoteToPdf
       importImageToNoteFolder: ImportImageToNoteFolder

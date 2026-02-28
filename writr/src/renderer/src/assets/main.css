@@ -160,3 +160,33 @@ header {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+/* Print Styles for Canvas Export */
+.canvas-printing {
+  background: white !important;
+}
+
+.canvas-printing body {
+  background: white !important;
+}
+
+.canvas-printing .obsidian-ribbon,
+.canvas-printing .obsidian-sidebar,
+.canvas-printing header,
+.canvas-printing .react-flow__panel,
+.canvas-printing .react-flow__controls,
+.canvas-printing .absolute.top-4.left-4 /* Floating Header */ {
+  display: none !important;
+}
+
+.canvas-printing .react-flow__background {
+  /* Give it a clean background when printing */
+  background: white !important;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: landscape;
+  }
+}

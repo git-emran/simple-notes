@@ -43,7 +43,7 @@ export const EditorTabs = () => {
                 "text-[11px] font-medium truncate flex-1 tracking-tight",
                 isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100"
             )}>
-              {tab.name.replace(/\.md$/, '')}
+              {tab.name.replace(/\.(md|canvas)$/, '')}
             </span>
 
             <button

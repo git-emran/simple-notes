@@ -12,6 +12,24 @@ const loadFileTree = async () => {
   return await window.context.getFileTree()
 }
 
+export const saveCanvasAtom = atom(null, async (get, set, jsonContent: string) => {
+  const selectedNode = get(selectedNodeAtom)
+  if (!selectedNode || !selectedNode.path || !selectedNode.path.endsWith('.canvas')) return
+
+  await window.context.writeFileNew(selectedNode.path, jsonContent)
+  const currentTree = get(fileTreeAtom) ?? []
+  if (currentTree.length > 0) {
+    set(
+      fileTreeAtom,
+      updateFileNodeInTree(currentTree, selectedNode.path, {
+        lastEditTime: Date.now()
+      })
+    )
+    return
+  }
+  set(fileTreeAtom, await loadFileTree())
+})
+
 const fileTreeAtomAsync = atom<FileNode[] | Promise<FileNode[]>>(loadFileTree())
 export const fileTreeAtom = unwrap(fileTreeAtomAsync, (prev) => prev)
 
@@ -172,15 +190,10 @@ export const selectedNoteAtomAsync = atom(async (get) => {
   const content = await window.context.readFileNew(activeTabPath)
   
   // Extract name for title
+  const name = activeTabPath.split('/').pop()?.split('\\').pop() || 'Untitled'
   
-  // Extract name for title
-  const lastSlash = activeTabPath.lastIndexOf('/')
-  const lastBackslash = activeTabPath.lastIndexOf('\\')
-  const maxIndex = Math.max(lastSlash, lastBackslash)
-  const name = maxIndex === -1 ? activeTabPath : activeTabPath.substring(maxIndex + 1)
-
   return {
-    title: name.replace(/\.md$/, ''),
+    title: name.replace(/\.(md|canvas)$/, ''),
     lastEditTime: Date.now(),
     content: content,
     path: activeTabPath
@@ -278,6 +291,48 @@ export const createNoteAtom = atom(null, async (get, set, parentDir: string) => 
   const actualParent = maxIndex === -1 ? '' : filePath.substring(0, maxIndex)
 
   // Find root path from tree if not provided
+  const root = inferRootDirFromTree(currentTree)
+  const targetPath = actualParent === root ? '' : actualParent
+
+  set(fileTreeAtom, addNodeToTree([...currentTree], targetPath, newNode))
+  set(openTabAtom, newNode)
+
+  return filePath
+})
+
+export const createCanvasAtom = atom(null, async (get, set, parentDir: string) => {
+  const filePath = await window.context.createCanvasNew(parentDir)
+  if (!filePath) return
+
+  const newNode = createFileNodeFromPath(filePath)
+  const currentTree = get(fileTreeAtom) ?? []
+
+  const addNodeToTree = (nodes: FileNode[], targetDir: string, node: FileNode): FileNode[] => {
+    if (!targetDir) return [...nodes, node].sort((a, b) => {
+        if (a.type === b.type) return a.name.localeCompare(b.name)
+        return a.type === 'folder' ? -1 : 1
+    })
+
+    return nodes.map(n => {
+      if (n.path === targetDir && n.type === 'folder') {
+        const children = [...(n.children ?? []), node].sort((a, b) => {
+            if (a.type === b.type) return a.name.localeCompare(b.name)
+            return a.type === 'folder' ? -1 : 1
+        })
+        return { ...n, children }
+      }
+      if (n.children) {
+        return { ...n, children: addNodeToTree(n.children, targetDir, node) }
+      }
+      return n
+    })
+  }
+
+  const lastSlash = filePath.lastIndexOf('/')
+  const lastBackslash = filePath.lastIndexOf('\\')
+  const maxIndex = Math.max(lastSlash, lastBackslash)
+  const actualParent = maxIndex === -1 ? '' : filePath.substring(0, maxIndex)
+
   const root = inferRootDirFromTree(currentTree)
   const targetPath = actualParent === root ? '' : actualParent
 

@@ -12,6 +12,7 @@ import {
   writeNote,
   getFileTree,
   createNoteNew,
+  createCanvasNew,
   createDirectory,
   deletePath,
   readFileNew,
@@ -31,6 +32,7 @@ import {
   WriteNote,
   GetFileTree,
   CreateNoteNew,
+  CreateCanvasNew,
   CreateDirectory,
   DeletePath,
   ReadFile,
@@ -106,6 +108,7 @@ app.whenReady().then(() => {
   ipcMain.handle('deleteNote', (_, ...args: Parameters<DeleteNote>) => deleteNote(...args))
   ipcMain.handle('getFileTree', (_, ...args: Parameters<GetFileTree>) => getFileTree(...args))
   ipcMain.handle('createNoteNew', (_, ...args: Parameters<CreateNoteNew>) => createNoteNew(...args))
+  ipcMain.handle('createCanvasNew', (_, ...args: Parameters<CreateCanvasNew>) => createCanvasNew(...args))
   ipcMain.handle('createDirectory', (_, ...args: Parameters<CreateDirectory>) => createDirectory(...args))
   ipcMain.handle('deletePath', (_, ...args: Parameters<DeletePath>) => deletePath(...args))
   ipcMain.handle('readFileNew', (_, ...args: Parameters<ReadFile>) => readFileNew(...args))

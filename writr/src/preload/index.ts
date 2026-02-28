@@ -6,6 +6,7 @@ import {
   WriteNote,
   GetFileTree,
   CreateNoteNew,
+  CreateCanvasNew,
   CreateDirectory,
   DeletePath,
   ReadFile,
@@ -35,6 +36,8 @@ try {
     getFileTree: (...args: Parameters<GetFileTree>) => ipcRenderer.invoke('getFileTree', ...args),
     createNoteNew: (...args: Parameters<CreateNoteNew>) =>
       ipcRenderer.invoke('createNoteNew', ...args),
+    createCanvasNew: (...args: Parameters<CreateCanvasNew>) =>
+      ipcRenderer.invoke('createCanvasNew', ...args),
     createDirectory: (...args: Parameters<CreateDirectory>) =>
       ipcRenderer.invoke('createDirectory', ...args),
     deletePath: (...args: Parameters<DeletePath>) => ipcRenderer.invoke('deletePath', ...args),

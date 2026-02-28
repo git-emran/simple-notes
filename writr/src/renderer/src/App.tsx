@@ -8,15 +8,24 @@ import {
 import { FileExplorer } from './components/FileExplorer'
 import { SidebarSearch } from './components/SidebarSearch'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
+import { CanvasEditor } from './components/canvas/CanvasEditor'
 import { useRef, useState, useEffect } from 'react'
-import { useSetAtom } from 'jotai'
-import { createDailyNoteAtom, switchTabByIndexAtom, closeActiveTabAtom, restoreClosedTabAtom } from '@renderer/store'
+import { useAtomValue, useSetAtom } from 'jotai'
+import { 
+  createDailyNoteAtom, 
+  switchTabByIndexAtom, 
+  closeActiveTabAtom, 
+  restoreClosedTabAtom,
+  createCanvasAtom,
+  selectedNodeAtom
+} from '@renderer/store'
 import {
   VscFiles,
   VscSearch,
   VscCalendar,
   VscChevronLeft,
-  VscChevronRight
+  VscChevronRight,
+  VscSymbolRuler
 } from 'react-icons/vsc'
 
 const App = () => {
@@ -24,6 +33,7 @@ const App = () => {
   const contentContainerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
+  const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(220) // default width
   const isDragging = useRef(false)
 
@@ -31,6 +41,35 @@ const App = () => {
   const createDailyNote = useSetAtom(createDailyNoteAtom)
   const closeActiveTab = useSetAtom(closeActiveTabAtom)
   const restoreClosedTab = useSetAtom(restoreClosedTabAtom)
+  const createCanvas = useSetAtom(createCanvasAtom)
+  const selectedNode = useAtomValue(selectedNodeAtom)
+
+  // Automatically switch mode based on selected file extension
+  useEffect(() => {
+    if (selectedNode?.path) {
+      if (selectedNode.path.endsWith('.canvas')) {
+        setAppMode('canvas')
+      } else if (selectedNode.path.endsWith('.md')) {
+        setAppMode('editor')
+      }
+    }
+  }, [selectedNode])
+
+  const handleCanvasClick = async () => {
+    if (selectedNode?.path && selectedNode.path.endsWith('.canvas')) {
+      // Already on a canvas file, just ensure mode is correct
+      setAppMode('canvas')
+      return
+    }
+
+    // Attempt to create a new canvas file
+    const parentDir = selectedNode?.type === 'folder' 
+      ? selectedNode.path 
+      : selectedNode?.path?.substring(0, Math.max(selectedNode.path.lastIndexOf('/'), selectedNode.path.lastIndexOf('\\'))) || ''
+    
+    await createCanvas(parentDir)
+    setAppMode('canvas')
+  }
 
   const applyTheme = (mode: 'light' | 'dark') => {
     document.documentElement.classList.toggle('dark', mode === 'dark')
@@ -134,6 +173,7 @@ const App = () => {
               onClick={() => {
                 setSidebarView('files')
                 setCollapsed(false)
+                setAppMode('editor')
               }}
             >
               <VscFiles />
@@ -144,6 +184,7 @@ const App = () => {
               onClick={() => {
                 setSidebarView('search')
                 setCollapsed(false)
+                setAppMode('editor')
               }}
             >
               <VscSearch />
@@ -153,10 +194,18 @@ const App = () => {
               title="Daily note"
               onClick={() => {
                 setCollapsed(false)
+                setAppMode('editor')
                 void createDailyNote()
               }}
             >
               <VscCalendar />
+            </button>
+            <button
+              className={`obsidian-ribbon-btn ${appMode === 'canvas' ? 'is-active' : ''}`}
+              title="Canvas"
+              onClick={handleCanvasClick}
+            >
+              <VscSymbolRuler />
             </button>
           </aside>
 
@@ -174,8 +223,8 @@ const App = () => {
             ref={contentContainerRef}
             className="relative h-full flex flex-col obsidian-workspace"
           >
-            <div className="flex-1 overflow-hidden">
-              <MarkdownEditor />
+            <div className="flex-1 overflow-hidden h-full">
+              {appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />}
             </div>
           </Content>
         </div>

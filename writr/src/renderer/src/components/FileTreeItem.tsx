@@ -229,7 +229,7 @@ export const FileTreeItem = ({
               />
             )
           )}
-          {node.type === 'file' && !node.name.toLowerCase().endsWith('.md') && (
+          {node.type === 'file' && !node.name.toLowerCase().endsWith('.md') && !node.name.toLowerCase().endsWith('.canvas') && (
             <VscFile
               className={twMerge(
                 'w-4 h-4',
@@ -256,7 +256,7 @@ export const FileTreeItem = ({
             <div
               className={twMerge(
                 'flex flex-1 min-w-0 flex-col gap-0.5',
-                node.type === 'file' && node.name.toLowerCase().endsWith('.md') ? 'ml-0' : 'ml-1'
+                (node.type === 'file' && (node.name.toLowerCase().endsWith('.md') || node.name.toLowerCase().endsWith('.canvas'))) ? 'ml-0' : 'ml-1'
               )}
             >
               {node.type === 'file' && node.lastEditTime && (
