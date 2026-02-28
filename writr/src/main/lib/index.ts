@@ -177,7 +177,7 @@ export const getFileTree: GetFileTree = async () => {
           } as FileNode
         } else {
           if (!dirent.name.endsWith('.md') && !dirent.name.endsWith('.canvas')) return null
-          
+
           return {
             id: res,
             name: dirent.name,
@@ -192,20 +192,22 @@ export const getFileTree: GetFileTree = async () => {
     const nodes = nodesWithPotentialDuplicates.filter((n): n is FileNode => n !== null)
 
     // Process file stats in chunks
-    const fileNodes = nodes.filter(n => n.type === 'file')
+    const fileNodes = nodes.filter((n) => n.type === 'file')
     const CHUNK_SIZE = 10
     for (let i = 0; i < fileNodes.length; i += CHUNK_SIZE) {
       const chunk = fileNodes.slice(i, i + CHUNK_SIZE)
-      await Promise.all(chunk.map(async (node) => {
-        try {
-          const fileStats = await stat(node.path)
-          node.lastEditTime = fileStats.mtimeMs
-          node.todoTotal = 0
-          node.todoCompleted = 0
-        } catch (e) {
-          console.error(`Failed to read stats for ${node.path}:`, e)
-        }
-      }))
+      await Promise.all(
+        chunk.map(async (node) => {
+          try {
+            const fileStats = await stat(node.path)
+            node.lastEditTime = fileStats.mtimeMs
+            node.todoTotal = 0
+            node.todoCompleted = 0
+          } catch (e) {
+            console.error(`Failed to read stats for ${node.path}:`, e)
+          }
+        })
+      )
     }
 
     return nodes.sort((a, b) => {
@@ -328,22 +330,22 @@ export const deletePath: DeletePath = async (filePath) => {
 
 export const movePath: MovePath = async (src, dest) => {
   try {
-     const safeSrc = ensurePathWithinRoot(src, { allowRoot: false })
-     const safeDest = ensurePathWithinRoot(dest, { allowRoot: false })
-     const exists = await pathExists(safeDest)
-     if (exists) {
-         // Should we support overwrite? For now, no.
-         // Or strictly speaking, if it's DnD, we might be moving into a folder, 
-         // but the caller sends the full destination path.
-         console.warn(`Destination ${safeDest} already exists`)
-         return false
-     }
-     
-     await move(safeSrc, safeDest)
-     return true
-  } catch (e) {
-      console.error(e)
+    const safeSrc = ensurePathWithinRoot(src, { allowRoot: false })
+    const safeDest = ensurePathWithinRoot(dest, { allowRoot: false })
+    const exists = await pathExists(safeDest)
+    if (exists) {
+      // Should we support overwrite? For now, no.
+      // Or strictly speaking, if it's DnD, we might be moving into a folder,
+      // but the caller sends the full destination path.
+      console.warn(`Destination ${safeDest} already exists`)
       return false
+    }
+
+    await move(safeSrc, safeDest)
+    return true
+  } catch (e) {
+    console.error(e)
+    return false
   }
 }
 
@@ -438,17 +440,12 @@ export const exportNoteToPdf = async (
   }
 }
 
-const imageExtensions = new Set([
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.gif',
-  '.webp',
-  '.svg',
-  '.bmp'
-])
+const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'])
 
-export const importImageToNoteFolder: ImportImageToNoteFolder = async (notePath, sourceImagePath) => {
+export const importImageToNoteFolder: ImportImageToNoteFolder = async (
+  notePath,
+  sourceImagePath
+) => {
   try {
     const extension = path.extname(sourceImagePath).toLowerCase()
     if (!imageExtensions.has(extension)) return null

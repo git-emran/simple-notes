@@ -5,13 +5,13 @@ import { useAtom, useSetAtom } from 'jotai'
 import { pinnedNotePathsAtom, duplicateNoteAtom } from '@renderer/store'
 import { twMerge } from 'tailwind-merge'
 
-interface MoreActionsMenuProps {
+interface tionsMenuProps {
   notePath: string
   onExportPdf: () => void
   isExportingPdf: boolean
 }
 
-export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: MoreActionsMenuProps) => {
+export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: tionsMenuProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [pinnedPaths, setPinnedPaths] = useAtom(pinnedNotePathsAtom)
   const duplicateNote = useSetAtom(duplicateNoteAtom)
@@ -20,23 +20,13 @@ export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: MoreA
 
   const isPinned = pinnedPaths.includes(notePath)
 
-  const togglePin = () => {
-    setPinnedPaths(prev => 
-      isPinned ? prev.filter(p => p !== notePath) : [...prev, notePath]
-    )
-    setIsOpen(false)
-  }
 
   const handleDuplicate = () => {
     void duplicateNote(notePath)
     setIsOpen(false)
   }
 
-  const handleEmail = () => {
-    // Stub for emailing file
-    window.alert('Email functionality is not implemented yet.')
-    setIsOpen(false)
-  }
+
 
   // Close when clicking outside
   useEffect(() => {
@@ -74,20 +64,13 @@ export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: MoreA
             right: buttonRef.current ? window.innerWidth - buttonRef.current.getBoundingClientRect().right : 0
           }}
         >
-          <button onClick={togglePin} className={btnClass}>
-            <VscPinned className={twMerge("w-4 h-4", isPinned && "text-[var(--obsidian-accent)]")} />
-            {isPinned ? 'Unpin note' : 'Pin note'}
-          </button>
           
           <button onClick={handleDuplicate} className={btnClass}>
             <VscFiles className="w-4 h-4" />
             Duplicate
           </button>
 
-          <button onClick={handleEmail} className={btnClass}>
-            <VscMail className="w-4 h-4" />
-            Email file
-          </button>
+        
 
           <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
 
