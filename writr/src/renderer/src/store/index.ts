@@ -116,6 +116,11 @@ export const noteTagByPathAtom = atomWithStorage<Record<string, string>>(
   {}
 )
 
+export const pinnedNotePathsAtom = atomWithStorage<string[]>(
+  'writr-pinned-note-paths',
+  []
+)
+
 // Notes Atoms (derived from selectedNode)
 export const selectedNoteAtomAsync = atom(async (get) => {
   const activeTabPath = get(activeTabPathAtom)
@@ -183,6 +188,25 @@ export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent)
 
   set(fileTreeAtom, await loadFileTree())
 
+})
+
+export const duplicateNoteAtom = atom(null, async (_get, set, path: string) => {
+  if (!window.context) return
+  
+  try {
+    const content = await window.context.readFileNew(path)
+    const lastDot = path.lastIndexOf('.')
+    const newPath = lastDot === -1 ? `${path}_copy` : `${path.substring(0, lastDot)}_copy${path.substring(lastDot)}`
+    
+    await window.context.writeFileNew(newPath, content)
+    set(fileTreeAtom, await loadFileTree())
+    
+    // Open the new note
+    const newNode = createFileNodeFromPath(newPath)
+    set(openTabAtom, newNode)
+  } catch (error) {
+    console.error('Failed to duplicate note:', error)
+  }
 })
 
 export const createNoteAtom = atom(null, async (get, set, parentDir: string) => {

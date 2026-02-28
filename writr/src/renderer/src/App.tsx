@@ -90,69 +90,82 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <DraggableTopBar />
-
-      <RootLayout className="obsidian-shell">
-        <aside className="obsidian-ribbon mt-8">
-          <button
-            className="obsidian-ribbon-btn"
-            onClick={() => setCollapsed((prev) => !prev)}
-            title={collapsed ? 'Show files' : 'Hide files'}
-          >
-            {collapsed ? <VscChevronRight /> : <VscChevronLeft />}
-          </button>
-          <button
-            className={`obsidian-ribbon-btn ${sidebarView === 'files' ? 'is-active' : ''}`}
-            title="Files"
-            onClick={() => {
-              setSidebarView('files')
-              setCollapsed(false)
-            }}
-          >
-            <VscFiles />
-          </button>
-          <button
-            className={`obsidian-ribbon-btn ${sidebarView === 'search' ? 'is-active' : ''}`}
-            title="Search"
-            onClick={() => {
-              setSidebarView('search')
-              setCollapsed(false)
-            }}
-          >
-            <VscSearch />
-          </button>
-          <button
-            className="obsidian-ribbon-btn"
-            title="Daily note"
-            onClick={() => {
-              setCollapsed(false)
-              void createDailyNote()
-            }}
-          >
-            <VscCalendar />
-          </button>
-        </aside>
-
-        {!collapsed && (
-          <Sidebar
-            width={sidebarWidth}
-            minWidth={minSidebarWidth}
-            onClose={() => setCollapsed(true)}
-            className="mt-8"
-          >
-            {sidebarView === 'files' ? <FileExplorer /> : <SidebarSearch />}
-          </Sidebar>
-        )}
-
-        <Content
-          ref={contentContainerRef}
-          className="relative h-full flex flex-col obsidian-workspace mt-8"
+      <RootLayout className="obsidian-shell flex-col">
+        {/* Persistent Title Bar */}
+        <div 
+          className="h-9 flex shrink-0 bg-[var(--obsidian-pane)] border-b border-[var(--obsidian-border)] z-50"
+          style={{ WebkitAppRegion: 'drag' } as any}
         >
-          <EditorTabs />
-          <div className="flex-1 overflow-hidden">
-            <MarkdownEditor />
+          {/* Spacer for Ribbon + Sidebar */}
+          <div 
+            className="flex shrink-0 border-r border-[var(--obsidian-border)] items-center pl-[72px]" 
+            style={{ width: 46 + (collapsed ? 0 : sidebarWidth) }}
+          />
+          {/* Tabs Area */}
+          <div className="flex-1 overflow-hidden" style={{ WebkitAppRegion: 'no-drag' } as any}>
+            <EditorTabs />
           </div>
-        </Content>
+        </div>
+        <div className="flex flex-1 overflow-hidden">
+          <aside className="obsidian-ribbon">
+            <button
+              className="obsidian-ribbon-btn"
+              onClick={() => setCollapsed((prev) => !prev)}
+              title={collapsed ? 'Show files' : 'Hide files'}
+            >
+              {collapsed ? <VscChevronRight /> : <VscChevronLeft />}
+            </button>
+            <button
+              className={`obsidian-ribbon-btn ${sidebarView === 'files' ? 'is-active' : ''}`}
+              title="Files"
+              onClick={() => {
+                setSidebarView('files')
+                setCollapsed(false)
+              }}
+            >
+              <VscFiles />
+            </button>
+            <button
+              className={`obsidian-ribbon-btn ${sidebarView === 'search' ? 'is-active' : ''}`}
+              title="Search"
+              onClick={() => {
+                setSidebarView('search')
+                setCollapsed(false)
+              }}
+            >
+              <VscSearch />
+            </button>
+            <button
+              className="obsidian-ribbon-btn"
+              title="Daily note"
+              onClick={() => {
+                setCollapsed(false)
+                void createDailyNote()
+              }}
+            >
+              <VscCalendar />
+            </button>
+          </aside>
+
+          {!collapsed && (
+            <Sidebar
+              width={sidebarWidth}
+              minWidth={minSidebarWidth}
+              onClose={() => setCollapsed(true)}
+            >
+              {sidebarView === 'files' ? <FileExplorer /> : <SidebarSearch />}
+            </Sidebar>
+          )}
+
+          <Content
+            ref={contentContainerRef}
+            className="relative h-full flex flex-col obsidian-workspace"
+          >
+            <div className="flex-1 overflow-hidden">
+              <MarkdownEditor />
+            </div>
+          </Content>
+        </div>
       </RootLayout>
     </ErrorBoundary>
   )

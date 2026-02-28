@@ -39,6 +39,7 @@ import { MarkdownToolbar } from './MarkdownToolbar'
 import { tabAsSpaces } from './tabAsSpaces'
 import { TbLayoutSidebarRightExpandFilled } from "react-icons/tb";
 import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
+import { twMerge } from 'tailwind-merge'
 import { markdownTableEnhancement } from './extendTableEditing'
 import { codeBlockCopy } from './codeBlockCopy'
 import { codeBlockBackground } from './codeBlockBackground'
@@ -55,10 +56,11 @@ import {
 } from 'react-icons/fa'
 import { MdHorizontalRule, MdPictureAsPdf } from 'react-icons/md'
 import { VscSparkle } from 'react-icons/vsc'
-import { VscTag, VscChevronDown, VscChromeClose } from 'react-icons/vsc'
+import { VscTag, VscChevronDown, VscChromeClose, VscSplitHorizontal } from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
 import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
+import { MoreActionsMenu } from './MoreActionsMenu'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -93,6 +95,7 @@ export const MarkdownEditor = () => {
   const [isGeneratingWithAi, setIsGeneratingWithAi] = useState(false)
   const [aiProgress, setAiProgress] = useState(0)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [showFAB, setShowFAB] = useState(false)
 
   // Save queue management
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
@@ -529,6 +532,50 @@ export const MarkdownEditor = () => {
     }
   }, [isPreview, isFullPreview])
 
+  // FAB Visibility & Inactivity Timer
+  const fabTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    const fabThreshold = 5
+    const inactivityTimeout = 10000 // 10 seconds
+    
+    const showAndResetTimer = () => {
+        setShowFAB(true)
+        if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
+        fabTimerRef.current = setTimeout(() => {
+            setShowFAB(false)
+        }, inactivityTimeout)
+    }
+
+    const handleScroll = (e: Event) => {
+        const target = e.target as HTMLElement
+        if (target.scrollTop !== undefined && target.scrollTop > fabThreshold) {
+            showAndResetTimer()
+        }
+    }
+
+    const handleMouseMove = () => {
+        showAndResetTimer()
+    }
+
+    const container = containerRef.current
+    if (container) {
+        container.addEventListener('scroll', handleScroll, true)
+        container.addEventListener('mousemove', handleMouseMove)
+    }
+
+    return () => {
+        container?.removeEventListener('scroll', handleScroll, true)
+        container?.removeEventListener('mousemove', handleMouseMove)
+        if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
+    }
+  }, [selectedNote?.path, isPreview, isFullPreview])
+
+  useEffect(() => {
+      // Reset FAB when switching notes
+      setShowFAB(false)
+  }, [selectedNote?.path])
+
   const handleFullPreviewToggle = () => {
     // If already in full preview, switch to edit mode.
     // Otherwise, switch to full preview mode.
@@ -607,104 +654,89 @@ export const MarkdownEditor = () => {
           {exportNotice}
         </div>
       )}
-      <div className="flex items-center justify-between px-6 py-2 bg-[var(--obsidian-pane)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
-        <div className="text-[11px] font-sans text-[var(--obsidian-text-muted)] truncate">
-          <span>{selectedNote.path}</span>
+      <div className="flex flex-col px-6 py-4 bg-[var(--obsidian-workspace)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
+        <div className="flex items-start justify-between mb-2">
+          <h1 className="text-2xl font-semibold text-[var(--obsidian-text)] truncate flex-1">
+            {selectedNote.title}
+          </h1>
+          <div className="flex items-center gap-1">
+            <MoreActionsMenu 
+              notePath={selectedNote.path} 
+              onExportPdf={() => void handleExportPdf()} 
+              isExportingPdf={isExportingPdf}
+            />
+          </div>
         </div>
-        <div className='flex items-center gap-1.5'>
-          {!isPreview && (
-            <div className="relative">
-              <VscTag className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
-              <select
-                value={currentNoteStatus ?? ''}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className={`h-7 min-w-[128px] appearance-none rounded-full border pl-8 pr-8 text-[11px] font-medium outline-none transition-colors focus:border-[var(--obsidian-accent)] ${
-                  currentNoteStatus
-                    ? NOTE_STATUS_META[currentNoteStatus].className
-                    : 'border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]'
-                }`}
-                title="Set note status"
-              >
-                <option value="">No Status</option>
-                {NOTE_STATUS_VALUES.map((statusValue) => (
-                  <option key={statusValue} value={statusValue}>
-                    {NOTE_STATUS_META[statusValue].label}
-                  </option>
-                ))}
-              </select>
-              <VscChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
+
+        <div className='flex items-center flex-wrap gap-3 text-[12px]'>
+          <div className="flex items-center gap-1 text-[var(--obsidian-text-muted)] opacity-80">
+            <span className="truncate max-w-[200px]">{selectedNote.path}</span>
+          </div>
+
+          <div className="w-px h-3 bg-[var(--obsidian-border)]" />
+
+          <div className="relative group">
+            <div className="flex items-center gap-1 cursor-pointer text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]">
+               {currentNoteStatus ? (
+                 <span className={twMerge(
+                   "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
+                   NOTE_STATUS_META[currentNoteStatus].className
+                 )}>
+                   {NOTE_STATUS_META[currentNoteStatus].label}
+                 </span>
+               ) : (
+                 <span>Status</span>
+               )}
+               <VscChevronDown className="w-3 h-3" />
             </div>
-          )}
-          {!isPreview && (
-            <div className="flex items-center gap-1.5">
-              {currentNoteTag ? (
-                <div 
-                  className={`flex items-center justify-between h-7 min-w-[128px] rounded-full border px-3 text-[11px] font-medium transition-colors ${CUSTOM_TAG_STYLE}`}
-                  title="Custom note tag"
-                >
-                  <span className="truncate max-w-[90px]">{currentNoteTag}</span>
-                  <button
-                    onClick={() => handleTagChange('')}
-                    className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                    title="Remove tag"
-                  >
-                    <VscChromeClose className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <div className="relative group">
-                  <VscTag className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)] group-focus-within:text-[var(--obsidian-accent)] transition-colors" />
-                  <input
-                    type="text"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && tagInput.trim()) {
-                        handleTagChange(tagInput.trim())
-                        setTagInput('')
-                      }
-                    }}
-                    placeholder="Add tag..."
-                    className="h-7 w-[128px] rounded-full border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] pl-8 pr-3 text-[11px] font-medium text-[var(--obsidian-text)] outline-none transition-all focus:border-[var(--obsidian-accent)] focus:w-[160px]"
-                    title="Press Enter to add tag"
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          {!isFullPreview && (
-            <button
-              onClick={handleSplitViewToggle}
-                className={`p-1.5 rounded-md transition-all ${isPreview && !isFullPreview
-                ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
-                : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]'
-                }`}
-              type="button"
-              title="Toggle Split View"
+            <select
+              value={currentNoteStatus ?? ''}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              title="Set note status"
             >
-              {isPreview ? <TbLayoutSidebarRightCollapse className="w-4 h-4" /> : <TbLayoutSidebarRightExpandFilled className="w-4 h-4" />}
-            </button>
-          )}
-          <button
-            onClick={handleFullPreviewToggle}
-            className={`p-1.5 rounded-md transition-all ${isFullPreview
-              ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
-              : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]'
-              }`}
-            type="button"
-            title="Toggle Preview Mode"
-          >
-            <HiOutlineEye className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => void handleExportPdf()}
-            disabled={isExportingPdf}
-            className="p-1.5 rounded-md transition-all text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] disabled:opacity-50"
-            type="button"
-            title="Export to PDF"
-          >
-            <MdPictureAsPdf className="w-4 h-4" />
-          </button>
+              <option value="">No Status</option>
+              {NOTE_STATUS_VALUES.map((statusValue) => (
+                <option key={statusValue} value={statusValue}>
+                  {NOTE_STATUS_META[statusValue].label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="w-px h-3 bg-[var(--obsidian-border)]" />
+
+          <div className="flex items-center gap-2">
+            {currentNoteTag ? (
+              <div 
+                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-colors ${CUSTOM_TAG_STYLE}`}
+              >
+                <span>{currentNoteTag}</span>
+                <button
+                  onClick={() => handleTagChange('')}
+                  className="p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                >
+                  <VscChromeClose className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative group">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && tagInput.trim()) {
+                      handleTagChange(tagInput.trim())
+                      setTagInput('')
+                    }
+                  }}
+                  placeholder="Add Tag"
+                  className="bg-transparent border-none outline-none text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] focus:text-[var(--obsidian-text)] placeholder:text-[var(--obsidian-text-muted)] w-16 focus:w-32 transition-all"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -719,6 +751,37 @@ export const MarkdownEditor = () => {
           setContextMenu({ x: e.clientX, y: e.clientY })
         }}
       >
+        {/* Floating Action Button (FAB) */}
+        <div className={twMerge(
+          "absolute bottom-10 right-4 flex flex-col items-center gap-0.5 bg-[var(--obsidian-workspace)] border border-[var(--obsidian-border)] rounded-xl shadow-xl z-[100] p-1 transition-all duration-300 transform",
+          showFAB ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+        )}>
+          <button
+            onClick={handleFullPreviewToggle}
+            className={twMerge(
+              "p-1.5 rounded-lg transition-all",
+              isFullPreview 
+                ? "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-accent)]" 
+                : "text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]"
+            )}
+            title="Toggle Preview Mode"
+          >
+            <HiOutlineEye className="w-4 h-4" />
+          </button>
+          <div className="w-5 h-px bg-[var(--obsidian-border-soft)]" />
+          <button
+            onClick={handleSplitViewToggle}
+            className={twMerge(
+              "p-1.5 rounded-lg transition-all",
+              isPreview && !isFullPreview
+                ? "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-accent)]"
+                : "text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]"
+            )}
+            title="Toggle Split View"
+          >
+             <VscSplitHorizontal className="w-4 h-4" />
+          </button>
+        </div>
         <div
           ref={editorContainerRef}
           className="h-full"

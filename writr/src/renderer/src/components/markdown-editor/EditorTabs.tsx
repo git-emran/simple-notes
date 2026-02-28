@@ -10,13 +10,10 @@ export const EditorTabs = () => {
   const setActiveTab = useSetAtom(setActiveTabAtom)
   const closeTab = useSetAtom(closeTabAtom)
 
-  if (tabs.length === 0) return null
-
   return (
     <div 
-      className="flex overflow-x-auto no-scrollbar border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)]"
+      className="flex overflow-x-auto no-scrollbar bg-[var(--obsidian-pane)] h-full"
       style={{ 
-          WebkitAppRegion: 'drag',
           fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       } as CSSProperties}
     >
