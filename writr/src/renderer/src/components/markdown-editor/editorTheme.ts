@@ -79,6 +79,14 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   '.cm-cursor-primary': {
     borderLeftColor: isDark ? '#9fb7ff' : '#000000',
   },
+  '.cm-fat-cursor': {
+    backgroundColor: isDark ? 'rgba(125, 211, 252, 0.6) !important' : 'rgba(14, 165, 233, 0.6) !important',
+    mixBlendMode: 'difference'
+  },
+  '&:not(.cm-focused) .cm-fat-cursor': {
+    background: 'none !important',
+    outline: `solid 1px ${isDark ? 'rgba(125, 211, 252, 0.6)' : 'rgba(14, 165, 233, 0.6)'} !important`
+  },
 
   '.cm-line:has(.ͼ1)': {
     marginTop: '1.5em',

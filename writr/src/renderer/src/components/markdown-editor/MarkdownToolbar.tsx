@@ -73,11 +73,7 @@ export const MarkdownToolbar = ({
           break
         case 't':
           e.preventDefault()
-          if (e.shiftKey) {
-            commands.insertTable(view)
-          } else {
-            commands.insertCheckbox(view)
-          }
+          commands.insertCheckbox(view)
           break
         case 'h':
           e.preventDefault()
@@ -298,7 +294,7 @@ export const MarkdownToolbar = ({
         onClick={() => commands.insertTable(view)}
         disabled={!view}
         className={btnClass}
-        title="Table (Ctrl+Shift+T)"
+        title="Table"
       >
         <FaTable />
       </button>

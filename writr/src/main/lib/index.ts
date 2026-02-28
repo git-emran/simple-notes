@@ -80,14 +80,18 @@ export const getNoteInfoFromFilename = async (fileName: string): Promise<NoteInf
 
 export const readNote: ReadNote = async (filename: string) => {
   const rootDir = getRootDir()
+  const filePath = path.join(rootDir, `${filename}.md`)
+  const safePath = ensurePathWithinRoot(filePath)
 
-  return readFile(`${rootDir}/${filename}.md`, { encoding: fileEncoding })
+  return readFile(safePath, { encoding: fileEncoding })
 }
 
 export const writeNote: WriteNote = async (filename, content) => {
   const rootDir = getRootDir()
+  const filePath = path.join(rootDir, `${filename}.md`)
+  const safePath = ensurePathWithinRoot(filePath)
 
-  return writeFile(`${rootDir}/${filename}.md`, content, { encoding: fileEncoding })
+  return writeFile(safePath, content, { encoding: fileEncoding })
 }
 
 export const createNote: CreateNote = async () => {
@@ -128,6 +132,8 @@ export const createNote: CreateNote = async () => {
 
 export const deleteNote: DeleteNote = async (filename) => {
   const rootDir = getRootDir()
+  const filePath = path.join(rootDir, `${filename}.md`)
+  const safePath = ensurePathWithinRoot(filePath, { allowRoot: false })
 
   const { response } = await dialog.showMessageBox({
     type: 'warning',
@@ -143,7 +149,7 @@ export const deleteNote: DeleteNote = async (filename) => {
   }
 
   console.info(`Deleting note: ${filename}`)
-  await remove(`${rootDir}/${filename}.md`)
+  await remove(safePath)
 
   return true
 }
@@ -185,27 +191,17 @@ export const getFileTree: GetFileTree = async () => {
 
     const nodes = nodesWithPotentialDuplicates.filter((n): n is FileNode => n !== null)
 
-    // Process file stats and todos in chunks to avoid slamming the disk/RAM
+    // Process file stats in chunks
     const fileNodes = nodes.filter(n => n.type === 'file')
-    const CHUNK_SIZE = 5
+    const CHUNK_SIZE = 10
     for (let i = 0; i < fileNodes.length; i += CHUNK_SIZE) {
       const chunk = fileNodes.slice(i, i + CHUNK_SIZE)
       await Promise.all(chunk.map(async (node) => {
         try {
           const fileStats = await stat(node.path)
           node.lastEditTime = fileStats.mtimeMs
-          
-          // Only read if item is a file and not too large (e.g. > 1MB)
-          if (fileStats.size < 1024 * 1024) {
-            const content = await readFile(node.path, { encoding: fileEncoding })
-            const todoMatches = content.match(/^\s*[-*]\s+\[( |x|X)\]\s+/gm) ?? []
-            const completedMatches = content.match(/^\s*[-*]\s+\[(x|X)\]\s+/gm) ?? []
-            node.todoTotal = todoMatches.length
-            node.todoCompleted = completedMatches.length
-          } else {
-             node.todoTotal = 0
-             node.todoCompleted = 0
-          }
+          node.todoTotal = 0
+          node.todoCompleted = 0
         } catch (e) {
           console.error(`Failed to read stats for ${node.path}:`, e)
         }

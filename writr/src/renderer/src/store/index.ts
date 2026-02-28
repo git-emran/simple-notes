@@ -19,6 +19,7 @@ export const selectedNodeAtom = atom<FileNode | null>(null)
 
 // Tabs State
 export const tabsAtom = atom<FileNode[]>([])
+export const closedTabsHistoryAtom = atom<FileNode[]>([])
 export const activeTabPathAtom = atom<string | null>(null)
 
 export const setActiveTabAtom = atom(null, (get, set, path: string) => {
@@ -91,6 +92,13 @@ const updateFileNodeInTree = (
 export const closeTabAtom = atom(null, (get, set, path: string) => {
   const tabs = get(tabsAtom)
   const activeTabPath = get(activeTabPathAtom)
+  
+  const closingTab = tabs.find((t) => t.path === path)
+  if (closingTab) {
+    const history = get(closedTabsHistoryAtom)
+    set(closedTabsHistoryAtom, [...history, closingTab])
+  }
+
   const newTabs = tabs.filter((t) => t.path !== path)
   set(tabsAtom, newTabs)
 
@@ -103,6 +111,30 @@ export const closeTabAtom = atom(null, (get, set, path: string) => {
       set(activeTabPathAtom, null)
       set(selectedNodeAtom, null)
     }
+  }
+})
+
+export const restoreClosedTabAtom = atom(null, (get, set) => {
+  const history = get(closedTabsHistoryAtom)
+  if (history.length > 0) {
+    const tabToRestore = history[history.length - 1]
+    const newHistory = history.slice(0, -1)
+    set(closedTabsHistoryAtom, newHistory)
+    
+    // Explicitly add to tabs and set as active
+    const currentTabs = get(tabsAtom)
+    if (!currentTabs.find(t => t.path === tabToRestore.path)) {
+      set(tabsAtom, [...currentTabs, tabToRestore])
+    }
+    set(activeTabPathAtom, tabToRestore.path)
+    set(selectedNodeAtom, tabToRestore)
+  }
+})
+
+export const closeActiveTabAtom = atom(null, (get, set) => {
+  const activePath = get(activeTabPathAtom)
+  if (activePath) {
+    set(closeTabAtom, activePath)
   }
 })
 
@@ -270,12 +302,11 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   const currentTree = get(fileTreeAtom) ?? []
   
   const removeNodeFromTree = (nodes: FileNode[], targetPath: string): FileNode[] => {
-    return nodes.filter(node => {
-      if (node.path === targetPath) return false
+    return nodes.filter(node => node.path !== targetPath).map(node => {
       if (node.children) {
-        node.children = removeNodeFromTree(node.children, targetPath)
+        return { ...node, children: removeNodeFromTree(node.children, targetPath) }
       }
-      return true
+      return node
     })
   }
 

@@ -37,8 +37,6 @@ import remarkGfm from 'remark-gfm'
 import { MermaidDiagram } from './MermaidDiagram'
 import { MarkdownToolbar } from './MarkdownToolbar'
 import { tabAsSpaces } from './tabAsSpaces'
-import { TbLayoutSidebarRightExpandFilled } from "react-icons/tb";
-import { TbLayoutSidebarRightCollapse } from "react-icons/tb";
 import { twMerge } from 'tailwind-merge'
 import { markdownTableEnhancement } from './extendTableEditing'
 import { codeBlockCopy } from './codeBlockCopy'
@@ -55,9 +53,9 @@ import {
   FaListUl, FaCheckSquare, FaCode, 
   FaLink, FaImage, FaTable, FaHeading 
 } from 'react-icons/fa'
-import { MdHorizontalRule, MdPictureAsPdf } from 'react-icons/md'
+import { MdHorizontalRule } from 'react-icons/md'
 import { VscSparkle } from 'react-icons/vsc'
-import { VscTag, VscChevronDown, VscChromeClose, VscSplitHorizontal } from 'react-icons/vsc'
+import { VscChevronDown, VscChromeClose, VscSplitHorizontal } from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
 import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
@@ -471,6 +469,14 @@ export const MarkdownEditor = () => {
     handleEditorImageDrop
   ])
 
+  // Destroy editor if no note is selected
+  useEffect(() => {
+    if (!selectedNote?.path && viewRef.current) {
+        viewRef.current.destroy()
+        viewRef.current = null
+    }
+  }, [selectedNote?.path])
+
   // Update editor content if note changes
   useEffect(() => {
     if (!viewRef.current || !selectedNote?.path || isSwitchingRef.current) return
@@ -531,11 +537,13 @@ export const MarkdownEditor = () => {
     dragBar.addEventListener('mousedown', onMouseDown)
     return () => {
       dragBar.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
     }
   }, [isPreview, isFullPreview])
 
   // FAB Visibility & Inactivity Timer
-  const fabTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const fabTimerRef = useRef<any>(null)
 
   useEffect(() => {
     const fabThreshold = 5

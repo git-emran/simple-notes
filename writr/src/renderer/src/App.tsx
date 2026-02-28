@@ -2,7 +2,6 @@ import {
   Content,
   RootLayout,
   Sidebar,
-  DraggableTopBar,
   EditorTabs,
   ErrorBoundary
 } from './components'
@@ -11,7 +10,7 @@ import { SidebarSearch } from './components/SidebarSearch'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { useRef, useState, useEffect } from 'react'
 import { useSetAtom } from 'jotai'
-import { createDailyNoteAtom, switchTabByIndexAtom } from '@renderer/store'
+import { createDailyNoteAtom, switchTabByIndexAtom, closeActiveTabAtom, restoreClosedTabAtom } from '@renderer/store'
 import {
   VscFiles,
   VscSearch,
@@ -30,6 +29,8 @@ const App = () => {
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
   const createDailyNote = useSetAtom(createDailyNoteAtom)
+  const closeActiveTab = useSetAtom(closeActiveTabAtom)
+  const restoreClosedTab = useSetAtom(restoreClosedTabAtom)
 
   const applyTheme = (mode: 'light' | 'dark') => {
     document.documentElement.classList.toggle('dark', mode === 'dark')
@@ -67,6 +68,18 @@ const App = () => {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd + W
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'w') {
+        e.preventDefault()
+        closeActiveTab()
+      }
+      
+      // Cmd + Shift + T
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 't') {
+        e.preventDefault()
+        restoreClosedTab()
+      }
+
       // Cmd + 1-9 (or Ctrl on Windows)
       if ((e.metaKey || e.ctrlKey) && /^[1-9]$/.test(e.key)) {
         e.preventDefault()

@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: com.writr.app
 productName: Writer
 directories:
   buildResources: build
@@ -40,4 +40,4 @@ appImage:
 npmRebuild: false
 publish:
   provider: generic
-  url: https://example.com/auto-updates
+  url: https://writr.app/auto-updates
