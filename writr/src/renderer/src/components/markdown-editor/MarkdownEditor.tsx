@@ -45,6 +45,7 @@ import { codeBlockCopy } from './codeBlockCopy'
 import { codeBlockBackground } from './codeBlockBackground'
 import { createLivePreviewImages } from './livePreviewImages'
 import { toLocalFileUrl } from './localFileUrl'
+import { tripleBacktickExtension } from './tripleBacktick'
 import { quoteLineStyling } from './quoteLineStyling'
 import { MdDragIndicator } from "react-icons/md";
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
@@ -190,6 +191,7 @@ export const MarkdownEditor = () => {
       codeBlockCopy,
       codeBlockBackground,
       quoteLineStyling,
+      tripleBacktickExtension,
       createLivePreviewImages(selectedNote?.path),
     ],
     [isDarkMode, selectedNote?.path]
