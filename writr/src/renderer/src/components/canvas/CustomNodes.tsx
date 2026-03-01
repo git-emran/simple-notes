@@ -35,9 +35,16 @@ export const EditableNode = ({ data, selected }: CustomNodeProps) => {
         minHeight={60}
       />
       <Handle type="target" position={Position.Top} id="t" style={commonHandleStyle} />
-      <Handle type="source" position={Position.Bottom} id="b" style={commonHandleStyle} />
-      <Handle type="source" position={Position.Right} id="r" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Top} id="tt" style={commonHandleStyle} />
+
+      <Handle type="target" position={Position.Bottom} id="b" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Bottom} id="bb" style={commonHandleStyle} />
+
+      <Handle type="target" position={Position.Right} id="r" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Right} id="rr" style={commonHandleStyle} />
+
       <Handle type="target" position={Position.Left} id="l" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Left} id="ll" style={commonHandleStyle} />
 
       <div className="flex flex-col">
         <textarea
@@ -63,10 +70,14 @@ export const DiamondNode = ({ data, selected }: CustomNodeProps) => {
 
   return (
     <div className="relative flex items-center justify-center w-[120px] h-[120px]">
-      <Handle type="target" position={Position.Top} id="t" style={commonHandleStyle} />
-      <Handle type="source" position={Position.Bottom} id="b" style={commonHandleStyle} />
-      <Handle type="source" position={Position.Right} id="r" style={commonHandleStyle} />
-      <Handle type="target" position={Position.Left} id="l" style={commonHandleStyle} />
+      <Handle type="target" position={Position.Top} id="t1" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Top} id="t2" style={commonHandleStyle} />
+      <Handle type="target" position={Position.Bottom} id="b1" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Bottom} id="b2" style={commonHandleStyle} />
+      <Handle type="target" position={Position.Right} id="r1" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Right} id="r2" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Left} id="l2" style={commonHandleStyle} />
+      <Handle type="target" position={Position.Left} id="l1" style={commonHandleStyle} />
 
       {/* Diamond SVG Background */}
       <svg viewBox="0 0 100 100" className="absolute top-0 left-0 w-full h-full pointer-events-none drop-shadow-sm">
@@ -153,6 +164,7 @@ export const CircleNode = ({ data, selected }: CustomNodeProps) => {
 
   return (
     <div className={`flex items-center justify-center w-[120px] h-[120px] rounded-full border-2 bg-[var(--obsidian-pane)] transition-all ${selected ? 'border-[var(--obsidian-accent)] shadow-md' : 'border-[var(--obsidian-border)]'}`}>
+
       <Handle type="target" position={Position.Top} style={commonHandleStyle} id="t" />
       <Handle type="source" position={Position.Top} style={{ ...commonHandleStyle, opacity: 0 }} id="ts" />
 
@@ -178,27 +190,6 @@ export const CircleNode = ({ data, selected }: CustomNodeProps) => {
   );
 };
 
-export const ArrowNode = ({ data, selected }: CustomNodeProps) => {
-  return (
-    <div className="relative w-[100px] h-[60px] flex items-center justify-center">
-      <svg viewBox="0 0 100 60" className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <path
-          d="M 10 20 L 60 20 L 60 5 L 95 30 L 60 55 L 60 40 L 10 40 Z"
-          fill="var(--obsidian-pane)"
-          stroke={selected ? "var(--obsidian-accent)" : "var(--obsidian-border)"}
-          strokeWidth="3"
-          strokeLinejoin="round"
-          className="transition-colors"
-        />
-      </svg>
-      <div className="relative z-10 text-[10px] font-bold text-[var(--obsidian-text)] opacity-80 pointer-events-none pr-4">
-        {data.label}
-      </div>
-      <Handle type="target" position={Position.Left} style={commonHandleStyle} />
-      <Handle type="source" position={Position.Right} style={commonHandleStyle} />
-    </div>
-  );
-};
 export const TextNode = ({ data, selected }: CustomNodeProps) => {
   const [label, setLabel] = useState(data.label);
 

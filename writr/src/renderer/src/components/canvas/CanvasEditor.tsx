@@ -17,8 +17,7 @@ import { selectedNoteAtom, saveCanvasAtom } from '../../store';
 import { VscTypeHierarchy, VscFilePdf, VscNote, VscSymbolString } from 'react-icons/vsc';
 import { FaRegSquare, FaRegCircle, } from 'react-icons/fa';
 import { TbDiamond } from 'react-icons/tb';
-import { VscArrowRight } from 'react-icons/vsc';
-import { EditableNode, DiamondNode, StickyNoteNode, CircleNode, ArrowNode, TextNode } from './CustomNodes';
+import { EditableNode, DiamondNode, StickyNoteNode, CircleNode, TextNode } from './CustomNodes';
 
 const initialNodes: any[] = [];
 const initialEdges: any[] = [];
@@ -28,7 +27,6 @@ const nodeTypes = {
   diamond: DiamondNode,
   sticky: StickyNoteNode,
   circle: CircleNode,
-  arrow: ArrowNode,
   text: TextNode,
 };
 
@@ -189,13 +187,6 @@ export const CanvasEditor = () => {
               title="Add Circle"
             >
               <FaRegCircle className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => addNode('arrow')}
-              className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-[var(--obsidian-text)] transition-all active:scale-95"
-              title="Add Arrow"
-            >
-              <VscArrowRight className="w-5 h-5" />
             </button>
             <button
               onClick={() => addNode('text')}
