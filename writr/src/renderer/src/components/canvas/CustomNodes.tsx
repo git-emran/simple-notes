@@ -34,7 +34,11 @@ export const EditableNode = ({ data, selected }: CustomNodeProps) => {
         minWidth={120}
         minHeight={60}
       />
-      <Handle type="target" position={Position.Top} style={commonHandleStyle} />
+      <Handle type="target" position={Position.Top} id="t" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Bottom} id="b" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Right} id="r" style={commonHandleStyle} />
+      <Handle type="target" position={Position.Left} id="l" style={commonHandleStyle} />
+
       <div className="flex flex-col">
         <textarea
           value={label}
@@ -44,9 +48,6 @@ export const EditableNode = ({ data, selected }: CustomNodeProps) => {
           spellCheck={false}
         />
       </div>
-      <Handle type="source" position={Position.Bottom} style={commonHandleStyle} />
-      <Handle type="source" position={Position.Right} style={commonHandleStyle} />
-      <Handle type="target" position={Position.Left} style={commonHandleStyle} />
     </div>
 
   );
@@ -62,6 +63,11 @@ export const DiamondNode = ({ data, selected }: CustomNodeProps) => {
 
   return (
     <div className="relative flex items-center justify-center w-[120px] h-[120px]">
+      <Handle type="target" position={Position.Top} id="t" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Bottom} id="b" style={commonHandleStyle} />
+      <Handle type="source" position={Position.Right} id="r" style={commonHandleStyle} />
+      <Handle type="target" position={Position.Left} id="l" style={commonHandleStyle} />
+
       {/* Diamond SVG Background */}
       <svg viewBox="0 0 100 100" className="absolute top-0 left-0 w-full h-full pointer-events-none drop-shadow-sm">
         <polygon
@@ -84,10 +90,6 @@ export const DiamondNode = ({ data, selected }: CustomNodeProps) => {
         />
       </div>
 
-      <Handle type="target" position={Position.Top} style={commonHandleStyle} />
-      <Handle type="source" position={Position.Bottom} style={commonHandleStyle} />
-      <Handle type="source" position={Position.Right} style={commonHandleStyle} />
-      <Handle type="target" position={Position.Left} style={commonHandleStyle} />
     </div>
   );
 };
