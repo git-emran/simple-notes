@@ -8,7 +8,7 @@
 
 Welcome to **Writer**. This is a _markdown_ Text editor, a Desktop app for macOS. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
 
-<img width="1032" height="794" alt="writer_new" src="https://github.com/user-attachments/assets/b7f4bc53-a0f5-4354-bbb4-3bf2b11ec1bc" />
+<img width="1364" height="1169" alt="writer_new" src="https://github.com/user-attachments/assets/51a20b38-9e14-49ca-be9b-af28410571b3" />
 
 # New Release: Whats new in 2.02
 
@@ -19,9 +19,14 @@ Another Big update for the Writer. Fresh new features and big leap toward improv
 - Create flowchart and diagrams in an interactive environment.
 - Also you can export the canvas as a pdf.
 
+  ![canvas](https://github.com/user-attachments/assets/0fa0e1c1-89e4-4da1-8f6e-9150e95c5f55)
+
+
 ### **Kanban Board**:
 
 - New Kanban board to manage your backlog of tasks more efficiently.
+
+<img width="1252" height="892" alt="kanban" src="https://github.com/user-attachments/assets/dfc7237c-a2d6-4db5-ad03-dba470830aa1" />
 
 ### **Daily Note:**
 
@@ -31,17 +36,27 @@ Another Big update for the Writer. Fresh new features and big leap toward improv
 
 - Redesigned top header of the app
 
+<img width="897" height="127" alt="header" src="https://github.com/user-attachments/assets/cb3a9a89-8f67-45c7-bb9a-81334a21b829" />
+
+
 ### **Note status:**
 
 - With Note status, it is easy to keep track of the progress of your notes. For example, Status - Active to mark the active progress of the note along side with hold, completed and dropped.
 
+<img width="320" height="156" alt="note_tags" src="https://github.com/user-attachments/assets/c40cee42-8066-4058-83ab-55bffab58146" />
+
+
 ### **Add Custom Tags:**
 
-- Along with the default tags, add custom tags to keep track of your specialized note.
+- Along with the default note tags: Active, On-Hold, Dropped, Completed. Add custom tags to keep track of your specialized note.
+![addtags](https://github.com/user-attachments/assets/2086b85f-95c6-44a6-bb23-13e63230b7cd)
+
 
 ### **Progress Bar**:
 
 - Whenever you create a checkbox list, a Progress Bar appears underneath your filename in the file tree.
+<img width="235" height="93" alt="progressbar" src="https://github.com/user-attachments/assets/37a23770-0bbc-44fd-a164-35bcd0647f76" />
+
 
 ### **Split view and Preview mode as a FAB**:
 
