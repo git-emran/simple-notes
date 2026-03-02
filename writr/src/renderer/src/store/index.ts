@@ -35,6 +35,32 @@ export const saveCanvasAtom = atom(null, async (get, set, jsonContent: string) =
 const fileTreeAtomAsync = atom<FileNode[] | Promise<FileNode[]>>(loadFileTree())
 export const fileTreeAtom = unwrap(fileTreeAtomAsync, (prev) => prev)
 
+const inferRootDirFromTree = (nodes: FileNode[]) => {
+  if (!nodes.length) return null
+  const firstPath = nodes[0].path
+  const lastSlash = firstPath.lastIndexOf('/')
+  const lastBackslash = firstPath.lastIndexOf('\\')
+  const maxIndex = Math.max(lastSlash, lastBackslash)
+  if (maxIndex === -1) return null
+  return firstPath.substring(0, maxIndex)
+}
+
+export const notesRootDirAtom = atom<string | null>((get) => inferRootDirFromTree(get(fileTreeAtom) ?? []))
+
+export const fileTreeIndexAtom = atom<Map<string, FileNode>>((get) => {
+  const tree = get(fileTreeAtom) ?? []
+  const index = new Map<string, FileNode>()
+  const stack: FileNode[] = [...tree]
+  while (stack.length) {
+    const node = stack.pop()!
+    index.set(node.path, node)
+    if (node.children?.length) {
+      stack.push(...node.children)
+    }
+  }
+  return index
+})
+
 export const selectedNodeAtom = atom<FileNode | null>(null)
 
 // Tabs State
@@ -246,10 +272,138 @@ export const noteTagByPathAtom = atomWithStorage<Record<string, string>>(
   {}
 )
 
+export type TodoStatsCacheEntry = {
+  mtimeMs: number
+  todoTotal: number
+  todoCompleted: number
+}
+
+export const todoStatsByPathAtom = atomWithStorage<Record<string, TodoStatsCacheEntry>>(
+  'writr-todo-stats-by-path',
+  {}
+)
+
 export const pinnedNotePathsAtom = atomWithStorage<string[]>(
   'writr-pinned-note-paths',
   []
 )
+
+const patchFileNodesInTree = (nodes: FileNode[], patchByPath: Map<string, Partial<FileNode>>): FileNode[] => {
+  let mutated = false
+  const next = nodes.map((node) => {
+    const patch = patchByPath.get(node.path)
+    let nextNode: FileNode = node
+    if (patch) {
+      nextNode = { ...nextNode, ...patch }
+      mutated = true
+    }
+
+    if (nextNode.children?.length) {
+      const nextChildren = patchFileNodesInTree(nextNode.children, patchByPath)
+      if (nextChildren !== nextNode.children) {
+        nextNode = { ...nextNode, children: nextChildren }
+        mutated = true
+      }
+    }
+
+    return nextNode
+  })
+
+  return mutated ? next : nodes
+}
+
+let todoReindexRunId = 0
+export const reindexTodoStatsAtom = atom(null, async (get, set) => {
+  const runId = (todoReindexRunId += 1)
+
+  if (!window.context) return
+
+  const tree = get(fileTreeAtom) ?? []
+  const index = get(fileTreeIndexAtom)
+  const cache = get(todoStatsByPathAtom)
+
+  // 1) Apply cached stats immediately (so progress bars show on reload)
+  const cachedPatches = new Map<string, Partial<FileNode>>()
+  for (const [path, entry] of Object.entries(cache)) {
+    const node = index.get(path)
+    if (!node || node.type !== 'file') continue
+    if (!node.lastEditTime || entry.mtimeMs !== node.lastEditTime) continue
+    if (node.todoTotal === entry.todoTotal && node.todoCompleted === entry.todoCompleted) continue
+    cachedPatches.set(path, { todoTotal: entry.todoTotal, todoCompleted: entry.todoCompleted })
+  }
+  if (cachedPatches.size > 0) {
+    set(fileTreeAtom, patchFileNodesInTree(tree, cachedPatches))
+  }
+
+  // 2) Find files missing cached stats for their current mtime
+  const needsScan: Array<{ path: string; mtimeMs: number }> = []
+  for (const [path, node] of index.entries()) {
+    if (node.type !== 'file') continue
+    if (!path.toLowerCase().endsWith('.md')) continue
+    const mtimeMs = node.lastEditTime
+    if (!mtimeMs) continue
+    const entry = cache[path]
+    if (entry && entry.mtimeMs === mtimeMs) continue
+    needsScan.push({ path, mtimeMs })
+  }
+
+  if (needsScan.length === 0) return
+
+  // 3) Background scan in small chunks; keep UI responsive
+  const CONCURRENCY = 4
+  const BATCH_PATCH_MAX = 16
+
+  let nextCache = { ...cache }
+  let pendingPatchMap = new Map<string, Partial<FileNode>>()
+
+  for (let i = 0; i < needsScan.length; i += CONCURRENCY) {
+    if (runId !== todoReindexRunId) return
+
+    const slice = needsScan.slice(i, i + CONCURRENCY)
+    const results = await Promise.all(
+      slice.map(async ({ path, mtimeMs }) => {
+        try {
+          const content = await window.context.readFileNew(path)
+          const stats = getTodoStats(content)
+          return { path, mtimeMs, stats }
+        } catch {
+          return null
+        }
+      })
+    )
+
+    for (const r of results) {
+      if (!r) continue
+      nextCache[r.path] = {
+        mtimeMs: r.mtimeMs,
+        todoTotal: r.stats.todoTotal,
+        todoCompleted: r.stats.todoCompleted
+      }
+
+      pendingPatchMap.set(r.path, {
+        todoTotal: r.stats.todoTotal,
+        todoCompleted: r.stats.todoCompleted
+      })
+    }
+
+    if (pendingPatchMap.size >= BATCH_PATCH_MAX) {
+      const currentTree = get(fileTreeAtom) ?? []
+      set(fileTreeAtom, patchFileNodesInTree(currentTree, pendingPatchMap))
+      set(todoStatsByPathAtom, nextCache)
+      pendingPatchMap = new Map()
+      // Yield back to the event loop
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+  }
+
+  if (runId !== todoReindexRunId) return
+
+  if (pendingPatchMap.size > 0) {
+    const currentTree = get(fileTreeAtom) ?? []
+    set(fileTreeAtom, patchFileNodesInTree(currentTree, pendingPatchMap))
+  }
+  set(todoStatsByPathAtom, nextCache)
+})
 
 // Notes Atoms (derived from selectedNode)
 export const selectedNoteAtomAsync = atom(async (get) => {
@@ -300,6 +454,14 @@ export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent)
   const currentTree = get(fileTreeAtom) ?? []
   if (currentTree.length > 0) {
     const todoStats = getTodoStats(newContent)
+    const nextCache = {
+      ...get(todoStatsByPathAtom),
+      [selectedNote.path]: {
+        mtimeMs: Date.now(),
+        todoTotal: todoStats.todoTotal,
+        todoCompleted: todoStats.todoCompleted
+      }
+    }
     set(
       fileTreeAtom,
       updateFileNodeInTree(currentTree, selectedNote.path, {
@@ -308,6 +470,7 @@ export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent)
         todoCompleted: todoStats.todoCompleted
       })
     )
+    set(todoStatsByPathAtom, nextCache)
     return
   }
 
@@ -494,16 +657,6 @@ const toLocalDateFileName = () => {
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}.md`
-}
-
-const inferRootDirFromTree = (nodes: FileNode[]) => {
-  if (!nodes.length) return null
-  const firstPath = nodes[0].path
-  const lastSlash = firstPath.lastIndexOf('/')
-  const lastBackslash = firstPath.lastIndexOf('\\')
-  const maxIndex = Math.max(lastSlash, lastBackslash)
-  if (maxIndex === -1) return null
-  return firstPath.substring(0, maxIndex)
 }
 
 export const createDailyNoteAtom = atom(null, async (get, set) => {

@@ -134,12 +134,12 @@ header {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 99px;
-  background: #3e4354;
+  background-color: #3e4354;
   transition: background-color 120ms ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a5065;
+  background-color: #4a5065;
 }
 
 ::-webkit-scrollbar-track {

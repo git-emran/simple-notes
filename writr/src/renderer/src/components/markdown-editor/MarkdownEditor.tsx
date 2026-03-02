@@ -85,6 +85,7 @@ export const MarkdownEditor = () => {
   const vimModeEnabled = useAtomValue(vimModeEnabledAtom)
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const currentNotePathRef = useRef<string>('')
 
   const containerRef = useRef<HTMLDivElement>(null)
   const editorContainerRef = useRef<HTMLDivElement>(null)
@@ -166,9 +167,12 @@ export const MarkdownEditor = () => {
   }, [isDarkMode])
 
   const vimCompartment = useMemo(() => new Compartment(), [])
+  const themeCompartment = useMemo(() => new Compartment(), [])
+  const highlightCompartment = useMemo(() => new Compartment(), [])
   const relativeLineNumbersCompartment = useMemo(() => new Compartment(), [])
   const lineWrappingCompartment = useMemo(() => new Compartment(), [])
   const tabIndentCompartment = useMemo(() => new Compartment(), [])
+  const livePreviewImagesCompartment = useMemo(() => new Compartment(), [])
 
   const applyEditorSettings = useCallback(() => {
     const view = viewRef.current
@@ -177,20 +181,30 @@ export const MarkdownEditor = () => {
     view.dispatch({
       effects: [
         vimCompartment.reconfigure(vimModeEnabled ? vim() : []),
+        themeCompartment.reconfigure(getEditorTheme(isDarkMode)),
+        highlightCompartment.reconfigure(
+          syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
+        ),
         relativeLineNumbersCompartment.reconfigure(
           relativeLineNumbersEnabled ? relativeLineNumbers() : []
         ),
         lineWrappingCompartment.reconfigure(lineWrappingEnabled ? EditorView.lineWrapping : []),
         tabIndentCompartment.reconfigure(tabAsSpaces(tabIndentUnit)),
+        livePreviewImagesCompartment.reconfigure(createLivePreviewImages(selectedNote?.path)),
       ],
     })
   }, [
+    highlightCompartment,
+    isDarkMode,
     lineWrappingCompartment,
     lineWrappingEnabled,
+    livePreviewImagesCompartment,
     relativeLineNumbersCompartment,
     relativeLineNumbersEnabled,
+    selectedNote?.path,
     tabIndentCompartment,
     tabIndentUnit,
+    themeCompartment,
     vimCompartment,
     vimModeEnabled,
   ])
@@ -246,7 +260,7 @@ export const MarkdownEditor = () => {
   const baseExtensions = useMemo(
     () => [
       history(),
-      getEditorTheme(isDarkMode),
+      themeCompartment.of(getEditorTheme(isDarkMode)),
       keymap.of([...defaultKeymap, ...historyKeymap]),
       vimCompartment.of([]),
       drawSelection(),
@@ -277,7 +291,9 @@ export const MarkdownEditor = () => {
           activeDark: 'rgba(255, 255, 255, 0.1)',
         },
       }),
-      syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
+      highlightCompartment.of(
+        syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
+      ),
       autocompletion({ activateOnTyping: true, icons: true }),
       relativeLineNumbersCompartment.of([]),
       markdownTableEnhancement,
@@ -289,9 +305,18 @@ export const MarkdownEditor = () => {
       codeBlockBackground,
       quoteLineStyling,
       tripleBacktickExtension,
-      createLivePreviewImages(selectedNote?.path),
+      livePreviewImagesCompartment.of([]),
     ],
-    [isDarkMode, lineWrappingCompartment, relativeLineNumbersCompartment, selectedNote?.path, tabIndentCompartment, vimCompartment]
+    [
+      highlightCompartment,
+      isDarkMode,
+      lineWrappingCompartment,
+      livePreviewImagesCompartment,
+      relativeLineNumbersCompartment,
+      tabIndentCompartment,
+      themeCompartment,
+      vimCompartment,
+    ]
   )
 
   // Optimized save function with queue
@@ -500,26 +525,18 @@ export const MarkdownEditor = () => {
     return () => window.clearInterval(timer)
   }, [isGeneratingWithAi])
 
-  // Initialize editor
+  // Initialize editor (once per mount) + switch documents without recreating the view
   useEffect(() => {
     if (!selectedNote?.path || !editorRef.current) {
       setCurrentContent('')
       return
     }
 
-    const switchNote = async () => {
-      isSwitchingRef.current = true
-      const newTitle = selectedNote.title
-      const newContent = selectedNote.content
-
-      debouncedSave.cancel()
-      await saveQueueRef.current
-
-      currentNoteTitleRef.current = newTitle
-      setCurrentContent(newContent)
+    const ensureView = () => {
+      if (viewRef.current) return
 
       const state = EditorState.create({
-        doc: newContent,
+        doc: '',
         extensions: [
           ...baseExtensions,
           EditorView.updateListener.of((update) => {
@@ -548,13 +565,36 @@ export const MarkdownEditor = () => {
         ],
       })
 
-      if (viewRef.current) viewRef.current.destroy()
       viewRef.current = new EditorView({ state, parent: editorRef.current! })
+    }
+
+    const switchNote = async () => {
+      isSwitchingRef.current = true
+      ensureView()
+
+      const newTitle = selectedNote.title
+      const newContent = selectedNote.content
+
+      debouncedSave.cancel()
+      await saveQueueRef.current
+
+      currentNoteTitleRef.current = newTitle
+      currentNotePathRef.current = selectedNote.path
+      setCurrentContent(newContent)
+
+      const view = viewRef.current
+      if (view) {
+        const currentDocLength = view.state.doc.length
+        view.dispatch({
+          changes: { from: 0, to: currentDocLength, insert: newContent },
+          selection: { anchor: 0 },
+        })
+      }
       applyEditorSettings()
       isSwitchingRef.current = false
     }
 
-    switchNote()
+    void switchNote()
     return () => {
       debouncedSave.cancel()
     }
@@ -581,18 +621,6 @@ export const MarkdownEditor = () => {
         viewRef.current = null
     }
   }, [selectedNote?.path])
-
-  // Update editor content if note changes
-  useEffect(() => {
-    if (!viewRef.current || !selectedNote?.path || isSwitchingRef.current) return
-    const editorContent = viewRef.current.state.doc.toString()
-    if (editorContent !== selectedNote.content) {
-      viewRef.current.dispatch({
-        changes: { from: 0, to: editorContent.length, insert: selectedNote.content },
-      })
-      setCurrentContent(selectedNote.content)
-    }
-  }, [selectedNote?.content, selectedNote])
 
   // Clean up editor
   useEffect(() => {
