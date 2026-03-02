@@ -978,7 +978,8 @@ export const MarkdownEditor = () => {
               className="h-full preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
               style={{ width: isFullPreview ? '100%' : '50%' }}
             >
-              <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
+              <div className="mx-auto w-full min-w-0 max-w-[860px]">
+                <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -1113,7 +1114,7 @@ export const MarkdownEditor = () => {
                     ),
                     table: ({ children }) => (
                       <div className="overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
-                        <table className="min-w-full w-max border-collapse">
+                        <table className="w-full table-auto border-collapse">
                           {children}
                         </table>
                       </div>
@@ -1134,13 +1135,13 @@ export const MarkdownEditor = () => {
                       </tr>
                     ),
                     th: ({ children }) => (
-                      <th className="px-4 py-2.5 text-left text-xs font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-[var(--obsidian-border)] last:border-r-0 whitespace-nowrap">
-                        {children}
+                      <th className="px-3 py-2 text-left text-[11px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-[var(--obsidian-border)] last:border-r-0 align-top">
+                        <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
                       </th>
                     ),
                     td: ({ children }) => (
-                      <td className="px-4 py-2 text-sm text-[var(--obsidian-text)] border-r border-[var(--obsidian-border-soft)] last:border-r-0 whitespace-nowrap">
-                        {children}
+                      <td className="px-3 py-1.5 text-xs text-[var(--obsidian-text)] border-r border-[var(--obsidian-border-soft)] last:border-r-0 align-top">
+                        <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
                       </td>
                     ),
                     code: ({ children, className, ...rest }) => {
@@ -1200,6 +1201,7 @@ export const MarkdownEditor = () => {
                 >
                   {debouncedContent.replace(/!\[\[(.*?)\]\]/g, '![$1]($1)')}
                 </ReactMarkdown>
+                </div>
               </div>
             </div>
           </>
