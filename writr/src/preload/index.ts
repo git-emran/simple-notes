@@ -15,6 +15,8 @@ import {
   ExportNoteToPdf,
   ExportCanvasToPdf,
   ImportImageToNoteFolder,
+  ImportImageToRootImageFolder,
+  GetRootDir,
   ListFreeAiModels,
   GenerateWithAi
 } from '@shared/types'
@@ -51,6 +53,9 @@ try {
       ipcRenderer.invoke('exportCanvasToPdf', ...args),
     importImageToNoteFolder: (...args: Parameters<ImportImageToNoteFolder>) =>
       ipcRenderer.invoke('importImageToNoteFolder', ...args),
+    importImageToRootImageFolder: (...args: Parameters<ImportImageToRootImageFolder>) =>
+      ipcRenderer.invoke('importImageToRootImageFolder', ...args),
+    getRootDir: (...args: Parameters<GetRootDir>) => ipcRenderer.invoke('getRootDir', ...args),
     listFreeAiModels: (...args: Parameters<ListFreeAiModels>) =>
       ipcRenderer.invoke('listFreeAiModels', ...args),
     generateWithAi: (...args: Parameters<GenerateWithAi>) =>

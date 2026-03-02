@@ -15,6 +15,8 @@ import {
   ExportNoteToPdf,
   ExportCanvasToPdf,
   ImportImageToNoteFolder,
+  ImportImageToRootImageFolder,
+  GetRootDir,
   ListFreeAiModels,
   GenerateWithAi
 } from '@shared/types'
@@ -39,6 +41,8 @@ declare global {
       exportNoteToPdf: ExportNoteToPdf
       exportCanvasToPdf: ExportCanvasToPdf
       importImageToNoteFolder: ImportImageToNoteFolder
+      importImageToRootImageFolder: ImportImageToRootImageFolder
+      getRootDir: GetRootDir
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi
     }

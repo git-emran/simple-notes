@@ -14,6 +14,7 @@ import {
   WriteFile,
   MovePath,
   ImportImageToNoteFolder,
+  ImportImageToRootImageFolder,
   ListFreeAiModels,
   GenerateWithAi,
 } from '@shared/types'
@@ -576,6 +577,53 @@ export const importImageToNoteFolder: ImportImageToNoteFolder = async (
     }
   } catch (error) {
     console.error('Failed to import image:', error)
+    return null
+  }
+}
+
+export const importImageToRootImageFolder: ImportImageToRootImageFolder = async (source) => {
+  try {
+    const rootDir = getRootDir()
+    const imageDir = ensurePathWithinRoot(path.join(rootDir, 'image'))
+    await ensureDir(imageDir)
+
+    const sourcePath = source?.sourcePath
+    const fileName = source?.fileName
+    const data = source?.data
+
+    const sourceNameForExtension = sourcePath || fileName
+    if (!sourceNameForExtension) return null
+
+    const extension = path.extname(sourceNameForExtension).toLowerCase()
+    if (!imageExtensions.has(extension)) return null
+
+    const baseName = path.basename(sourceNameForExtension, extension).replace(/[^\w.-]+/g, '-')
+    const safeBaseName = baseName || 'image'
+
+    let targetName = `${safeBaseName}${extension}`
+    let counter = 1
+    let targetPath = path.join(imageDir, targetName)
+
+    while (await pathExists(targetPath)) {
+      targetName = `${safeBaseName}-${counter}${extension}`
+      targetPath = path.join(imageDir, targetName)
+      counter++
+    }
+
+    if (sourcePath) {
+      await copy(sourcePath, targetPath, { overwrite: false, errorOnExist: true })
+    } else if (fileName && data) {
+      await writeFile(targetPath, data)
+    } else {
+      return null
+    }
+
+    return {
+      markdownPath: `image/${targetName}`,
+      absolutePath: targetPath
+    }
+  } catch (error) {
+    console.error('Failed to import image to root image folder:', error)
     return null
   }
 }

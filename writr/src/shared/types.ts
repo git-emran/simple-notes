@@ -20,10 +20,16 @@ export type ExportCanvasToPdf = (
   canvasTitle: string,
   rect: { x: number; y: number; width: number; height: number }
 ) => Promise<boolean>
+export type GetRootDir = () => Promise<string>
 export type ImportImageToNoteFolder = (
   notePath: string,
   sourceImagePath: string
 ) => Promise<{ markdownPath: string; absolutePath: string } | null>
+export type ImportImageToRootImageFolder = (source: {
+  sourcePath?: string
+  fileName?: string
+  data?: Uint8Array
+}) => Promise<{ markdownPath: string; absolutePath: string } | null>
 
 export type AiModelInfo = {
   id: string

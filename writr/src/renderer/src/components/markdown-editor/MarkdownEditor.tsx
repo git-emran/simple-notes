@@ -100,6 +100,7 @@ export const MarkdownEditor = () => {
   const [currentContent, setCurrentContent] = useState('')
   const [debouncedContent, setDebouncedContent] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [rootDir, setRootDir] = useState<string>('')
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [exportNotice, setExportNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
@@ -190,7 +191,7 @@ export const MarkdownEditor = () => {
         ),
         lineWrappingCompartment.reconfigure(lineWrappingEnabled ? EditorView.lineWrapping : []),
         tabIndentCompartment.reconfigure(tabAsSpaces(tabIndentUnit)),
-        livePreviewImagesCompartment.reconfigure(createLivePreviewImages(selectedNote?.path)),
+        livePreviewImagesCompartment.reconfigure(createLivePreviewImages(selectedNote?.path, rootDir || undefined)),
       ],
     })
   }, [
@@ -207,7 +208,22 @@ export const MarkdownEditor = () => {
     themeCompartment,
     vimCompartment,
     vimModeEnabled,
+    rootDir,
   ])
+
+  useEffect(() => {
+    let cancelled = false
+    void window.context
+      .getRootDir()
+      .then((dir) => {
+        if (!cancelled) setRootDir(dir)
+      })
+      .catch((error) => console.error('Failed to get root dir:', error))
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Save queue management
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
@@ -390,14 +406,43 @@ export const MarkdownEditor = () => {
       event.preventDefault()
 
       const insertedLinks: string[] = []
+      const extensionFromMimeType = (mimeType: string) => {
+        switch (mimeType.toLowerCase()) {
+          case 'image/png':
+            return '.png'
+          case 'image/jpeg':
+            return '.jpg'
+          case 'image/gif':
+            return '.gif'
+          case 'image/webp':
+            return '.webp'
+          case 'image/svg+xml':
+            return '.svg'
+          case 'image/bmp':
+            return '.bmp'
+          default:
+            return ''
+        }
+      }
+
       for (const file of imageFiles) {
         const sourcePath = (file as File & { path?: string }).path
-        if (!sourcePath) continue
+        const result = sourcePath
+          ? await window.context.importImageToRootImageFolder({ sourcePath })
+          : await (async () => {
+              const buffer = new Uint8Array(await file.arrayBuffer())
+              const originalName = file.name?.trim() || 'image'
+              const hasExtension = /\.[a-z0-9]+$/i.test(originalName)
+              const effectiveName = hasExtension
+                ? originalName
+                : `${originalName}${extensionFromMimeType(file.type)}`
+              return window.context.importImageToRootImageFolder({
+                fileName: effectiveName,
+                data: buffer,
+              })
+            })()
 
-        const result = await window.context.importImageToNoteFolder(selectedNote.path, sourcePath)
-        if (result?.markdownPath) {
-          insertedLinks.push(`![[${result.markdownPath}]]`)
-        }
+        if (result?.markdownPath) insertedLinks.push(`![[${result.markdownPath}]]`)
       }
 
       if (insertedLinks.length > 0) {
@@ -1115,7 +1160,7 @@ export const MarkdownEditor = () => {
                       )
 
                       if (isImage) {
-                        const finalSrc = href ? toLocalFileUrl(href, selectedNote.path) : href
+                        const finalSrc = href ? toLocalFileUrl(href, selectedNote.path, rootDir || undefined) : href
                         return (
                           <img 
                             src={finalSrc} 
@@ -1215,7 +1260,7 @@ export const MarkdownEditor = () => {
                       </pre>
                     ),
                     img: ({ src, alt }) => {
-                      const finalSrc = src ? toLocalFileUrl(src, selectedNote.path) : src
+                      const finalSrc = src ? toLocalFileUrl(src, selectedNote.path, rootDir || undefined) : src
                       return (
                         <img 
                           src={finalSrc} 

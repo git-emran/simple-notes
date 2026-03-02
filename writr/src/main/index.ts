@@ -21,6 +21,7 @@ import {
   exportNoteToPdf,
   exportCanvasToPdf,
   importImageToNoteFolder,
+  importImageToRootImageFolder,
   getRootDir,
   listFreeAiModels,
   generateWithAi
@@ -41,7 +42,9 @@ import {
   MovePath,
   ExportNoteToPdf,
   ExportCanvasToPdf,
+  GetRootDir,
   ImportImageToNoteFolder,
+  ImportImageToRootImageFolder,
   ListFreeAiModels,
   GenerateWithAi
 } from '@shared/types'
@@ -129,6 +132,10 @@ app.whenReady().then(() => {
   ipcMain.handle('importImageToNoteFolder', (_, ...args: Parameters<ImportImageToNoteFolder>) =>
     importImageToNoteFolder(...args)
   )
+  ipcMain.handle('importImageToRootImageFolder', (_, ...args: Parameters<ImportImageToRootImageFolder>) =>
+    importImageToRootImageFolder(...args)
+  )
+  ipcMain.handle('getRootDir', (_, ...args: Parameters<GetRootDir>) => getRootDir(...args))
   ipcMain.handle('listFreeAiModels', (_, ...args: Parameters<ListFreeAiModels>) =>
     listFreeAiModels(...args)
   )
@@ -158,6 +165,22 @@ app.whenReady().then(() => {
       // Remove leading slash on Windows if present (e.g. /C:/ -> C:/)
       if (process.platform === 'win32' && filePath.startsWith('/') && !filePath.startsWith('//')) {
           filePath = filePath.slice(1);
+      }
+
+      // Some renderers/inputs may produce URLs like local-file://users/<name>/...
+      // Normalize to the real macOS/Linux /Users/... path.
+      if (process.platform !== 'win32') {
+        if (!filePath.startsWith('/') && /^users\//i.test(filePath)) {
+          filePath = `/${filePath}`
+        }
+        if (filePath.startsWith('/users/')) {
+          filePath = `/Users/${filePath.slice('/users/'.length)}`
+        }
+      }
+
+      // Normalize POSIX paths like //Users/... -> /Users/...
+      if (process.platform !== 'win32' && filePath.startsWith('//')) {
+        filePath = filePath.replace(/^\/+/, '/')
       }
 
       const resolvedFilePath = path.resolve(filePath)
