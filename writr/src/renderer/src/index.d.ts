@@ -6,12 +6,14 @@ import {
   DeleteNote,
   GetFileTree,
   CreateNoteNew,
+  CreateCanvasNew,
   CreateDirectory,
   DeletePath,
   ReadFile,
   WriteFile,
   MovePath,
   ExportNoteToPdf,
+  ExportCanvasToPdf,
   ImportImageToNoteFolder,
   ListFreeAiModels,
   GenerateWithAi
@@ -28,12 +30,14 @@ declare global {
       deleteNote: DeleteNote
       getFileTree: GetFileTree
       createNoteNew: CreateNoteNew
+      createCanvasNew: CreateCanvasNew
       createDirectory: CreateDirectory
       deletePath: DeletePath
       readFileNew: ReadFile
       writeFileNew: WriteFile
       movePath: MovePath
       exportNoteToPdf: ExportNoteToPdf
+      exportCanvasToPdf: ExportCanvasToPdf
       importImageToNoteFolder: ImportImageToNoteFolder
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi

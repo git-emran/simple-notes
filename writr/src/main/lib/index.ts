@@ -15,7 +15,7 @@ import {
   MovePath,
   ImportImageToNoteFolder,
   ListFreeAiModels,
-  GenerateWithAi
+  GenerateWithAi,
 } from '@shared/types'
 import { BrowserWindow, dialog } from 'electron'
 import { copy, readFile, writeFile, move, pathExists } from 'fs-extra'
@@ -432,6 +432,109 @@ export const exportNoteToPdf = async (
     return true
   } catch (error) {
     console.error('Failed to export PDF:', error)
+    return false
+  } finally {
+    if (printWindow && !printWindow.isDestroyed()) {
+      printWindow.destroy()
+    }
+  }
+}
+
+export const exportCanvasToPdf = async (
+  parentWindow: BrowserWindow,
+  canvasPath: string,
+  canvasTitle: string,
+  rect: { x: number; y: number; width: number; height: number }
+): Promise<boolean> => {
+  let printWindow: BrowserWindow | null = null
+  try {
+    const safeCanvasPath = ensurePathWithinRoot(canvasPath)
+    const canvasDir = path.dirname(safeCanvasPath)
+    const defaultSavePath = path.join(canvasDir, `${canvasTitle || 'Untitled'}.pdf`)
+
+    const { canceled, filePath } = await dialog.showSaveDialog(parentWindow, {
+      title: 'Export canvas to PDF',
+      defaultPath: defaultSavePath,
+      buttonLabel: 'Export',
+      filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    })
+
+    if (canceled || !filePath) return false
+
+    const captureRect = {
+      x: Math.max(0, Math.round(rect.x)),
+      y: Math.max(0, Math.round(rect.y)),
+      width: Math.max(1, Math.round(rect.width)),
+      height: Math.max(1, Math.round(rect.height))
+    }
+
+    const image = await parentWindow.webContents.capturePage(captureRect)
+    const png = image.toPNG()
+    const base64 = png.toString('base64')
+    const isLandscape = captureRect.width >= captureRect.height
+
+    printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: true
+      }
+    })
+
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(canvasTitle || 'Untitled')}</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+    }
+    .page {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+    }
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <img src="data:image/png;base64,${base64}" alt="Canvas export" />
+  </div>
+</body>
+</html>`
+
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+    const pdf = await printWindow.webContents.printToPDF({
+      printBackground: true,
+      landscape: isLandscape,
+      pageSize: 'A4',
+      margins: {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0
+      }
+    })
+    await writeFile(filePath, pdf)
+
+    return true
+  } catch (error) {
+    console.error('Failed to export canvas PDF:', error)
     return false
   } finally {
     if (printWindow && !printWindow.isDestroyed()) {

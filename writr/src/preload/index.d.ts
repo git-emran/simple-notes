@@ -13,6 +13,7 @@ import {
   WriteFile,
   MovePath,
   ExportNoteToPdf,
+  ExportCanvasToPdf,
   ImportImageToNoteFolder,
   ListFreeAiModels,
   GenerateWithAi
@@ -36,6 +37,7 @@ declare global {
       createDirectory: CreateDirectory
       movePath: MovePath
       exportNoteToPdf: ExportNoteToPdf
+      exportCanvasToPdf: ExportCanvasToPdf
       importImageToNoteFolder: ImportImageToNoteFolder
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi

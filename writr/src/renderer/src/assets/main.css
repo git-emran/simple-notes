@@ -122,8 +122,8 @@ header {
 }
 
 .cm-editor {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 13px;
+  font-family: var(--writr-editor-font-family, 'JetBrains Mono', monospace);
+  font-size: var(--writr-editor-font-size, 13px);
   line-height: 1.55;
 }
 
@@ -135,6 +135,7 @@ header {
 ::-webkit-scrollbar-thumb {
   border-radius: 99px;
   background: #3e4354;
+  transition: background-color 120ms ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -161,6 +162,23 @@ header {
   scrollbar-width: none; /* Firefox */
 }
 
+.filetree-scroll {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #3e4354 transparent; /* Firefox */
+}
+
+.filetree-scroll.scrollbar-fade-out {
+  scrollbar-color: transparent transparent; /* Firefox */
+}
+
+.filetree-scroll.scrollbar-fade-out::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
+.filetree-scroll.scrollbar-fade-out::-webkit-scrollbar-thumb:hover {
+  background-color: transparent;
+}
+
 /* Print Styles for Canvas Export */
 .canvas-printing {
   background: white !important;
@@ -182,6 +200,11 @@ header {
 .canvas-printing .react-flow__background {
   /* Give it a clean background when printing */
   background: white !important;
+}
+
+.canvas-exporting .react-flow__panel,
+.canvas-exporting .react-flow__controls {
+  display: none !important;
 }
 
 @media print {

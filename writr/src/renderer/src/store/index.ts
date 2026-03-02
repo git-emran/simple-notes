@@ -2,6 +2,7 @@ import { NoteContent, FileNode } from '@shared/models'
 import { atom } from 'jotai'
 import { atomWithStorage, unwrap } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
+export * from './settingsStore'
 
 // File Tree Atoms
 const loadFileTree = async () => {
@@ -36,36 +37,81 @@ export const fileTreeAtom = unwrap(fileTreeAtomAsync, (prev) => prev)
 export const selectedNodeAtom = atom<FileNode | null>(null)
 
 // Tabs State
-export const tabsAtom = atom<FileNode[]>([])
-export const closedTabsHistoryAtom = atom<FileNode[]>([])
-export const activeTabPathAtom = atom<string | null>(null)
+export type EditorTab = {
+  id: string
+  path: string | null
+  name: string
+}
 
-export const setActiveTabAtom = atom(null, (get, set, path: string) => {
-  set(activeTabPathAtom, path)
-  
-  // Find node in tabs to update selectedNodeAtom
+const getNameFromPath = (filePath: string) => {
+  const normalized = filePath.replace(/\\/g, '/')
+  return normalized.substring(normalized.lastIndexOf('/') + 1)
+}
+
+const createEmptyTab = (): EditorTab => ({
+  id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  path: null,
+  name: 'New Tab',
+})
+
+export const tabsAtom = atom<EditorTab[]>([{ id: 'tab-1', path: null, name: 'New Tab' }])
+export const closedTabsHistoryAtom = atom<EditorTab[]>([])
+export const activeTabIdAtom = atom<string>('tab-1')
+
+export const activeTabPathAtom = atom<string | null>((get) => {
   const tabs = get(tabsAtom)
-  const node = tabs.find(t => t.path === path)
-  if (node) {
-    set(selectedNodeAtom, node)
+  const activeId = get(activeTabIdAtom)
+  const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0]
+  return activeTab?.path ?? null
+})
+
+export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
+  set(activeTabIdAtom, tabId)
+  const tabs = get(tabsAtom)
+  const next = tabs.find((t) => t.id === tabId) ?? tabs[0]
+  if (!next?.path) {
+    set(selectedNodeAtom, null)
+    return
   }
+  set(selectedNodeAtom, createFileNodeFromPath(next.path))
 })
 
 export const switchTabByIndexAtom = atom(null, (get, set, index: number) => {
   const tabs = get(tabsAtom)
   if (index >= 0 && index < tabs.length) {
-    set(setActiveTabAtom, tabs[index].path)
+    set(setActiveTabAtom, tabs[index].id)
   }
+})
+
+export const createNewTabAtom = atom(null, (get, set) => {
+  const tabs = get(tabsAtom)
+  const nextTab = createEmptyTab()
+  set(tabsAtom, [...tabs, nextTab])
+  set(activeTabIdAtom, nextTab.id)
+  set(selectedNodeAtom, null)
 })
 
 export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   if (node.type !== 'file') return
 
   const tabs = get(tabsAtom)
-  if (!tabs.find((t) => t.path === node.path)) {
-    set(tabsAtom, [...tabs, node])
+  const activeId = get(activeTabIdAtom)
+  const name = getNameFromPath(node.path)
+
+  if (tabs.length === 0) {
+    const onlyTab: EditorTab = { id: 'tab-1', path: node.path, name }
+    set(tabsAtom, [onlyTab])
+    set(activeTabIdAtom, onlyTab.id)
+    set(selectedNodeAtom, node)
+    return
   }
-  set(activeTabPathAtom, node.path)
+
+  const nextTabs = tabs.map((tab) => {
+    if (tab.id !== activeId) return tab
+    return { ...tab, path: node.path, name }
+  })
+
+  set(tabsAtom, nextTabs)
   set(selectedNodeAtom, node)
 })
 
@@ -107,29 +153,29 @@ const updateFileNodeInTree = (
     return node
   })
 
-export const closeTabAtom = atom(null, (get, set, path: string) => {
+export const closeTabAtom = atom(null, (get, set, tabId: string) => {
   const tabs = get(tabsAtom)
-  const activeTabPath = get(activeTabPathAtom)
-  
-  const closingTab = tabs.find((t) => t.path === path)
-  if (closingTab) {
-    const history = get(closedTabsHistoryAtom)
-    set(closedTabsHistoryAtom, [...history, closingTab])
+  const activeId = get(activeTabIdAtom)
+  const closingTab = tabs.find((t) => t.id === tabId)
+  if (!closingTab) return
+
+  const history = get(closedTabsHistoryAtom)
+  set(closedTabsHistoryAtom, [...history, closingTab])
+
+  const nextTabs = tabs.filter((t) => t.id !== tabId)
+  if (nextTabs.length === 0) {
+    set(tabsAtom, [{ id: 'tab-1', path: null, name: 'New Tab' }])
+    set(activeTabIdAtom, 'tab-1')
+    set(selectedNodeAtom, null)
+    return
   }
 
-  const newTabs = tabs.filter((t) => t.path !== path)
-  set(tabsAtom, newTabs)
+  set(tabsAtom, nextTabs)
+  if (activeId !== tabId) return
 
-  if (activeTabPath === path) {
-    if (newTabs.length > 0) {
-      const nextTab = newTabs[newTabs.length - 1]
-      set(activeTabPathAtom, nextTab.path)
-      set(selectedNodeAtom, nextTab)
-    } else {
-      set(activeTabPathAtom, null)
-      set(selectedNodeAtom, null)
-    }
-  }
+  const nextActive = nextTabs[Math.max(0, nextTabs.length - 1)]
+  set(activeTabIdAtom, nextActive.id)
+  set(selectedNodeAtom, nextActive.path ? createFileNodeFromPath(nextActive.path) : null)
 })
 
 export const restoreClosedTabAtom = atom(null, (get, set) => {
@@ -139,21 +185,16 @@ export const restoreClosedTabAtom = atom(null, (get, set) => {
     const newHistory = history.slice(0, -1)
     set(closedTabsHistoryAtom, newHistory)
     
-    // Explicitly add to tabs and set as active
     const currentTabs = get(tabsAtom)
-    if (!currentTabs.find(t => t.path === tabToRestore.path)) {
-      set(tabsAtom, [...currentTabs, tabToRestore])
-    }
-    set(activeTabPathAtom, tabToRestore.path)
-    set(selectedNodeAtom, tabToRestore)
+    set(tabsAtom, [...currentTabs, tabToRestore])
+    set(activeTabIdAtom, tabToRestore.id)
+    set(selectedNodeAtom, tabToRestore.path ? createFileNodeFromPath(tabToRestore.path) : null)
   }
 })
 
 export const closeActiveTabAtom = atom(null, (get, set) => {
-  const activePath = get(activeTabPathAtom)
-  if (activePath) {
-    set(closeTabAtom, activePath)
-  }
+  const activeId = get(activeTabIdAtom)
+  if (activeId) set(closeTabAtom, activeId)
 })
 
 export const isDarkModeAtom = atom(false)
@@ -370,8 +411,9 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   
   // Close tab if it was open
   const tabs = get(tabsAtom)
-  if (tabs.find(t => t.path === path)) {
-    set(closeTabAtom, path)
+  const idsToClose = tabs.filter((t) => t.path === path).map((t) => t.id)
+  for (const tabId of idsToClose) {
+    set(closeTabAtom, tabId)
   }
 })
 
@@ -396,9 +438,6 @@ export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: st
     
     if (tabMatched) {
       set(tabsAtom, newTabs)
-      if (activeTabPath === src) {
-        set(activeTabPathAtom, dest)
-      }
     }
 
     // Update selected node if it was the one moved/renamed

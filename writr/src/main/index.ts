@@ -19,6 +19,7 @@ import {
   writeFileNew,
   movePath,
   exportNoteToPdf,
+  exportCanvasToPdf,
   importImageToNoteFolder,
   getRootDir,
   listFreeAiModels,
@@ -39,6 +40,7 @@ import {
   WriteFile,
   MovePath,
   ExportNoteToPdf,
+  ExportCanvasToPdf,
   ImportImageToNoteFolder,
   ListFreeAiModels,
   GenerateWithAi
@@ -118,6 +120,11 @@ app.whenReady().then(() => {
     const parent = BrowserWindow.fromWebContents(event.sender)
     if (!parent) return false
     return exportNoteToPdf(parent, ...args)
+  })
+  ipcMain.handle('exportCanvasToPdf', (event, ...args: Parameters<ExportCanvasToPdf>) => {
+    const parent = BrowserWindow.fromWebContents(event.sender)
+    if (!parent) return false
+    return exportCanvasToPdf(parent, ...args)
   })
   ipcMain.handle('importImageToNoteFolder', (_, ...args: Parameters<ImportImageToNoteFolder>) =>
     importImageToNoteFolder(...args)

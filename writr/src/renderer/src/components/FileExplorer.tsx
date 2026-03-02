@@ -10,7 +10,7 @@ import {
   selectedNodeAtom
 } from '@renderer/store'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { ComponentProps, useEffect, useMemo, useState } from 'react'
+import { ComponentProps, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
 import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll } from 'react-icons/vsc'
@@ -29,6 +29,8 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
   const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
+  const [showScrollbar, setShowScrollbar] = useState(false)
+  const scrollbarTimerRef = useRef<number | null>(null)
 
   const allFolderPaths = useMemo(() => {
     const collectFolders = (nodes: FileNode[]): string[] => {
@@ -74,6 +76,14 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
       }
     })
   }, [activeTabPath, fileTree, setSelectedNode])
+
+  useEffect(() => {
+    return () => {
+      if (scrollbarTimerRef.current) {
+        window.clearTimeout(scrollbarTimerRef.current)
+      }
+    }
+  }, [])
 
   const handleNodeSelect = (node: FileNode) => {
     setSelectedNode(node)
@@ -181,9 +191,17 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
 
       <div 
         className={twMerge(
-            "flex-1 overflow-auto py-1 transition-colors",
+            "flex-1 overflow-auto py-1 transition-colors filetree-scroll",
+            !showScrollbar && "scrollbar-fade-out",
             isDraggingOverRoot && "bg-[var(--obsidian-accent-dim)]"
         )}
+        onScroll={() => {
+          setShowScrollbar(true)
+          if (scrollbarTimerRef.current) window.clearTimeout(scrollbarTimerRef.current)
+          scrollbarTimerRef.current = window.setTimeout(() => {
+            setShowScrollbar(false)
+          }, 1200)
+        }}
         onClick={(e) => {
             if (e.target === e.currentTarget) {
                 setSelectedNode(null)

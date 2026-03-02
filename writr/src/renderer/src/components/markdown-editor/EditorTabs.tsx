@@ -1,14 +1,15 @@
 import { useAtomValue, useSetAtom } from 'jotai'
-import { tabsAtom, activeTabPathAtom, setActiveTabAtom, closeTabAtom } from '@renderer/store'
-import { VscClose } from 'react-icons/vsc'
+import { activeTabIdAtom, closeTabAtom, createNewTabAtom, setActiveTabAtom, tabsAtom } from '@renderer/store'
+import { VscAdd, VscClose } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { type CSSProperties } from 'react'
 
 export const EditorTabs = () => {
   const tabs = useAtomValue(tabsAtom)
-  const activeTabPath = useAtomValue(activeTabPathAtom)
+  const activeTabId = useAtomValue(activeTabIdAtom)
   const setActiveTab = useSetAtom(setActiveTabAtom)
   const closeTab = useSetAtom(closeTabAtom)
+  const createNewTab = useSetAtom(createNewTabAtom)
 
   return (
     <div 
@@ -18,11 +19,11 @@ export const EditorTabs = () => {
       } as CSSProperties}
     >
       {tabs.map((tab) => {
-        const isActive = activeTabPath === tab.path
+        const isActive = activeTabId === tab.id
         return (
           <div
-            key={tab.path}
-            onClick={() => setActiveTab(tab.path)}
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
             style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
             className={twMerge(
               'group relative flex items-center min-w-[130px] max-w-[230px] h-9 px-3 cursor-pointer select-none transition-all',
@@ -43,13 +44,13 @@ export const EditorTabs = () => {
                 "text-[11px] font-medium truncate flex-1 tracking-tight",
                 isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100"
             )}>
-              {tab.name.replace(/\.(md|canvas)$/, '')}
+              {(tab.path ? tab.name.replace(/\.(md|canvas)$/, '') : tab.name)}
             </span>
 
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                closeTab(tab.path)
+                closeTab(tab.id)
               }}
               style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
               className={twMerge(
@@ -62,6 +63,14 @@ export const EditorTabs = () => {
           </div>
         )
       })}
+      <button
+        onClick={() => createNewTab()}
+        style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
+        className="h-9 w-10 flex items-center justify-center text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+        title="New tab"
+      >
+        <VscAdd className="w-4 h-4" />
+      </button>
       {/* Fill remaining space */}
       <div className="flex-1 bg-[var(--obsidian-pane)]" />
     </div>

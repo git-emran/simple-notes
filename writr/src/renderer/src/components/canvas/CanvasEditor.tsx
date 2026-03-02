@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   addEdge,
@@ -33,37 +33,80 @@ const nodeTypes = {
 export const CanvasEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom);
   const saveCanvas = useSetAtom(saveCanvasAtom);
+  const rootRef = useRef<HTMLDivElement>(null)
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [isLoaded, setIsLoaded] = React.useState(false);
 
+  const canvasTitle = selectedNote?.title || 'Canvas'
+  const isCanvasFile = !!selectedNote?.path && selectedNote.path.endsWith('.canvas')
+
+  const onChangeLabel = useCallback((nodeId: string, label: string) => {
+    setNodes((prev) =>
+      prev.map((node) => {
+        if (node.id !== nodeId) return node
+        return {
+          ...node,
+          data: {
+            ...(node.data ?? {}),
+            label
+          }
+        }
+      })
+    )
+  }, [setNodes])
+
+  const hydrateNodes = useCallback((rawNodes: any[]) => {
+    return (rawNodes ?? []).map((node) => ({
+      ...node,
+      data: {
+        ...(node.data ?? {}),
+        onChangeLabel,
+      },
+    }))
+  }, [onChangeLabel])
+
+  const canvasPath = selectedNote?.path ?? ''
+  const canvasContent = selectedNote?.content ?? ''
+
+  // Reset state when switching between canvas files
+  useEffect(() => {
+    if (!isCanvasFile) return
+    setIsLoaded(false)
+    setNodes([])
+    setEdges([])
+  }, [canvasPath, isCanvasFile, setEdges, setNodes])
+
   // Load from file content
   React.useEffect(() => {
-    if (selectedNote?.content && !isLoaded) {
+    if (!isCanvasFile) return
+
+    if (canvasContent && !isLoaded) {
       try {
-        const parsed = JSON.parse(selectedNote.content);
-        if (parsed.nodes) setNodes(parsed.nodes);
+        const parsed = JSON.parse(canvasContent);
+        if (parsed.nodes) setNodes(hydrateNodes(parsed.nodes));
         if (parsed.edges) setEdges(parsed.edges);
         setIsLoaded(true);
       } catch (e) {
         console.error('Failed to parse canvas file:', e);
         setIsLoaded(true);
       }
-    } else if (!selectedNote?.content && !isLoaded) {
+    } else if (!canvasContent && !isLoaded) {
       setIsLoaded(true);
     }
-  }, [selectedNote?.content, isLoaded, setNodes, setEdges]);
+  }, [canvasContent, hydrateNodes, isCanvasFile, isLoaded, setEdges, setNodes]);
 
   // Persistence effect - save on change
   React.useEffect(() => {
     if (!isLoaded) return;
+    if (!isCanvasFile) return
 
     const timeout = setTimeout(() => {
       saveCanvas(JSON.stringify({ nodes, edges }, null, 2));
     }, 500);
     return () => clearTimeout(timeout);
-  }, [nodes, edges, isLoaded, saveCanvas]);
+  }, [nodes, edges, isCanvasFile, isLoaded, saveCanvas]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
@@ -122,26 +165,54 @@ export const CanvasEditor = () => {
       id,
       type,
       position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 200 },
-      data: { label: type === 'sticky' ? 'Note...' : type === 'diamond' ? 'Decision' : type === 'circle' ? 'Start/End' : type === 'arrow' ? '' : type === 'text' ? '' : 'Process' },
+      data: {
+        label: type === 'sticky' ? 'Note...' : type === 'diamond' ? 'Decision' : type === 'circle' ? 'Start/End' : type === 'arrow' ? '' : type === 'text' ? '' : 'Process',
+        onChangeLabel,
+      },
     };
     setNodes((nds) => nds.concat(newNode));
   };
 
-  const exportAsPdf = () => {
-    // Hide UI elements for print
-    const originalPrintStyle = document.body.style.cssText;
+  const exportAsPdf = async () => {
+    const canvasPath = selectedNote?.path
+    if (!canvasPath) return
 
-    // Add a print-specific class to hide sidebar and controls
-    document.documentElement.classList.add('canvas-printing');
+    const flowEl = rootRef.current?.querySelector('.react-flow') as HTMLElement | null
+    if (!flowEl) return
 
-    setTimeout(() => {
-      window.print();
-      document.documentElement.classList.remove('canvas-printing');
-    }, 100);
+    document.documentElement.classList.add('canvas-exporting')
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    })
+
+    try {
+      const rect = flowEl.getBoundingClientRect()
+      await window.context.exportCanvasToPdf(canvasPath, canvasTitle, {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      })
+    } finally {
+      document.documentElement.classList.remove('canvas-exporting')
+    }
   };
 
+  if (!isCanvasFile) {
+    return (
+      <div className="flex items-center justify-center h-full bg-[var(--obsidian-workspace)]">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-[var(--obsidian-text)]">No canvas selected</h2>
+          <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">
+            Create or select a <span className="font-mono">.canvas</span> file to start.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="w-full h-full bg-[var(--obsidian-workspace)] relative overflow-hidden">
+    <div ref={rootRef} className="w-full h-full bg-[var(--obsidian-workspace)] relative overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -211,7 +282,9 @@ export const CanvasEditor = () => {
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
         <div className="bg-[var(--obsidian-pane)]/90 backdrop-blur-md px-4 py-2 rounded-full border border-[var(--obsidian-border)] shadow-lg flex items-center gap-2 pointer-events-auto">
           <VscTypeHierarchy className="w-4 h-4 text-[var(--obsidian-accent)]" />
-          <span className="text-xs font-bold tracking-wider text-[var(--obsidian-text)] uppercase">Operations Canvas</span>
+          <span className="text-xs font-bold tracking-wider text-[var(--obsidian-text)] uppercase">
+            {canvasTitle}
+          </span>
         </div>
       </div>
     </div>

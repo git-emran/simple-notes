@@ -15,6 +15,11 @@ export type DeletePath = (path: string) => Promise<boolean>
 export type CreateDirectory = (parentDir: string) => Promise<string | false>
 export type MovePath = (src: string, dest: string) => Promise<boolean>
 export type ExportNoteToPdf = (notePath: string, noteTitle: string, content: string) => Promise<boolean>
+export type ExportCanvasToPdf = (
+  canvasPath: string,
+  canvasTitle: string,
+  rect: { x: number; y: number; width: number; height: number }
+) => Promise<boolean>
 export type ImportImageToNoteFolder = (
   notePath: string,
   sourceImagePath: string

@@ -9,6 +9,7 @@ import { FileExplorer } from './components/FileExplorer'
 import { SidebarSearch } from './components/SidebarSearch'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
+import { SettingsModal } from './components/SettingsModal'
 import { useRef, useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { 
@@ -17,7 +18,10 @@ import {
   closeActiveTabAtom, 
   restoreClosedTabAtom,
   createCanvasAtom,
-  selectedNodeAtom
+  selectedNodeAtom,
+  editorFontAtom,
+  editorFontSizeAtom,
+  themeModeAtom
 } from '@renderer/store'
 import {
   VscFiles,
@@ -25,7 +29,8 @@ import {
   VscCalendar,
   VscChevronLeft,
   VscChevronRight,
-  VscSymbolRuler
+  VscSymbolRuler,
+  VscSettingsGear
 } from 'react-icons/vsc'
 
 const App = () => {
@@ -36,6 +41,7 @@ const App = () => {
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(220) // default width
   const isDragging = useRef(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
   const createDailyNote = useSetAtom(createDailyNoteAtom)
@@ -43,6 +49,9 @@ const App = () => {
   const restoreClosedTab = useSetAtom(restoreClosedTabAtom)
   const createCanvas = useSetAtom(createCanvasAtom)
   const selectedNode = useAtomValue(selectedNodeAtom)
+  const themeMode = useAtomValue(themeModeAtom)
+  const editorFont = useAtomValue(editorFontAtom)
+  const editorFontSize = useAtomValue(editorFontSizeAtom)
 
   // Automatically switch mode based on selected file extension
   useEffect(() => {
@@ -78,15 +87,31 @@ const App = () => {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const applySystemTheme = () => applyTheme(mediaQuery.matches ? 'dark' : 'light')
+    const applyCurrentTheme = () => {
+      const resolvedMode =
+        themeMode === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : themeMode
+      applyTheme(resolvedMode)
+    }
 
-    applySystemTheme()
-    mediaQuery.addEventListener('change', applySystemTheme)
+    applyCurrentTheme()
+    if (themeMode === 'system') {
+      mediaQuery.addEventListener('change', applyCurrentTheme)
+    }
 
     return () => {
-      mediaQuery.removeEventListener('change', applySystemTheme)
+      mediaQuery.removeEventListener('change', applyCurrentTheme)
     }
-  }, [])
+  }, [themeMode])
+
+  useEffect(() => {
+    const root = document.documentElement
+    const normalizedFont = editorFont === 'JetBrains Mono' ? 'JetBrains Mono' : editorFont
+    root.style.setProperty(
+      '--writr-editor-font-family',
+      `"${normalizedFont}", "SFMono-Regular", Menlo, "JetBrains Mono", Courier, monospace`
+    )
+    root.style.setProperty('--writr-editor-font-size', `${Math.max(11, Math.min(20, editorFontSize))}px`)
+  }, [editorFont, editorFontSize])
 
   // Drag to resize logic
   useEffect(() => {
@@ -107,6 +132,20 @@ const App = () => {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd + ,
+      if ((e.metaKey || e.ctrlKey) && (e.key === ',' || e.code === 'Comma')) {
+        e.preventDefault()
+        setIsSettingsOpen(true)
+        return
+      }
+
+      // Esc closes settings
+      if (e.key === 'Escape' && isSettingsOpen) {
+        e.preventDefault()
+        setIsSettingsOpen(false)
+        return
+      }
+
       // Cmd + W
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'w') {
         e.preventDefault()
@@ -138,7 +177,7 @@ const App = () => {
       window.removeEventListener('mouseup', handleMouseUp)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [switchTabByIndex])
+  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, switchTabByIndex])
 
   return (
     <ErrorBoundary>
@@ -207,6 +246,14 @@ const App = () => {
             >
               <VscSymbolRuler />
             </button>
+            <div className="flex-1" />
+            <button
+              className="obsidian-ribbon-btn"
+              title="Settings"
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <VscSettingsGear />
+            </button>
           </aside>
 
           {!collapsed && (
@@ -226,6 +273,7 @@ const App = () => {
             <div className="flex-1 overflow-hidden h-full">
               {appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />}
             </div>
+            {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
           </Content>
         </div>
       </RootLayout>

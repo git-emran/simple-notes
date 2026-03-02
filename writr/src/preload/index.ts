@@ -13,6 +13,7 @@ import {
   WriteFile,
   MovePath,
   ExportNoteToPdf,
+  ExportCanvasToPdf,
   ImportImageToNoteFolder,
   ListFreeAiModels,
   GenerateWithAi
@@ -46,6 +47,8 @@ try {
     movePath: (...args: Parameters<MovePath>) => ipcRenderer.invoke('movePath', ...args),
     exportNoteToPdf: (...args: Parameters<ExportNoteToPdf>) =>
       ipcRenderer.invoke('exportNoteToPdf', ...args),
+    exportCanvasToPdf: (...args: Parameters<ExportCanvasToPdf>) =>
+      ipcRenderer.invoke('exportCanvasToPdf', ...args),
     importImageToNoteFolder: (...args: Parameters<ImportImageToNoteFolder>) =>
       ipcRenderer.invoke('importImageToNoteFolder', ...args),
     listFreeAiModels: (...args: Parameters<ListFreeAiModels>) =>

@@ -2,6 +2,9 @@ import { EditorView } from '@codemirror/view'
 import { HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 
+const editorFontFamilyVar = 'var(--writr-editor-font-family, "JetBrains Mono", monospace)'
+const editorFontSizeVar = 'var(--writr-editor-font-size, 13px)'
+
 export const gutterTheme = EditorView.theme({
   '.cm-gutters': {
     paddingRight: '6px',
@@ -13,21 +16,18 @@ export const gutterTheme = EditorView.theme({
 export const getEditorTheme = (isDark: boolean) => EditorView.theme({
   '&': {
     height: '100%',
-    fontSize: '13px',
+    fontSize: editorFontSizeVar,
     lineHeight: '1.55',
     backgroundColor: isDark ? '#232530' : '#ffffff',
     color: isDark ? '#d4d7df' : '#111827'
   },
   '.cm-scroller': {
-    fontFamily: 'JetBrains Mono',
+    fontFamily: editorFontFamilyVar,
     padding: '0',
     backgroundColor: isDark ? '#232530' : '#ffffff'
   },
   '.cm-focused': {
     outline: 'none'
-  },
-  '.cm-editor': {
-    fontSize: '14px'
   },
   '.cm-content': {
     minHeight: '100%',
@@ -43,7 +43,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.16)'
   },
   '.cm-foldGutter .cm-gutterElement': {
-    fontSize: '14px'
+    fontSize: editorFontSizeVar
   },
 
   '.cm-selectionBackground': {
@@ -58,7 +58,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
   },
   '.cm-tooltip.cm-tooltip-autocomplete > ul': {
-    fontFamily: 'JetBrains Mono',
+    fontFamily: editorFontFamilyVar,
     fontSize: '12px',
     backgroundColor: isDark ? '#252833' : '#ffffff',
     color: isDark ? '#d4d7df' : '#000000'
@@ -114,7 +114,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     fontSize: '0.9em'
   },
   '.cm-table-line': {
-    fontFamily: 'JetBrains Mono, monospace',
+    fontFamily: editorFontFamilyVar,
     whiteSpace: 'pre',
     backgroundColor: isDark ? 'rgba(0, 0, 0, 0.12)' : 'rgba(128, 128, 128, 0.03)',
     borderLeft: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.2)',
@@ -160,7 +160,7 @@ export const markdownHighlightStyle = HighlightStyle.define([
     tag: tags.monospace,
     backgroundColor: 'var(--obsidian-inline-code-bg)',
     color: 'var(--obsidian-inline-code-text)',
-    fontFamily: 'JetBrains Mono',
+    fontFamily: editorFontFamilyVar,
     padding: '2px 4px',
     borderRadius: '3px'
   },
@@ -215,7 +215,7 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
     tag: tags.monospace,
     backgroundColor: 'var(--obsidian-inline-code-bg)',
     color: 'var(--obsidian-inline-code-text)',
-    fontFamily: 'JetBrains Mono',
+    fontFamily: editorFontFamilyVar,
     padding: '2px 4px',
     borderRadius: '3px'
   },

@@ -1,12 +1,23 @@
 'use client'
-import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
-import { EditorState } from '@codemirror/state'
+import { Children, isValidElement, useEffect, useRef, useCallback, useMemo, useState } from 'react'
+import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, keymap, drawSelection } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
 import { vim } from '@replit/codemirror-vim'
 import { throttle, debounce } from 'lodash'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { createNoteAtom, noteStatusByPathAtom, noteTagByPathAtom, saveNoteAtom, selectedNoteAtom } from '@renderer/store'
+import {
+  createNoteAtom,
+  lineWrappingEnabledAtom,
+  noteStatusByPathAtom,
+  noteTagByPathAtom,
+  relativeLineNumbersEnabledAtom,
+  saveNoteAtom,
+  selectedNoteAtom,
+  showToolbarAtom,
+  tabIndentUnitAtom,
+  vimModeEnabledAtom,
+} from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
 import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
@@ -55,7 +66,7 @@ import {
 } from 'react-icons/fa'
 import { MdHorizontalRule } from 'react-icons/md'
 import { VscSparkle } from 'react-icons/vsc'
-import { VscChevronDown, VscChromeClose, VscSplitHorizontal } from 'react-icons/vsc'
+import { VscChevronDown, VscChromeClose, VscError, VscInfo, VscLightbulb, VscSplitHorizontal, VscWarning } from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
 import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
@@ -67,6 +78,11 @@ export const MarkdownEditor = () => {
   const [noteTags, setNoteTags] = useAtom(noteTagByPathAtom)
   const saveNote = useSetAtom(saveNoteAtom)
   const createNote = useSetAtom(createNoteAtom)
+  const showToolbar = useAtomValue(showToolbarAtom)
+  const relativeLineNumbersEnabled = useAtomValue(relativeLineNumbersEnabledAtom)
+  const lineWrappingEnabled = useAtomValue(lineWrappingEnabledAtom)
+  const tabIndentUnit = useAtomValue(tabIndentUnitAtom)
+  const vimModeEnabled = useAtomValue(vimModeEnabledAtom)
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
 
@@ -96,6 +112,88 @@ export const MarkdownEditor = () => {
   const [aiProgress, setAiProgress] = useState(0)
   const [aiError, setAiError] = useState<string | null>(null)
   const [showFAB, setShowFAB] = useState(false)
+
+  const getReactNodeText = useCallback((node: unknown): string => {
+    if (node == null) return ''
+    if (typeof node === 'string' || typeof node === 'number') return String(node)
+    if (Array.isArray(node)) return node.map(getReactNodeText).join('')
+    if (isValidElement(node)) return getReactNodeText((node.props as any)?.children)
+    return ''
+  }, [])
+
+  const getCalloutMeta = useCallback((type: string) => {
+    const upper = type.toUpperCase()
+    const isDark = isDarkMode
+
+    const make = (
+      label: string,
+      Icon: any,
+      colors: { light: { border: string; fg: string }; dark: { border: string; fg: string } }
+    ) => {
+      const c = isDark ? colors.dark : colors.light
+      return { label, Icon, ...c }
+    }
+
+    switch (upper) {
+      case 'NOTE':
+        return make('Note', VscInfo, {
+          light: { border: '#3b82f6', fg: '#2563eb' },
+          dark: { border: '#60a5fa', fg: '#93c5fd' },
+        })
+      case 'TIP':
+        return make('Tip', VscLightbulb, {
+          light: { border: '#22c55e', fg: '#16a34a' },
+          dark: { border: '#34d399', fg: '#6ee7b7' },
+        })
+      case 'IMPORTANT':
+        return make('Important', VscWarning, {
+          light: { border: '#a855f7', fg: '#a855f7' },
+          dark: { border: '#c084fc', fg: '#d8b4fe' },
+        })
+      case 'WARNING':
+        return make('Warning', VscWarning, {
+          light: { border: '#f97316', fg: '#f97316' },
+          dark: { border: '#fb923c', fg: '#fdba74' },
+        })
+      case 'CAUTION':
+        return make('Caution', VscError, {
+          light: { border: '#ef4444', fg: '#ef4444' },
+          dark: { border: '#f87171', fg: '#fecaca' },
+        })
+      default:
+        return null
+    }
+  }, [isDarkMode])
+
+  const vimCompartment = useMemo(() => new Compartment(), [])
+  const relativeLineNumbersCompartment = useMemo(() => new Compartment(), [])
+  const lineWrappingCompartment = useMemo(() => new Compartment(), [])
+  const tabIndentCompartment = useMemo(() => new Compartment(), [])
+
+  const applyEditorSettings = useCallback(() => {
+    const view = viewRef.current
+    if (!view) return
+
+    view.dispatch({
+      effects: [
+        vimCompartment.reconfigure(vimModeEnabled ? vim() : []),
+        relativeLineNumbersCompartment.reconfigure(
+          relativeLineNumbersEnabled ? relativeLineNumbers() : []
+        ),
+        lineWrappingCompartment.reconfigure(lineWrappingEnabled ? EditorView.lineWrapping : []),
+        tabIndentCompartment.reconfigure(tabAsSpaces(tabIndentUnit)),
+      ],
+    })
+  }, [
+    lineWrappingCompartment,
+    lineWrappingEnabled,
+    relativeLineNumbersCompartment,
+    relativeLineNumbersEnabled,
+    tabIndentCompartment,
+    tabIndentUnit,
+    vimCompartment,
+    vimModeEnabled,
+  ])
 
   // Save queue management
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
@@ -150,7 +248,7 @@ export const MarkdownEditor = () => {
       history(),
       getEditorTheme(isDarkMode),
       keymap.of([...defaultKeymap, ...historyKeymap]),
-      vim(),
+      vimCompartment.of([]),
       drawSelection(),
       closeBrackets(),
       autoCloseTags,
@@ -181,19 +279,19 @@ export const MarkdownEditor = () => {
       }),
       syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle),
       autocompletion({ activateOnTyping: true, icons: true }),
-      relativeLineNumbers(),
+      relativeLineNumbersCompartment.of([]),
       markdownTableEnhancement,
-      EditorView.lineWrapping,
+      lineWrappingCompartment.of([]),
       checkboxExtension,
       statusBarExtension,
-      tabAsSpaces,
+      tabIndentCompartment.of([]),
       codeBlockCopy,
       codeBlockBackground,
       quoteLineStyling,
       tripleBacktickExtension,
       createLivePreviewImages(selectedNote?.path),
     ],
-    [isDarkMode, selectedNote?.path]
+    [isDarkMode, lineWrappingCompartment, relativeLineNumbersCompartment, selectedNote?.path, tabIndentCompartment, vimCompartment]
   )
 
   // Optimized save function with queue
@@ -452,6 +550,7 @@ export const MarkdownEditor = () => {
 
       if (viewRef.current) viewRef.current.destroy()
       viewRef.current = new EditorView({ state, parent: editorRef.current! })
+      applyEditorSettings()
       isSwitchingRef.current = false
     }
 
@@ -467,8 +566,13 @@ export const MarkdownEditor = () => {
     debouncedSave,
     selectedNote,
     handleBlurSave,
-    handleEditorImageDrop
+    handleEditorImageDrop,
+    applyEditorSettings,
   ])
+
+  useEffect(() => {
+    applyEditorSettings()
+  }, [applyEditorSettings])
 
   // Destroy editor if no note is selected
   useEffect(() => {
@@ -801,7 +905,9 @@ export const MarkdownEditor = () => {
         </div>
       </div>
 
-      {!isFullPreview && <MarkdownToolbar view={viewRef.current} onWriteWithAi={() => void openAiModal()} />}
+      {!isFullPreview && showToolbar && (
+        <MarkdownToolbar view={viewRef.current} onWriteWithAi={() => void openAiModal()} />
+      )}
 
       <div
         ref={containerRef}
@@ -927,9 +1033,47 @@ export const MarkdownEditor = () => {
                       </strong>
                     ),
                     blockquote: ({ children }) => (
-                      <blockquote className="pl-2 my-4 italic text-[var(--obsidian-quote-text)] [&_p]:!text-[var(--obsidian-quote-text)] [&_p]:italic [&_li]:!text-[var(--obsidian-quote-text)] [&_li]:italic">
-                        {children}
-                      </blockquote>
+                      (() => {
+                        const parts = Children.toArray(children).filter((child) => {
+                          if (typeof child === 'string') return child.trim().length > 0
+                          return child != null
+                        })
+                        const first = parts[0]
+
+                        const firstText = getReactNodeText(first).trim()
+                        const match = /^\[!([A-Za-z]+)\]\s*(.*)$/.exec(firstText)
+                        if (match) {
+                          const meta = getCalloutMeta(match[1])
+                          if (meta) {
+                            const remainder = (match[2] || '').trim()
+                            const rest = parts.slice(1)
+                            const Icon = meta.Icon
+                            return (
+                              <div
+                                className="my-4 pl-4"
+                                style={{
+                                  borderLeft: `4px solid ${meta.border}`,
+                                }}
+                              >
+                                <div className="flex items-center gap-2 mb-3" style={{ color: meta.fg }}>
+                                  <Icon className="w-5 h-5" />
+                                  <div className="text-lg font-semibold">{meta.label}</div>
+                                </div>
+                                <div className="text-[var(--obsidian-text)] [&_p]:mb-0">
+                                  {remainder ? <p>{remainder}</p> : null}
+                                  {rest}
+                                </div>
+                              </div>
+                            )
+                          }
+                        }
+
+                        return (
+                          <blockquote className="pl-2 my-4 italic text-[var(--obsidian-quote-text)] [&_p]:!text-[var(--obsidian-quote-text)] [&_p]:italic [&_li]:!text-[var(--obsidian-quote-text)] [&_li]:italic">
+                            {children}
+                          </blockquote>
+                        )
+                      })()
                     ),
                     a: ({ href, children }) => {
                       const isImage = href && (

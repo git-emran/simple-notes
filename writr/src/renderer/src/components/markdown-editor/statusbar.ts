@@ -23,6 +23,8 @@ export const statusBarExtension = ViewPlugin.fromClass(
         font-family: sans-serif;
         pointer-events: none;
         z-index: 10;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       `
 
       const parent = view.dom.parentElement
@@ -62,11 +64,11 @@ export const statusBarExtension = ViewPlugin.fromClass(
 
     applyColors() {
       if (this.darkMode) {
-        this.dom.style.background = '#4A4A4F' // dark gray
+        this.dom.style.background = 'rgba(74, 74, 79, 0.6)' // dark gray @ 60%
         this.dom.style.color = '#d1d5db' // light gray text
         this.dom.style.borderTop = '1px solid #374151'
       } else {
-        this.dom.style.background = '#DEDEDE' // light gray
+        this.dom.style.background = 'rgba(222, 222, 222, 0.6)' // light gray @ 60%
         this.dom.style.color = '#919191' // dark gray text
         this.dom.style.borderTop = '1px solid #d1d5db'
       }
