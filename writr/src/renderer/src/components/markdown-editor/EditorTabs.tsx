@@ -44,7 +44,7 @@ export const EditorTabs = () => {
                 "text-[11px] font-medium truncate flex-1 tracking-tight",
                 isActive ? "opacity-100" : "opacity-80 group-hover:opacity-100"
             )}>
-              {(tab.path ? tab.name.replace(/\.(md|canvas)$/, '') : tab.name)}
+              {(tab.kind === 'file' && tab.path ? tab.name.replace(/\.(md|canvas)$/, '') : tab.name)}
             </span>
 
             <button

@@ -10,6 +10,7 @@ import { SidebarSearch } from './components/SidebarSearch'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
 import { SettingsModal } from './components/SettingsModal'
+import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { useRef, useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { 
@@ -19,6 +20,8 @@ import {
   restoreClosedTabAtom,
   createCanvasAtom,
   selectedNodeAtom,
+  activeTabKindAtom,
+  createKanbanTabAtom,
   editorFontAtom,
   editorFontSizeAtom,
   themeModeAtom
@@ -29,6 +32,7 @@ import {
   VscCalendar,
   VscChevronLeft,
   VscChevronRight,
+  VscProject,
   VscSymbolRuler,
   VscSettingsGear
 } from 'react-icons/vsc'
@@ -48,7 +52,9 @@ const App = () => {
   const closeActiveTab = useSetAtom(closeActiveTabAtom)
   const restoreClosedTab = useSetAtom(restoreClosedTabAtom)
   const createCanvas = useSetAtom(createCanvasAtom)
+  const createKanbanTab = useSetAtom(createKanbanTabAtom)
   const selectedNode = useAtomValue(selectedNodeAtom)
+  const activeTabKind = useAtomValue(activeTabKindAtom)
   const themeMode = useAtomValue(themeModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
@@ -240,6 +246,16 @@ const App = () => {
               <VscCalendar />
             </button>
             <button
+              className="obsidian-ribbon-btn"
+              title="Kanban"
+              onClick={() => {
+                setCollapsed(false)
+                createKanbanTab()
+              }}
+            >
+              <VscProject />
+            </button>
+            <button
               className={`obsidian-ribbon-btn ${appMode === 'canvas' ? 'is-active' : ''}`}
               title="Canvas"
               onClick={handleCanvasClick}
@@ -271,7 +287,11 @@ const App = () => {
             className="relative h-full flex flex-col obsidian-workspace"
           >
             <div className="flex-1 overflow-hidden h-full">
-              {appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />}
+              {activeTabKind === 'kanban' ? (
+                <KanbanBoard />
+              ) : (
+                (appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />)
+              )}
             </div>
             {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
           </Content>

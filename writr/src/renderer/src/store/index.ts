@@ -3,6 +3,7 @@ import { atom } from 'jotai'
 import { atomWithStorage, unwrap } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
 export * from './settingsStore'
+export * from './kanbanStore'
 
 // File Tree Atoms
 const loadFileTree = async () => {
@@ -39,6 +40,7 @@ export const selectedNodeAtom = atom<FileNode | null>(null)
 // Tabs State
 export type EditorTab = {
   id: string
+  kind: 'empty' | 'file' | 'kanban'
   path: string | null
   name: string
 }
@@ -50,11 +52,12 @@ const getNameFromPath = (filePath: string) => {
 
 const createEmptyTab = (): EditorTab => ({
   id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  kind: 'empty',
   path: null,
   name: 'New Tab',
 })
 
-export const tabsAtom = atom<EditorTab[]>([{ id: 'tab-1', path: null, name: 'New Tab' }])
+export const tabsAtom = atom<EditorTab[]>([{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
 export const closedTabsHistoryAtom = atom<EditorTab[]>([])
 export const activeTabIdAtom = atom<string>('tab-1')
 
@@ -65,11 +68,18 @@ export const activeTabPathAtom = atom<string | null>((get) => {
   return activeTab?.path ?? null
 })
 
+export const activeTabKindAtom = atom<EditorTab['kind']>((get) => {
+  const tabs = get(tabsAtom)
+  const activeId = get(activeTabIdAtom)
+  const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0]
+  return activeTab?.kind ?? 'empty'
+})
+
 export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
   set(activeTabIdAtom, tabId)
   const tabs = get(tabsAtom)
   const next = tabs.find((t) => t.id === tabId) ?? tabs[0]
-  if (!next?.path) {
+  if (!next || next.kind !== 'file' || !next.path) {
     set(selectedNodeAtom, null)
     return
   }
@@ -91,6 +101,25 @@ export const createNewTabAtom = atom(null, (get, set) => {
   set(selectedNodeAtom, null)
 })
 
+export const createKanbanTabAtom = atom(null, (get, set) => {
+  const tabs = get(tabsAtom)
+  const existing = tabs.find((t) => t.kind === 'kanban')
+  if (existing) {
+    set(activeTabIdAtom, existing.id)
+    set(selectedNodeAtom, null)
+    return
+  }
+  const nextTab: EditorTab = {
+    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    kind: 'kanban',
+    path: null,
+    name: 'Kanban',
+  }
+  set(tabsAtom, [...tabs, nextTab])
+  set(activeTabIdAtom, nextTab.id)
+  set(selectedNodeAtom, null)
+})
+
 export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   if (node.type !== 'file') return
 
@@ -99,16 +128,26 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   const name = getNameFromPath(node.path)
 
   if (tabs.length === 0) {
-    const onlyTab: EditorTab = { id: 'tab-1', path: node.path, name }
+    const onlyTab: EditorTab = { id: 'tab-1', kind: 'file', path: node.path, name }
     set(tabsAtom, [onlyTab])
     set(activeTabIdAtom, onlyTab.id)
     set(selectedNodeAtom, node)
     return
   }
 
+  const activeTab = tabs.find((t) => t.id === activeId)
+  const targetId =
+    activeTab?.kind === 'kanban'
+      ? (tabs.find((t) => t.kind !== 'kanban')?.id ?? activeId)
+      : activeId
+
+  if (targetId !== activeId) {
+    set(activeTabIdAtom, targetId)
+  }
+
   const nextTabs = tabs.map((tab) => {
-    if (tab.id !== activeId) return tab
-    return { ...tab, path: node.path, name }
+    if (tab.id !== targetId) return tab
+    return { ...tab, kind: 'file' as const, path: node.path, name }
   })
 
   set(tabsAtom, nextTabs)
@@ -164,7 +203,7 @@ export const closeTabAtom = atom(null, (get, set, tabId: string) => {
 
   const nextTabs = tabs.filter((t) => t.id !== tabId)
   if (nextTabs.length === 0) {
-    set(tabsAtom, [{ id: 'tab-1', path: null, name: 'New Tab' }])
+    set(tabsAtom, [{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
     set(activeTabIdAtom, 'tab-1')
     set(selectedNodeAtom, null)
     return
