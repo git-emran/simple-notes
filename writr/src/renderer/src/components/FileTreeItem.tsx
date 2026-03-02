@@ -22,6 +22,12 @@ const getParentPath = (fullPath: string) => {
   return idx === -1 ? '' : fullPath.substring(0, idx)
 }
 
+const joinPath = (parentPath: string, name: string) => {
+  if (!parentPath) return name
+  const separator = parentPath.includes('\\') ? '\\' : '/'
+  return `${parentPath}${separator}${name}`
+}
+
 const splitFileName = (name: string) => {
   const lastDotIndex = name.lastIndexOf('.')
   if (lastDotIndex <= 0) return { base: name, ext: '' }
@@ -154,13 +160,13 @@ const FileTreeItemComponent = ({
     const fileName = getBasenameFromPath(src)
 
     if (node.type === 'folder') {
-      const dest = `${node.path}/${fileName}`
+      const dest = joinPath(node.path, fileName)
       onDropNode?.(src, dest)
       return
     }
 
     const parentPath = getParentPath(node.path)
-    const dest = `${parentPath}/${fileName}`
+    const dest = joinPath(parentPath, fileName)
     if (dest !== src) {
       onDropNode?.(src, dest)
     }
@@ -178,7 +184,7 @@ const FileTreeItemComponent = ({
     }
 
     const parentPath = getParentPath(node.path)
-    const newPath = `${parentPath}/${newName}`
+    const newPath = joinPath(parentPath, newName)
     onDropNode?.(node.path, newPath)
   }
 
@@ -210,7 +216,7 @@ const FileTreeItemComponent = ({
   const renderMetaRow = () => {
     if (!showMeta) return null
     return (
-      <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden">
+      <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
         {node.lastEditTime && (
           <span className="shrink-0 whitespace-nowrap tabular-nums text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
             {formatRelativeEditedTime(node.lastEditTime)}

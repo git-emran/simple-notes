@@ -6,6 +6,7 @@ import {
   deleteNodeAtom,
   fileTreeAtom,
   fileTreeIndexAtom,
+  fileTreeUiByRootAtom,
   movePathAtom,
   notesRootDirAtom,
   noteStatusByPathAtom,
@@ -35,6 +36,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const notesRootDir = useAtomValue(notesRootDirAtom)
   const activeTabPath = useAtomValue(activeTabPathAtom)
   const [selectedNode, setSelectedNode] = useAtom(selectedNodeAtom)
+  const [fileTreeUiByRoot, setFileTreeUiByRoot] = useAtom(fileTreeUiByRootAtom)
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteTags = useAtomValue(noteTagByPathAtom)
   const createNote = useSetAtom(createNoteAtom)
@@ -44,15 +46,65 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const openTab = useSetAtom(openTabAtom)
   const reindexTodoStats = useSetAtom(reindexTodoStatsAtom)
 
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())
+  const rootKey = notesRootDir ?? '__no_root__'
+  const expandedNodeList = useMemo(() => fileTreeUiByRoot[rootKey]?.expanded ?? [], [fileTreeUiByRoot, rootKey])
+  const persistedScrollTop = useMemo(() => fileTreeUiByRoot[rootKey]?.scrollTop ?? 0, [fileTreeUiByRoot, rootKey])
+  const expandedNodes = useMemo(() => new Set(expandedNodeList), [expandedNodeList])
+  const setExpandedNodes = useCallback(
+    (updater: (prev: Set<string>) => Set<string>) => {
+      setFileTreeUiByRoot((prev) => {
+        const current = prev[rootKey] ?? { expanded: [], scrollTop: 0 }
+        const nextSet = updater(new Set(current.expanded))
+        return {
+          ...prev,
+          [rootKey]: {
+            ...current,
+            expanded: Array.from(nextSet).sort()
+          }
+        }
+      })
+    },
+    [rootKey, setFileTreeUiByRoot]
+  )
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
   const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
   const [showScrollbar, setShowScrollbar] = useState(false)
   const scrollbarTimerRef = useRef<number | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
+  const scrollTopRef = useRef(0)
   const [viewportHeight, setViewportHeight] = useState(1)
   const rafScrollRef = useRef<number | null>(null)
+  const rafResizeRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    scrollTopRef.current = scrollTop
+  }, [scrollTop])
+
+  useEffect(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+
+    const target = persistedScrollTop
+    const raf = window.requestAnimationFrame(() => {
+      el.scrollTop = target
+      setScrollTop(el.scrollTop)
+    })
+    return () => window.cancelAnimationFrame(raf)
+  }, [persistedScrollTop, rootKey])
+
+  useEffect(() => {
+    return () => {
+      setFileTreeUiByRoot((prev) => {
+        const current = prev[rootKey] ?? { expanded: [], scrollTop: 0 }
+        if (current.scrollTop === scrollTopRef.current) return prev
+        return {
+          ...prev,
+          [rootKey]: { ...current, scrollTop: scrollTopRef.current }
+        }
+      })
+    }
+  }, [rootKey, setFileTreeUiByRoot])
 
   const allFolderPaths = useMemo(() => {
     const paths: string[] = []
@@ -106,6 +158,9 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
       if (rafScrollRef.current) {
         window.cancelAnimationFrame(rafScrollRef.current)
       }
+      if (rafResizeRef.current) {
+        window.cancelAnimationFrame(rafResizeRef.current)
+      }
     }
   }, [])
 
@@ -114,7 +169,11 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     if (!el) return
 
     const ro = new ResizeObserver(() => {
-      setViewportHeight(el.clientHeight || 1)
+      if (rafResizeRef.current) return
+      rafResizeRef.current = window.requestAnimationFrame(() => {
+        rafResizeRef.current = null
+        setViewportHeight(el.clientHeight || 1)
+      })
     })
     ro.observe(el)
     setViewportHeight(el.clientHeight || 1)
@@ -156,7 +215,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
       }
       return next
     })
-  }, [])
+  }, [setExpandedNodes])
 
   const handleCreateNote = useCallback(() => {
     const parent = getCreationParent()
@@ -169,7 +228,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         return next
       })
     }
-  }, [createNote, getCreationParent])
+  }, [createNote, getCreationParent, setExpandedNodes])
 
   const handleCreateDirectory = useCallback(() => {
     const parent = getCreationParent()
@@ -182,15 +241,15 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         return next
       })
     }
-  }, [createDirectory, getCreationParent])
+  }, [createDirectory, getCreationParent, setExpandedNodes])
 
   const handleCollapseAll = useCallback(() => {
-    setExpandedNodes(new Set())
-  }, [])
+    setExpandedNodes(() => new Set())
+  }, [setExpandedNodes])
 
   const handleExpandAll = useCallback(() => {
-    setExpandedNodes(new Set(allFolderPaths))
-  }, [allFolderPaths])
+    setExpandedNodes(() => new Set(allFolderPaths))
+  }, [allFolderPaths, setExpandedNodes])
 
   const handleDelete = useCallback(
     (path: string) => {
