@@ -18,10 +18,9 @@ import {
   ListFreeAiModels,
   GenerateWithAi,
 } from '@shared/types'
-import { BrowserWindow, dialog } from 'electron'
+import { BrowserWindow, dialog, shell } from 'electron'
 import { copy, readFile, writeFile, move, pathExists } from 'fs-extra'
 import { ensureDir, readdir, stat } from 'fs-extra'
-import { remove } from 'fs-extra'
 import { isEmpty } from 'lodash'
 import { homedir } from 'os'
 import path from 'path'
@@ -150,7 +149,7 @@ export const deleteNote: DeleteNote = async (filename) => {
   }
 
   console.info(`Deleting note: ${filename}`)
-  await remove(safePath)
+  await shell.trashItem(safePath)
 
   return true
 }
@@ -168,6 +167,9 @@ export const getFileTree: GetFileTree = async () => {
         const isDirectory = dirent.isDirectory()
 
         if (isDirectory) {
+          // Hide the root-level image storage folder from the notes file tree
+          if (currentDir === rootDir && dirent.name === 'image') return null
+
           return {
             id: res,
             name: dirent.name,
@@ -321,7 +323,7 @@ export const deletePath: DeletePath = async (filePath) => {
 
     if (response === 1) return false
 
-    await remove(safePath)
+    await shell.trashItem(safePath)
     return true
   } catch (error) {
     console.error(error)
