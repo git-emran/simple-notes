@@ -3,38 +3,102 @@
 > Built with love by A passionate Vim enthusiast, Emran Hossain.
 
 #### Download macOS application:
+
 [Writer macOS](https://drive.google.com/drive/u/0/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1)
 
 Welcome to **Writer**. This is a _markdown_ Text editor, a Desktop app for macOS. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
 
 <img width="1032" height="794" alt="writer_new" src="https://github.com/user-attachments/assets/b7f4bc53-a0f5-4354-bbb4-3bf2b11ec1bc" />
 
+# New Release: Whats new in 2.02
+
+Another Big update for the Writer. Fresh new features and big leap toward improving product development workflow.
+
+### **Canvas:**
+
+- Create flowchart and diagrams in an interactive environment.
+- Also you can export the canvas as a pdf.
+
+### **Kanban Board**:
+
+- New Kanban board to manage your backlog of tasks more efficiently.
+
+### **Daily Note:**
+
+- Creates a daily note with the current Date as a filename.
+
+### **Header redesign:**
+
+- Redesigned top header of the app
+
+### **Note status:**
+
+- With Note status, it is easy to keep track of the progress of your notes. For example, Status - Active to mark the active progress of the note along side with hold, completed and dropped.
+
+### **Add Custom Tags:**
+
+- Along with the default tags, add custom tags to keep track of your specialized note.
+
+### **Progress Bar**:
+
+- Whenever you create a checkbox list, a Progress Bar appears underneath your filename in the file tree.
+
+### **Split view and Preview mode as a FAB**:
+
+- Split view and Preview mode are now presented as a floating action button for a better user experience.
+
+### **Custom Alerts**:
+
+- Custom alerts now available, you can write them like this.
+
+```
+> [!NOTE]
+> Highlights information that users should take into account, even when skimming.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention due to potential risks.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+### **Settings menu**:
+
+- Typical settings menu to control the Appearance and Interface controls
+
+### **Security Updates**
+
+- Improved filetree read for every collapse all and expand all, Added memoization and filetree state persistance, Progress bar UX improvements.
 
 # Use Features like
 
 ### Write with AI
+
 Although right now the AI will only write new content, soon it will have context of your written note to add or substract based on the direction.
 
 ![write_with_ai_writer](https://github.com/user-attachments/assets/8973d139-258e-4b05-a81e-07903bf99f31)
-
 
 ### "Flowchart creation" using Mermaidjs
 
 ![mermaidjs](https://github.com/user-attachments/assets/bc8f467a-52fd-433e-ade6-31614fe8c235)
 
-
 ### Code Completions
+
 <img width="887" height="660" alt="lsp" src="https://github.com/user-attachments/assets/8d151180-8be6-44fb-9c91-04c879025f54" />
 
 ##### New Release:
+
 ## Version 2.0:
 
 - 🔥 **Redesigned UI**. Redesigned color scheme and UI components that looks good and soothing for the eye for both light and dark mode.
-- 🔥 **Write with AI mode**. Writing with AI is here. With the power of the Open-router models and all the other available open-source LLM's, writing with AI remains free as long as you have the API key from the respective model, Which wouldn't cost any money because they are free to use. 
-- 🔥 **File Search**. Better late than never, file search is now available on Writer. 
-
-
-
+- 🔥 **Write with AI mode**. Writing with AI is here. With the power of the Open-router models and all the other available open-source LLM's, writing with AI remains free as long as you have the API key from the respective model, Which wouldn't cost any money because they are free to use.
+- 🔥 **File Search**. Better late than never, file search is now available on Writer.
 
 # What is Writer
 
