@@ -18,13 +18,13 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     height: '100%',
     fontSize: editorFontSizeVar,
     lineHeight: '1.55',
-    backgroundColor: isDark ? '#232530' : '#ffffff',
+    backgroundColor: isDark ? '#232530' : 'var(--obsidian-workspace)',
     color: isDark ? '#d4d7df' : '#111827'
   },
   '.cm-scroller': {
     fontFamily: editorFontFamilyVar,
     padding: '0',
-    backgroundColor: isDark ? '#232530' : '#ffffff'
+    backgroundColor: isDark ? '#232530' : 'var(--obsidian-workspace)'
   },
   '.cm-focused': {
     outline: 'none'
@@ -38,7 +38,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     paddingRight: '24px'
   },
   '.cm-gutters': {
-    backgroundColor: isDark ? '#232530' : '#ffffff',
+    backgroundColor: isDark ? '#232530' : 'var(--obsidian-workspace)',
     paddingLeft: '0',
     borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.16)'
   },
@@ -142,19 +142,19 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     overflow: 'visible'
   },
   '.cm-codeblock-line': {
-    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.24)' : 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.09)' : 'rgba(0, 0, 0, 0.0175)',
   }
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
-  { tag: tags.heading1, color: '#2563eb', fontWeight: 'bold', fontSize: '1.5em' },
-  { tag: tags.heading2, color: '#1d4ed8', fontWeight: 'bold', fontSize: '1.3em' },
-  { tag: tags.heading3, color: '#1e40af', fontWeight: 'bold', fontSize: '1.2em' },
-  { tag: tags.heading4, color: '#1e3a8a', fontWeight: 'bold', fontSize: '1.1em' },
-  { tag: tags.heading5, color: '#1e3a8a', fontWeight: 'bold' },
-  { tag: tags.heading6, color: '#1e3a8a', fontWeight: 'bold' },
-  { tag: tags.strong, fontWeight: 'bold', color: '#374151' },
-  { tag: tags.emphasis, fontStyle: 'italic', color: '#4b5563' },
+  { tag: tags.heading1, color: '#517FB8', fontWeight: 'bold', fontSize: '1.5em' },
+  { tag: tags.heading2, color: '#517FB8', fontWeight: 'bold', fontSize: '1.3em' },
+  { tag: tags.heading3, color: '#517FB8', fontWeight: 'bold', fontSize: '1.2em' },
+  { tag: tags.heading4, color: '#517FB8', fontWeight: 'bold', fontSize: '1.1em' },
+  { tag: tags.heading5, color: '#517FB8', fontWeight: 'bold' },
+  { tag: tags.heading6, color: '#517FB8', fontWeight: 'bold' },
+  { tag: tags.strong, fontWeight: 'bold', color: '#D44957' },
+  { tag: tags.emphasis, fontStyle: 'italic', fontWeight: '500', color: '#DA8267' },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#6b7280' },
   {
     tag: tags.monospace,
@@ -189,27 +189,26 @@ export const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.regexp, color: '#dc2626' },
   { tag: tags.link, color: '#2563eb', textDecoration: 'underline' },
   { tag: tags.url, color: '#2563eb', textDecoration: 'underline' },
-  { tag: tags.list, color: '#374151' },
   {
     tag: tags.quote,
     color: 'var(--obsidian-quote-text)',
     fontStyle: 'italic',
     paddingLeft: '6px'
   },
-  { tag: tags.meta, color: '#9ca3af', opacity: '0.7' },
+  { tag: tags.meta, color: '#9abce6', opacity: '0.85' },
   { tag: tags.contentSeparator, color: '#9ca3af' },
-  { tag: tags.processingInstruction, color: '#7c3aed', fontStyle: 'italic' }
+  { tag: tags.processingInstruction, color: '#9abce6', opacity: '0.85' }
 ])
 
 export const markdownHighlightStyleDark = HighlightStyle.define([
-  { tag: tags.heading1, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.5em' },
-  { tag: tags.heading2, color: '#3b82f6', fontWeight: 'bold', fontSize: '1.3em' },
-  { tag: tags.heading3, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.2em' },
-  { tag: tags.heading4, color: '#60a5fa', fontWeight: 'bold', fontSize: '1.1em' },
-  { tag: tags.heading5, color: '#60a5fa', fontWeight: 'bold' },
-  { tag: tags.heading6, color: '#60a5fa', fontWeight: 'bold' },
-  { tag: tags.strong, fontWeight: 'bold', color: '#f9fafb' },
-  { tag: tags.emphasis, fontStyle: 'italic', color: '#e5e7eb' },
+  { tag: tags.heading1, color: '#517FB8', fontWeight: 'bold', fontSize: '1.5em' },
+  { tag: tags.heading2, color: '#517FB8', fontWeight: 'bold', fontSize: '1.3em' },
+  { tag: tags.heading3, color: '#517FB8', fontWeight: 'bold', fontSize: '1.2em' },
+  { tag: tags.heading4, color: '#517FB8', fontWeight: 'bold', fontSize: '1.1em' },
+  { tag: tags.heading5, color: '#517FB8', fontWeight: 'bold' },
+  { tag: tags.heading6, color: '#517FB8', fontWeight: 'bold' },
+  { tag: tags.strong, fontWeight: 'bold', color: '#D44957' },
+  { tag: tags.emphasis, fontStyle: 'italic', fontWeight: '500', color: '#DA8267' },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#9ca3af' },
   {
     tag: tags.monospace,
@@ -244,15 +243,14 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
   { tag: tags.regexp, color: '#f87171' },
   { tag: tags.link, color: '#60a5fa', textDecoration: 'underline' },
   { tag: tags.url, color: '#60a5fa', textDecoration: 'underline' },
-  { tag: tags.list, color: '#60a5fa' },
   {
     tag: tags.quote,
     color: 'var(--obsidian-quote-text)',
     fontStyle: 'italic',
     paddingLeft: '6px'
   },
-  { tag: tags.meta, color: '#6b7280', opacity: '0.7' },
+  { tag: tags.meta, color: '#9abce6', opacity: '0.85' },
   { tag: tags.contentSeparator, color: '#ffffff' },
   { tag: tags.content, color: '#D6D6D6' },
-  { tag: tags.processingInstruction, color: '#a78bfa', fontStyle: 'italic' }
+  { tag: tags.processingInstruction, color: '#9abce6', opacity: '0.85' }
 ])

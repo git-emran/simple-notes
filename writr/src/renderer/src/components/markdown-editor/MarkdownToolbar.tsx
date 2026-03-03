@@ -11,7 +11,8 @@ import {
   FaCheckSquare,
   FaStrikethrough,
   FaChevronDown,
-  FaImage
+  FaImage,
+  FaKeyboard
 } from "react-icons/fa"
 import { MdHorizontalRule } from "react-icons/md"
 import { VscSparkle } from "react-icons/vsc"
@@ -189,6 +190,15 @@ export const MarkdownToolbar = ({
         title="Strikethrough (Ctrl+D)"
       >
         <FaStrikethrough />
+      </button>
+
+      <button
+        onClick={() => commands.insertKbd(view)}
+        disabled={!view}
+        className={btnClass}
+        title="Keyboard key (<kbd>)"
+      >
+        <FaKeyboard />
       </button>
 
       <div className="w-px h-4 bg-[var(--obsidian-border)] mx-2" />

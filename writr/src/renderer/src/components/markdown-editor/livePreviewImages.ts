@@ -30,7 +30,8 @@ class ImageWidget extends WidgetType {
     const img = document.createElement("img")
     img.src = finalSrc
     img.alt = this.alt
-    img.className = "max-w-full w-auto h-auto rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800"
+    img.className =
+      "max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] border border-zinc-200 dark:border-zinc-800"
     img.style.maxHeight = "400px" // Mimic Obsidian's default constraint
     img.style.maxWidth = "min(100%, 720px)"
 

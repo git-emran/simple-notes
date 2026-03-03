@@ -26,6 +26,7 @@ import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting } from '@codemirror/language'
 import { markdownLanguage } from "@codemirror/lang-markdown"
 import SyntaxHighlighter from 'react-syntax-highlighter'
+import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import { gutterTheme, getEditorTheme, markdownHighlightStyle, markdownHighlightStyleDark } from './editorTheme'
 import { codeLanguages } from './languageConfig'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
@@ -60,10 +61,11 @@ import { MdDragIndicator } from "react-icons/md";
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import * as commands from './editorCommands'
 import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
+import { markdownMarkupColors } from './markdownMarkupColors'
 import { 
   FaBold, FaItalic, FaStrikethrough, FaQuoteRight, 
   FaListUl, FaCheckSquare, FaCode, 
-  FaLink, FaImage, FaTable, FaHeading 
+  FaLink, FaImage, FaTable, FaHeading, FaKeyboard
 } from 'react-icons/fa'
 import { MdHorizontalRule } from 'react-icons/md'
 import { VscSparkle } from 'react-icons/vsc'
@@ -119,6 +121,23 @@ export const MarkdownEditor = () => {
 
   const previewReadableWidthClass = 'mx-auto w-full min-w-0 max-w-[860px]'
 
+  const previewMarkdown = useMemo(() => {
+    const lines = debouncedContent.split('\n')
+    let inFence = false
+    const replaced = lines
+      .map((line) => {
+        if (/^\s*```/.test(line)) {
+          inFence = !inFence
+          return line
+        }
+        if (inFence) return line
+        return line.replace(/<kbd>(.*?)<\/kbd>/gi, (_, inner: string) => `\`kbd:${inner}\``)
+      })
+      .join('\n')
+
+    return replaced.replace(/!\[\[(.*?)\]\]/g, '![$1]($1)')
+  }, [debouncedContent])
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase()
@@ -127,6 +146,7 @@ export const MarkdownEditor = () => {
 
       if (isFullPreview) return
       if (isAiModalOpen) return
+      if (!selectedNote?.path) return
 
       e.preventDefault()
       e.stopPropagation()
@@ -136,7 +156,11 @@ export const MarkdownEditor = () => {
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [isAiModalOpen, isFullPreview])
+  }, [isAiModalOpen, isFullPreview, selectedNote?.path])
+
+  useEffect(() => {
+    if (!selectedNote?.path) setIsCommandPaletteOpen(false)
+  }, [selectedNote?.path])
 
   const getReactNodeText = useCallback((node: unknown): string => {
     if (node == null) return ''
@@ -306,7 +330,7 @@ export const MarkdownEditor = () => {
       closeBrackets(),
       autoCloseTags,
       gutterTheme,
-      markdown({ base: markdownLanguage, codeLanguages, addKeymap: true }),
+      markdown({ base: markdownLanguage, codeLanguages, addKeymap: true, completeHTMLTags: false }),
       javascript(),
       python(),
       rust(),
@@ -345,6 +369,7 @@ export const MarkdownEditor = () => {
       quoteLineStyling,
       tripleBacktickExtension,
       livePreviewImagesCompartment.of([]),
+      markdownMarkupColors,
     ],
     [
       highlightCompartment,
@@ -562,6 +587,14 @@ export const MarkdownEditor = () => {
         shortcut: 'Ctrl+D',
         keywords: ['strike'],
         run: () => commands.applyFormat(viewRef.current, '~~', '~~'),
+      },
+      {
+        type: 'item',
+        id: 'kbd',
+        label: 'Keyboard Key',
+        icon: <FaKeyboard className="h-3 w-3 opacity-60" />,
+        keywords: ['kbd', 'keyboard', 'key', 'shortcut'],
+        run: () => commands.insertKbd(viewRef.current),
       },
       {
         type: 'item',
@@ -1437,10 +1470,11 @@ export const MarkdownEditor = () => {
                       </li>
                     ),
                     strong: ({ children }) => (
-                      <strong className="font-semibold text-[var(--obsidian-text)]">
+                      <strong className="font-semibold text-[#D44957]">
                         {children}
                       </strong>
                     ),
+                    em: ({ children }) => <em className="italic font-medium text-[#DA8267]">{children}</em>,
                     blockquote: ({ children }) => (
                       (() => {
                         const parts = Children.toArray(children).filter((child) => {
@@ -1506,7 +1540,7 @@ export const MarkdownEditor = () => {
                             <img 
                               src={finalSrc} 
                               alt={String(children)} 
-                              className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
+                              className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
                               style={{ maxWidth: 'min(100%, 720px)' }}
                             />
                           </div>
@@ -1569,6 +1603,15 @@ export const MarkdownEditor = () => {
                         return <MermaidDiagram chart={codeContent} />
                       }
 
+                      if (isInline && codeContent.toLowerCase().startsWith('kbd:')) {
+                        const keyText = codeContent.slice(4)
+                        return (
+                          <kbd className="inline-flex items-center rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--obsidian-text)] shadow-[inset_0_-1px_0_rgba(0,0,0,0.22),0_10px_28px_rgba(0,0,0,0.06)]">
+                            {keyText}
+                          </kbd>
+                        )
+                      }
+
                       return isInline ? (
                         <code
                           className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono before:content-none after:content-none"
@@ -1581,12 +1624,14 @@ export const MarkdownEditor = () => {
                           PreTag="div"
                           children={codeContent}
                           language={language}
+                          style={isDarkMode ? vs2015 : vs}
                           customStyle={{
                             margin: '1rem 0',
                             borderRadius: '0.2rem',
-                            fontSize: '0.675rem',
+                            fontSize: '15px',
                             lineHeight: '1.5',
-                            overflowWrap: 'break-word'
+                            overflowWrap: 'break-word',
+                            ...(isDarkMode ? {} : { background: 'rgba(0, 0, 0, 0.0175)' }),
                           }}
                           codeTagProps={{
                             style: {
@@ -1608,7 +1653,7 @@ export const MarkdownEditor = () => {
                           <img 
                             src={finalSrc} 
                             alt={alt} 
-                            className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
+                            className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
                             style={{ maxWidth: 'min(100%, 720px)' }}
                           />
                         </div>
@@ -1616,7 +1661,7 @@ export const MarkdownEditor = () => {
                     }
                   }}
                 >
-                  {debouncedContent.replace(/!\[\[(.*?)\]\]/g, '![$1]($1)')}
+                  {previewMarkdown}
                 </ReactMarkdown>
                 </div>
               </div>

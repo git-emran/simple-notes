@@ -188,3 +188,7 @@ export const insertCodeBlock = (view: EditorView | null) => {
 
   view.focus()
 }
+
+export const insertKbd = (view: EditorView | null) => {
+  applyFormat(view, '<kbd>', '</kbd>')
+}

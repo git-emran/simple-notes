@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
+const CLOSE_ANIMATION_MS = 160
+
 export type CommandPaletteItem = {
   id: string
   label: string
@@ -22,9 +24,36 @@ export const CommandPaletteModal = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const closeTimerRef = useRef<number | null>(null)
 
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [shouldRender, setShouldRender] = useState(isOpen)
+  const [isShown, setIsShown] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isOpen) {
+      if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
+      setShouldRender(true)
+      const raf = window.requestAnimationFrame(() => setIsShown(true))
+      return () => window.cancelAnimationFrame(raf)
+    }
+
+    setIsShown(false)
+    if (!shouldRender) return undefined
+
+    closeTimerRef.current = window.setTimeout(() => {
+      setShouldRender(false)
+    }, CLOSE_ANIMATION_MS)
+
+    return undefined
+  }, [isOpen, shouldRender])
 
   useEffect(() => {
     if (!isOpen) return
@@ -59,19 +88,32 @@ export const CommandPaletteModal = ({
     item.run()
   }
 
-  if (!isOpen) return null
+  if (!shouldRender) return null
+
+  const easingClass = isOpen ? 'ease-in' : 'ease-out'
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[10000] flex items-start justify-center bg-black/45 px-4 pt-20"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
+      className="fixed inset-0 z-[10000] flex items-start justify-center px-4 pt-20"
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
     >
-      <div className="w-full max-w-xl overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl">
+      <div
+        className={twMerge(
+          'absolute inset-0 bg-black/45 transition-opacity duration-[160ms]',
+          easingClass,
+          isShown ? 'opacity-100' : 'opacity-0'
+        )}
+        onMouseDown={onClose}
+      />
+      <div
+        className={twMerge(
+          'relative z-10 w-full max-w-xl overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
+          easingClass,
+          isShown ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-1 scale-[0.98] opacity-0'
+        )}
+      >
         <div className="border-b border-[var(--obsidian-border-soft)] px-4 py-3">
           <input
             ref={inputRef}
