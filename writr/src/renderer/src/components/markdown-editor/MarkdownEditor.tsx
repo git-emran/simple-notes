@@ -1,5 +1,5 @@
 'use client'
-import { Children, isValidElement, useEffect, useRef, useCallback, useMemo, useState } from 'react'
+import { Children, isValidElement, useEffect, useRef, useCallback, useMemo, useState, type ReactNode } from 'react'
 import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView, keymap, drawSelection } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
@@ -59,6 +59,7 @@ import { quoteLineStyling } from './quoteLineStyling'
 import { MdDragIndicator } from "react-icons/md";
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import * as commands from './editorCommands'
+import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
 import { 
   FaBold, FaItalic, FaStrikethrough, FaQuoteRight, 
   FaListUl, FaCheckSquare, FaCode, 
@@ -105,6 +106,7 @@ export const MarkdownEditor = () => {
   const [exportNotice, setExportNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiModels, setAiModels] = useState<AiModelInfo[]>([])
   const [selectedAiModel, setSelectedAiModel] = useState('')
@@ -116,6 +118,25 @@ export const MarkdownEditor = () => {
   const [showFAB, setShowFAB] = useState(false)
 
   const previewReadableWidthClass = 'mx-auto w-full min-w-0 max-w-[860px]'
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      const isModP = key === 'p' && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey
+      if (!isModP) return
+
+      if (isFullPreview) return
+      if (isAiModalOpen) return
+
+      e.preventDefault()
+      e.stopPropagation()
+      setContextMenu(null)
+      setIsCommandPaletteOpen(true)
+    }
+
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [isAiModalOpen, isFullPreview])
 
   const getReactNodeText = useCallback((node: unknown): string => {
     if (node == null) return ''
@@ -500,6 +521,173 @@ export const MarkdownEditor = () => {
       setIsLoadingAiModels(false)
     }
   }, [])
+
+  type EditorMenuEntry =
+    | { type: 'separator'; id: string }
+    | {
+        type: 'item'
+        id: string
+        label: string
+        icon?: ReactNode
+        shortcut?: string
+        keywords?: string[]
+        run: () => void
+      }
+
+  const editorMenuEntries: EditorMenuEntry[] = useMemo(
+    () => [
+      {
+        type: 'item',
+        id: 'bold',
+        label: 'Bold',
+        icon: <FaBold className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+B',
+        keywords: ['strong'],
+        run: () => commands.applyFormat(viewRef.current, '**', '**'),
+      },
+      {
+        type: 'item',
+        id: 'italic',
+        label: 'Italic',
+        icon: <FaItalic className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+I',
+        keywords: ['emphasis'],
+        run: () => commands.applyFormat(viewRef.current, '*', '*'),
+      },
+      {
+        type: 'item',
+        id: 'strikethrough',
+        label: 'Strikethrough',
+        icon: <FaStrikethrough className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+D',
+        keywords: ['strike'],
+        run: () => commands.applyFormat(viewRef.current, '~~', '~~'),
+      },
+      {
+        type: 'item',
+        id: 'write-with-ai',
+        label: 'Write with AI',
+        icon: <VscSparkle className="h-3 w-3 opacity-60" />,
+        keywords: ['ai', 'generate', 'rewrite'],
+        run: () => void openAiModal(),
+      },
+      { type: 'separator', id: 'sep-1' },
+      {
+        type: 'item',
+        id: 'header-1',
+        label: 'Header 1',
+        icon: <FaHeading className="h-3 w-3 opacity-60" />,
+        keywords: ['heading', 'h1', 'title'],
+        run: () => commands.applyHeaderFormat(viewRef.current, 1),
+      },
+      {
+        type: 'item',
+        id: 'header-2',
+        label: 'Header 2',
+        icon: <FaHeading className="h-3 w-3 opacity-60" />,
+        keywords: ['heading', 'h2'],
+        run: () => commands.applyHeaderFormat(viewRef.current, 2),
+      },
+      {
+        type: 'item',
+        id: 'header-3',
+        label: 'Header 3',
+        icon: <FaHeading className="h-3 w-3 opacity-60" />,
+        keywords: ['heading', 'h3'],
+        run: () => commands.applyHeaderFormat(viewRef.current, 3),
+      },
+      { type: 'separator', id: 'sep-2' },
+      {
+        type: 'item',
+        id: 'quote',
+        label: 'Quote',
+        icon: <FaQuoteRight className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+Q',
+        keywords: ['blockquote'],
+        run: () => commands.applyLineFormat(viewRef.current, '> '),
+      },
+      {
+        type: 'item',
+        id: 'bullet-list',
+        label: 'Bullet List',
+        icon: <FaListUl className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+L',
+        keywords: ['list', 'unordered'],
+        run: () => commands.applyLineFormat(viewRef.current, '- '),
+      },
+      {
+        type: 'item',
+        id: 'task-list',
+        label: 'Task List',
+        icon: <FaCheckSquare className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+T',
+        keywords: ['checkbox', 'todo'],
+        run: () => commands.insertCheckbox(viewRef.current),
+      },
+      { type: 'separator', id: 'sep-3' },
+      {
+        type: 'item',
+        id: 'link',
+        label: 'Link',
+        icon: <FaLink className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+K',
+        keywords: ['url', 'hyperlink'],
+        run: () => commands.applyLinkFormat(viewRef.current),
+      },
+      {
+        type: 'item',
+        id: 'image',
+        label: 'Image',
+        icon: <FaImage className="h-3 w-3 opacity-60" />,
+        keywords: ['img', 'picture'],
+        run: () => commands.applyImageFormat(viewRef.current),
+      },
+      {
+        type: 'item',
+        id: 'table',
+        label: 'Table',
+        icon: <FaTable className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+Shift+T',
+        keywords: ['grid'],
+        run: () => commands.insertTable(viewRef.current),
+      },
+      {
+        type: 'item',
+        id: 'horizontal-rule',
+        label: 'Horizontal Rule',
+        icon: <MdHorizontalRule className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+H',
+        keywords: ['divider', 'hr'],
+        run: () => commands.insertHorizontalRule(viewRef.current),
+      },
+      { type: 'separator', id: 'sep-4' },
+      {
+        type: 'item',
+        id: 'code-block',
+        label: 'Code Block',
+        icon: <FaCode className="h-3 w-3 opacity-60" />,
+        shortcut: 'Ctrl+Shift+`',
+        keywords: ['code', 'fence', 'triple backtick'],
+        run: () => commands.insertCodeBlock(viewRef.current),
+      },
+    ],
+    [openAiModal]
+  )
+
+  const commandPaletteItems: CommandPaletteItem[] = useMemo(
+    () =>
+      editorMenuEntries
+        .filter((e): e is Extract<EditorMenuEntry, { type: 'item' }> => e.type === 'item')
+        .map(({ id, label, icon, shortcut, keywords, run }) => ({
+          id,
+          label,
+          icon,
+          shortcut,
+          keywords,
+          run,
+        })),
+    [editorMenuEntries]
+  )
 
   const insertAiText = useCallback((text: string) => {
     const view = viewRef.current
@@ -1431,96 +1619,42 @@ export const MarkdownEditor = () => {
           onClose={() => setContextMenu(null)}
           className="fixed z-50 bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar"
         >
-          <ContextMenuItem onClick={() => { commands.applyFormat(viewRef.current, "**", "**"); setContextMenu(null); }}>
-             <FaBold className="w-3 h-3 opacity-60" />
-             <span>Bold</span>
-             <span className="ml-auto text-[10px] opacity-40">Ctrl+B</span>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => { commands.applyFormat(viewRef.current, "*", "*"); setContextMenu(null); }}>
-             <FaItalic className="w-3 h-3 opacity-60" />
-             <span>Italic</span>
-             <span className="ml-auto text-[10px] opacity-40">Ctrl+I</span>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => { commands.applyFormat(viewRef.current, "~~", "~~"); setContextMenu(null); }}>
-             <FaStrikethrough className="w-3 h-3 opacity-60" />
-             <span>Strikethrough</span>
-             <span className="ml-auto text-[10px] opacity-40">Ctrl+D</span>
-          </ContextMenuItem>
+          {editorMenuEntries.map((entry) => {
+            if (entry.type === 'separator') {
+              return (
+                <div
+                  key={entry.id}
+                  className="my-1 h-px bg-[var(--obsidian-border-soft)]"
+                />
+              )
+            }
 
-          <ContextMenuItem onClick={() => { void openAiModal(); }}>
-             <VscSparkle className="w-3 h-3 opacity-60" />
-             <span>Write with AI</span>
-          </ContextMenuItem>
-
-          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
-          
-          <ContextMenuItem onClick={() => { commands.applyHeaderFormat(viewRef.current, 1); setContextMenu(null); }}>
-            <FaHeading className="w-3 h-3 opacity-60" />
-            <span>Header 1</span>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => { commands.applyHeaderFormat(viewRef.current, 2); setContextMenu(null); }}>
-            <FaHeading className="w-3 h-3 opacity-60" />
-            <span>Header 2</span>
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => { commands.applyHeaderFormat(viewRef.current, 3); setContextMenu(null); }}>
-            <FaHeading className="w-3 h-3 opacity-60" />
-            <span>Header 3</span>
-          </ContextMenuItem>
-
-          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
-
-          <ContextMenuItem onClick={() => { commands.applyLineFormat(viewRef.current, "> "); setContextMenu(null); }}>
-            <FaQuoteRight className="w-3 h-3 opacity-60" />
-            <span>Quote</span>
-            <span className="ml-auto text-[10px] opacity-40">Ctrl+Q</span>
-          </ContextMenuItem>
-          
-          <ContextMenuItem onClick={() => { commands.applyLineFormat(viewRef.current, "- "); setContextMenu(null); }}>
-            <FaListUl className="w-3 h-3 opacity-60" />
-            <span>Bullet List</span>
-            <span className="ml-auto text-[10px] opacity-40">Ctrl+L</span>
-          </ContextMenuItem>
-
-          <ContextMenuItem onClick={() => { commands.insertCheckbox(viewRef.current); setContextMenu(null); }}>
-            <FaCheckSquare className="w-3 h-3 opacity-60" />
-            <span>Task List</span>
-            <span className="ml-auto text-[10px] opacity-40">Ctrl+T</span>
-          </ContextMenuItem>
-
-          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
-
-          <ContextMenuItem onClick={() => { commands.applyLinkFormat(viewRef.current); setContextMenu(null); }}>
-            <FaLink className="w-3 h-3 opacity-60" />
-            <span>Link</span>
-            <span className="ml-auto text-[10px] opacity-40">Ctrl+K</span>
-          </ContextMenuItem>
-
-          <ContextMenuItem onClick={() => { commands.applyImageFormat(viewRef.current); setContextMenu(null); }}>
-            <FaImage className="w-3 h-3 opacity-60" />
-            <span>Image</span>
-          </ContextMenuItem>
-
-          <ContextMenuItem onClick={() => { commands.insertTable(viewRef.current); setContextMenu(null); }}>
-            <FaTable className="w-3 h-3 opacity-60" />
-            <span>Table</span>
-            <span className="ml-auto text-[10px] opacity-40">Ctrl+Shift+T</span>
-          </ContextMenuItem>
-
-          <ContextMenuItem onClick={() => { commands.insertHorizontalRule(viewRef.current); setContextMenu(null); }}>
-            <MdHorizontalRule className="w-3 h-3 opacity-60" />
-            <span>Horizontal Rule</span>
-            <span className="ml-auto text-[10px] opacity-40">Ctrl+H</span>
-          </ContextMenuItem>
-
-          <div className="h-px bg-[var(--obsidian-border-soft)] my-1" />
-
-          <ContextMenuItem onClick={() => { commands.insertCodeBlock(viewRef.current); setContextMenu(null); }}>
-            <FaCode className="w-3 h-3 opacity-60" />
-            <span>Code Block</span>
-            <span className="ml-auto text-[10px] opacity-40">Ctrl+Shift+`</span>
-          </ContextMenuItem>
+            return (
+              <ContextMenuItem
+                key={entry.id}
+                onClick={() => {
+                  setContextMenu(null)
+                  entry.run()
+                }}
+              >
+                {entry.icon}
+                <span>{entry.label}</span>
+                {entry.shortcut ? (
+                  <span className="ml-auto text-[10px] opacity-40">{entry.shortcut}</span>
+                ) : null}
+              </ContextMenuItem>
+            )
+          })}
         </ContextMenu>
       )}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        items={commandPaletteItems}
+        onClose={() => {
+          setIsCommandPaletteOpen(false)
+          viewRef.current?.focus()
+        }}
+      />
     </div>
   )
 }
