@@ -1002,6 +1002,111 @@ export const MarkdownEditor = () => {
     return () => clearTimeout(timer)
   }, [isPreview, isFullPreview, restoreScrollPosition])
 
+  const scrollSyncLockRef = useRef<null | 'editor' | 'preview'>(null)
+  const scrollSyncRafRef = useRef<number | null>(null)
+  const lastProgrammaticScrollRef = useRef<{ editor: number; preview: number }>({ editor: 0, preview: 0 })
+
+  // Sync scroll between editor + preview in split view
+  useEffect(() => {
+    if (!isPreview || isFullPreview) return
+
+    const editorContainer = editorContainerRef.current
+    const previewContainer = previewContainerRef.current
+    if (!editorContainer || !previewContainer) return
+
+    const clearRaf = () => {
+      if (scrollSyncRafRef.current != null) {
+        window.cancelAnimationFrame(scrollSyncRafRef.current)
+        scrollSyncRafRef.current = null
+      }
+    }
+
+    const getScrollPercentage = (el: HTMLElement) => {
+      const max = el.scrollHeight - el.clientHeight
+      if (max <= 0) return 0
+      return el.scrollTop / max
+    }
+
+    const setScrollPercentage = (el: HTMLElement, percentage: number) => {
+      const max = el.scrollHeight - el.clientHeight
+      if (max <= 0) {
+        el.scrollTop = 0
+        return
+      }
+      const nextTop = percentage * max
+      if (Math.abs(el.scrollTop - nextTop) < 0.5) return
+      el.scrollTop = nextTop
+    }
+
+    const getEditorScroller = (eventTarget: EventTarget | null): HTMLElement | null => {
+      const viewScroller = viewRef.current?.scrollDOM as HTMLElement | undefined
+      if (viewScroller) return viewScroller
+
+      if (!(eventTarget instanceof HTMLElement)) return null
+      if (eventTarget.classList.contains('cm-scroller')) return eventTarget
+      return eventTarget.closest?.('.cm-scroller') ?? null
+    }
+
+    const syncFromEditor = (source: HTMLElement) => {
+      if (scrollSyncLockRef.current === 'preview') return
+      scrollSyncLockRef.current = 'editor'
+
+      const percentage = getScrollPercentage(source)
+      lastScrollPercentageRef.current = percentage
+
+      clearRaf()
+      scrollSyncRafRef.current = window.requestAnimationFrame(() => {
+        lastProgrammaticScrollRef.current.preview = performance.now()
+        setScrollPercentage(previewContainer, percentage)
+        window.requestAnimationFrame(() => {
+          scrollSyncLockRef.current = null
+        })
+      })
+    }
+
+    const syncFromPreview = () => {
+      if (scrollSyncLockRef.current === 'editor') return
+      const editorScroller = viewRef.current?.scrollDOM as HTMLElement | undefined
+      if (!editorScroller) return
+
+      scrollSyncLockRef.current = 'preview'
+
+      const percentage = getScrollPercentage(previewContainer)
+      lastScrollPercentageRef.current = percentage
+
+      clearRaf()
+      scrollSyncRafRef.current = window.requestAnimationFrame(() => {
+        lastProgrammaticScrollRef.current.editor = performance.now()
+        setScrollPercentage(editorScroller, percentage)
+        window.requestAnimationFrame(() => {
+          scrollSyncLockRef.current = null
+        })
+      })
+    }
+
+    const onEditorScroll = (e: Event) => {
+      if (performance.now() - lastProgrammaticScrollRef.current.editor < 120) return
+      const scroller = getEditorScroller(e.target)
+      if (!scroller) return
+      syncFromEditor(scroller)
+    }
+
+    const onPreviewScroll = () => {
+      if (performance.now() - lastProgrammaticScrollRef.current.preview < 120) return
+      syncFromPreview()
+    }
+
+    editorContainer.addEventListener('scroll', onEditorScroll, true)
+    previewContainer.addEventListener('scroll', onPreviewScroll)
+
+    return () => {
+      editorContainer.removeEventListener('scroll', onEditorScroll, true)
+      previewContainer.removeEventListener('scroll', onPreviewScroll)
+      clearRaf()
+      scrollSyncLockRef.current = null
+    }
+  }, [isPreview, isFullPreview, selectedNote?.path])
+
   const handleFullPreviewToggle = () => {
     captureScrollPercentage()
     // If already in full preview, switch to edit mode.
