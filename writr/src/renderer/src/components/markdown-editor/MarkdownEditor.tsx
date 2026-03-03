@@ -1513,11 +1513,11 @@ export const MarkdownEditor = () => {
                       </li>
                     ),
                     strong: ({ children }) => (
-                      <strong className="font-semibold text-[#D44957]">
+                      <strong className="font-semibold text-[var(--obsidian-text)]">
                         {children}
                       </strong>
                     ),
-                    em: ({ children }) => <em className="italic font-medium text-[#DA8267]">{children}</em>,
+                    em: ({ children }) => <em className="italic font-medium text-[var(--obsidian-text)]">{children}</em>,
                     blockquote: ({ children }) => (
                       (() => {
                         const parts = Children.toArray(children).filter((child) => {

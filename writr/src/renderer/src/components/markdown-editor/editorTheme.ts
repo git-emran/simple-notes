@@ -207,8 +207,6 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
   { tag: tags.heading4, color: '#517FB8', fontWeight: 'bold', fontSize: '1.1em' },
   { tag: tags.heading5, color: '#517FB8', fontWeight: 'bold' },
   { tag: tags.heading6, color: '#517FB8', fontWeight: 'bold' },
-  { tag: tags.strong, fontWeight: 'bold', color: '#D44957' },
-  { tag: tags.emphasis, fontStyle: 'italic', fontWeight: '500', color: '#DA8267' },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#9ca3af' },
   {
     tag: tags.monospace,
@@ -252,5 +250,7 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
   { tag: tags.meta, color: '#9abce6', opacity: '0.85' },
   { tag: tags.contentSeparator, color: '#ffffff' },
   { tag: tags.content, color: '#D6D6D6' },
+  { tag: tags.strong, fontWeight: 'bold', color: '#D44957' },
+  { tag: tags.emphasis, fontStyle: 'italic', fontWeight: '500', color: '#DA8267' },
   { tag: tags.processingInstruction, color: '#9abce6', opacity: '0.85' }
 ])
