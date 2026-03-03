@@ -1,5 +1,5 @@
 'use client'
-import { Children, isValidElement, useEffect, useRef, useCallback, useMemo, useState, type ReactNode } from 'react'
+import { Children, isValidElement, useEffect, useRef, useCallback, useMemo, useState, memo, startTransition, type ReactNode } from 'react'
 import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, drawSelection } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
@@ -48,6 +48,7 @@ import { statusBarExtension } from './statusbar'
 import remarkGfm from 'remark-gfm'
 import { MermaidDiagram } from './MermaidDiagram'
 import { MarkdownToolbar } from './MarkdownToolbar'
+const MarkdownToolbarMemo = memo(MarkdownToolbar)
 import { tabAsSpaces } from './tabAsSpaces'
 import { twMerge } from 'tailwind-merge'
 import { markdownTableEnhancement } from './extendTableEditing'
@@ -119,7 +120,7 @@ export const MarkdownEditor = () => {
   const [aiError, setAiError] = useState<string | null>(null)
   const [showFAB, setShowFAB] = useState(false)
 
-  const previewReadableWidthClass = 'mx-auto w-full min-w-0 max-w-[860px]'
+  const previewReadableWidthClass = 'w-full min-w-0 max-w-[860px]'
 
   const suppressNativeFormatUntilRef = useRef({ bold: 0, italic: 0 })
 
@@ -318,7 +319,9 @@ export const MarkdownEditor = () => {
   )
 
   useEffect(() => {
-    debouncedSetContent(currentContent)
+    startTransition(() => {
+      debouncedSetContent(currentContent)
+    })
     return debouncedSetContent.cancel
   }, [currentContent, debouncedSetContent])
 
@@ -883,39 +886,49 @@ export const MarkdownEditor = () => {
       viewRef.current = new EditorView({ state: buildState(''), parent: editorRef.current! })
     }
 
-    const switchNote = async () => {
-      isSwitchingRef.current = true
-      ensureView()
-
-      const newTitle = selectedNote.title
-      const newContent = selectedNote.content
-
-      debouncedSave.cancel()
-      await saveQueueRef.current
-
-      currentNoteTitleRef.current = newTitle
-      currentNotePathRef.current = selectedNote.path
-      setCurrentContent(newContent)
-
-      const view = viewRef.current
-      if (view) {
-        view.setState(buildState(newContent))
+      const switchNote = () => {
+        isSwitchingRef.current = true
+        ensureView()
+  
+        const newTitle = selectedNote.title
+        const newContent = selectedNote.content
+  
+        // Cancel pending debounced saves for the OLD note.
+        // We no longer await the Disk I/O (saveQueueRef) in the UI thread.
+        // The save queue ensures sequential writes in the background.
+        debouncedSave.cancel()
+  
+        currentNoteTitleRef.current = newTitle
+        currentNotePathRef.current = selectedNote.path
+        
+        // Update state immediately for visual snappiness
+        setCurrentContent(newContent)
+        startTransition(() => {
+          setDebouncedContent(newContent)
+        })
+  
+        const view = viewRef.current
+        if (view) {
+          // PRODUCTION OPTIMIZATION: Atomic document swap
+          // This is much faster than setState as it preserves extensions and state structure.
+          view.dispatch({
+            changes: { from: 0, to: view.state.doc.length, insert: newContent },
+            selection: { anchor: 0 },
+            scrollIntoView: true
+          })
+        }
+        applyEditorSettings()
+        isSwitchingRef.current = false
       }
-      applyEditorSettings()
-      isSwitchingRef.current = false
-    }
-
-    void switchNote()
+  
+      switchNote()
     return () => {
       debouncedSave.cancel()
     }
   }, [
     selectedNote?.path,
-    selectedNote?.title,
-    selectedNote?.content,
     baseExtensions,
     debouncedSave,
-    selectedNote,
     handleBlurSave,
     handleEditorImageDrop,
     applyEditorSettings,
@@ -1073,7 +1086,7 @@ export const MarkdownEditor = () => {
 
   // Restore scroll when mode changes
   useEffect(() => {
-    // Small delay to ensure render is complete and scroll heights are correct
+    // 50ms is a good compromise for layout stabilization
     const timer = setTimeout(restoreScrollPosition, 50)
     return () => clearTimeout(timer)
   }, [isPreview, isFullPreview, restoreScrollPosition])
@@ -1185,8 +1198,9 @@ export const MarkdownEditor = () => {
 
   const handleFullPreviewToggle = () => {
     captureScrollPercentage()
-    // If already in full preview, switch to edit mode.
-    // Otherwise, switch to full preview mode.
+    // Synchronize preview content immediately for a safe and efficient transition
+    setDebouncedContent(currentContent)
+
     if (isFullPreview) {
       setIsFullPreview(false);
       setIsPreview(false);
@@ -1198,6 +1212,8 @@ export const MarkdownEditor = () => {
 
   const handleSplitViewToggle = () => {
     captureScrollPercentage()
+    // Synchronize preview content immediately for a safe and efficient transition
+    setDebouncedContent(currentContent)
     if (isFullPreview) {
       setIsFullPreview(false)
       setIsPreview(true)
@@ -1350,7 +1366,7 @@ export const MarkdownEditor = () => {
       </div>
 
       {!isFullPreview && showToolbar && (
-        <MarkdownToolbar view={viewRef.current} onWriteWithAi={() => void openAiModal()} />
+        <MarkdownToolbarMemo view={viewRef.current} onWriteWithAi={() => void openAiModal()} />
       )}
 
       <div
@@ -1407,310 +1423,38 @@ export const MarkdownEditor = () => {
           />
         </div>
 
-        {isPreview && (
-          <>
-            {!isFullPreview && (
-              <div
-                ref={dragBarRef}
-                className="w-1.5 cursor-col-resize bg-[var(--obsidian-border)] hover:bg-[var(--obsidian-accent)] z-10 flex items-center justify-center transition-colors"
-              >
-                <MdDragIndicator className="w-3 h-3 text-[var(--obsidian-text-muted)]" />
-              </div>
-            )}
-            <div
-              ref={previewContainerRef}
-              className="h-full preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
-              style={{ width: isFullPreview ? '100%' : '50%' }}
-            >
-              <div className="w-full min-w-0">
-                <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    h1: ({ children }) => (
-                      <h1
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'font-sans text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-[var(--obsidian-border)] text-[var(--obsidian-text)]'
-                        )}
-                      >
-                        {children}
-                      </h1>
-                    ),
-                    h2: ({ children }) => (
-                      <h2
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'text-xl font-sans text-[var(--obsidian-text)] font-semibold mt-6 mb-3'
-                        )}
-                      >
-                        {children}
-                      </h2>
-                    ),
-                    h3: ({ children }) => (
-                      <h3
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'text-lg font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
-                        )}
-                      >
-                        {children}
-                      </h3>
-                    ),
-                    h4: ({ children }) => (
-                      <h4
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
-                        )}
-                      >
-                        {children}
-                      </h4>
-                    ),
-                    h5: ({ children }) => (
-                      <h5
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
-                        )}
-                      >
-                        {children}
-                      </h5>
-                    ),
-                    p: ({ children }) => (
-                      <p
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'mb-4 text-[14px] leading-7 font-sans text-[var(--obsidian-text)]'
-                        )}
-                      >
-                        {children}
-                      </p>
-                    ),
-                    ul: ({ children }) => (
-                      <ul
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'font-sans mb-4 pl-6 space-y-1 text-[var(--obsidian-text)]'
-                        )}
-                      >
-                        {children}
-                      </ul>
-                    ),
-                    ol: ({ children }) => (
-                      <ol
-                        className={twMerge(
-                          previewReadableWidthClass,
-                          'text-[var(--obsidian-text)] text-sm font-sans mb-4 pl-6 space-y-1'
-                        )}
-                      >
-                        {children}
-                      </ol>
-                    ),
-                    li: ({ children }) => (
-                      <li className="font-sans text-sm text-[var(--obsidian-text)]">
-                        {children}
-                      </li>
-                    ),
-                    strong: ({ children }) => (
-                      <strong className="font-semibold text-[var(--obsidian-text)]">
-                        {children}
-                      </strong>
-                    ),
-                    em: ({ children }) => <em className="italic font-medium text-[var(--obsidian-text)]">{children}</em>,
-                    blockquote: ({ children }) => (
-                      (() => {
-                        const parts = Children.toArray(children).filter((child) => {
-                          if (typeof child === 'string') return child.trim().length > 0
-                          return child != null
-                        })
-                        const first = parts[0]
-
-                        const firstText = getReactNodeText(first).trim()
-                        const match = /^\[!([A-Za-z]+)\]\s*(.*)$/.exec(firstText)
-                        if (match) {
-                          const meta = getCalloutMeta(match[1])
-                          if (meta) {
-                            const remainder = (match[2] || '').trim()
-                            const rest = parts.slice(1)
-                            const Icon = meta.Icon
-                            return (
-                              <div
-                                className={twMerge(previewReadableWidthClass, 'my-4 pl-4')}
-                                style={{
-                                  borderLeft: `4px solid ${meta.border}`,
-                                }}
-                              >
-                                <div className="flex items-center gap-2 mb-3" style={{ color: meta.fg }}>
-                                  <Icon className="w-5 h-5" />
-                                  <div className="text-lg font-semibold">{meta.label}</div>
-                                </div>
-                                <div className="text-[var(--obsidian-text)] [&_p]:mb-0">
-                                  {remainder ? <p>{remainder}</p> : null}
-                                  {rest}
-                                </div>
-                              </div>
-                            )
-                          }
-                        }
-
-                        return (
-                          <blockquote
-                            className={twMerge(
-                              previewReadableWidthClass,
-                              'pl-2 my-4 italic text-[var(--obsidian-quote-text)] [&_p]:!text-[var(--obsidian-quote-text)] [&_p]:italic [&_li]:!text-[var(--obsidian-quote-text)] [&_li]:italic'
-                            )}
-                          >
-                            {children}
-                          </blockquote>
-                        )
-                      })()
-                    ),
-                    a: ({ href, children }) => {
-                      const isImage = href && (
-                        href.toLowerCase().endsWith('.png') || 
-                        href.toLowerCase().endsWith('.jpg') || 
-                        href.toLowerCase().endsWith('.jpeg') || 
-                        href.toLowerCase().endsWith('.gif') || 
-                        href.toLowerCase().endsWith('.svg') || 
-                        href.toLowerCase().endsWith('.webp')
-                      )
-
-                      if (isImage) {
-                        const finalSrc = href ? toLocalFileUrl(href, selectedNote.path, rootDir || undefined) : href
-                        return (
-                          <div className={previewReadableWidthClass}>
-                            <img 
-                              src={finalSrc} 
-                              alt={String(children)} 
-                              className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
-                              style={{ maxWidth: 'min(100%, 720px)' }}
-                            />
-                          </div>
-                        )
-                      }
-
-                      return (
-                        <a 
-                          href={href} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-[var(--obsidian-accent)] hover:opacity-80 underline underline-offset-4"
-                        >
-                          {children}
-                        </a>
-                      )
-                    },
-                    hr: () => (
-                      <hr className={twMerge(previewReadableWidthClass, 'my-8 border-t border-[var(--obsidian-border)]')} />
-                    ),
-                    table: ({ children }) => (
-                      <div className="w-full overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
-                        <table className="w-full table-auto border-collapse">
-                          {children}
-                        </table>
-                      </div>
-                    ),
-                    thead: ({ children }) => (
-                      <thead className="bg-[var(--obsidian-table-head)] border-b border-[var(--obsidian-border)]">
-                        {children}
-                      </thead>
-                    ),
-                    tbody: ({ children }) => (
-                      <tbody className="divide-y divide-[var(--obsidian-border-soft)]">
-                        {children}
-                      </tbody>
-                    ),
-                    tr: ({ children }) => (
-                      <tr className="even:bg-[var(--obsidian-table-row)] transition-colors">
-                        {children}
-                      </tr>
-                    ),
-                    th: ({ children }) => (
-                      <th className="px-3 py-2 text-left text-[11px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-[var(--obsidian-border)] last:border-r-0 align-top">
-                        <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
-                      </th>
-                    ),
-                    td: ({ children }) => (
-                      <td className="px-3 py-1.5 text-xs text-[var(--obsidian-text)] border-r border-[var(--obsidian-border-soft)] last:border-r-0 align-top">
-                        <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
-                      </td>
-                    ),
-                    code: ({ children, className, ...rest }) => {
-                      const match = /language-(\w+)/.exec(className || '')
-                      const language = match ? match[1] : ''
-                      const isInline = !match
-                      const codeContent = String(children).replace(/\n$/, '')
-
-                      if (language === 'mermaid') {
-                        return <MermaidDiagram chart={codeContent} />
-                      }
-
-                      if (isInline && codeContent.toLowerCase().startsWith('kbd:')) {
-                        const keyText = codeContent.slice(4)
-                        return (
-                          <kbd className="inline-flex items-center rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--obsidian-text)] shadow-[inset_0_-1px_0_rgba(0,0,0,0.22),0_10px_28px_rgba(0,0,0,0.06)]">
-                            {keyText}
-                          </kbd>
-                        )
-                      }
-
-                      return isInline ? (
-                        <code
-                          className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono before:content-none after:content-none"
-                          {...rest}
-                        >
-                          {children}
-                        </code>
-                      ) : (
-                        <SyntaxHighlighter
-                          PreTag="div"
-                          children={codeContent}
-                          language={language}
-                          style={isDarkMode ? vs2015 : vs}
-                          customStyle={{
-                            margin: '1rem 0',
-                            borderRadius: '0.2rem',
-                            fontSize: '15px',
-                            lineHeight: '1.5',
-                            overflowWrap: 'break-word',
-                            ...(isDarkMode ? {} : { background: 'rgba(0, 0, 0, 0.0175)' }),
-                          }}
-                          codeTagProps={{
-                            style: {
-                              fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
-                            },
-                          }}
-                        />
-                      )
-                    },
-                    pre: ({ children }) => (
-                      <pre className={twMerge(previewReadableWidthClass, 'mb-4 bg-transparent overflow-hidden rounded')}>
-                        {children}
-                      </pre>
-                    ),
-                    img: ({ src, alt }) => {
-                      const finalSrc = src ? toLocalFileUrl(src, selectedNote.path, rootDir || undefined) : src
-                      return (
-                        <div className={previewReadableWidthClass}>
-                          <img 
-                            src={finalSrc} 
-                            alt={alt} 
-                            className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
-                            style={{ maxWidth: 'min(100%, 720px)' }}
-                          />
-                        </div>
-                      )
-                    }
-                  }}
-                >
-                  {previewMarkdown}
-                </ReactMarkdown>
-                </div>
-              </div>
-            </div>
-          </>
+        {isPreview && !isFullPreview && (
+          <div
+            ref={dragBarRef}
+            className="w-1.5 cursor-col-resize bg-[var(--obsidian-border)] hover:bg-[var(--obsidian-accent)] z-10 flex items-center justify-center transition-colors"
+          >
+            <MdDragIndicator className="w-3 h-3 text-[var(--obsidian-text-muted)]" />
+          </div>
         )}
+
+        {/* Toggleable Preview Container */}
+        <div
+          ref={previewContainerRef}
+          className="h-full preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
+          style={{ 
+            width: isFullPreview ? '100%' : '50%',
+            display: isPreview ? 'block' : 'none'
+          }}
+        >
+          <div className="w-full min-w-0">
+            <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
+            <MarkdownPreview 
+                  previewMarkdown={previewMarkdown}
+                  selectedNotePath={selectedNote.path}
+                  rootDir={rootDir || undefined}
+                  isDarkMode={isDarkMode}
+                  previewReadableWidthClass={previewReadableWidthClass}
+                  getReactNodeText={getReactNodeText}
+                  getCalloutMeta={getCalloutMeta}
+                />
+            </div>
+          </div>
+        </div>
       </div>
       {isAiModalOpen && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
@@ -1851,3 +1595,308 @@ export const MarkdownEditor = () => {
     </div>
   )
 }
+
+interface MarkdownPreviewProps {
+  previewMarkdown: string;
+  selectedNotePath: string;
+  rootDir?: string;
+  isDarkMode: boolean;
+  previewReadableWidthClass: string;
+  getReactNodeText: (node: any) => string;
+  getCalloutMeta: (type: string) => any;
+}
+
+const MarkdownPreview = memo(({ 
+  previewMarkdown, 
+  selectedNotePath, 
+  rootDir, 
+  isDarkMode, 
+  previewReadableWidthClass,
+  getReactNodeText,
+  getCalloutMeta
+}: MarkdownPreviewProps) => {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => (
+          <h1
+            className={twMerge(
+              previewReadableWidthClass,
+              'font-sans text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-[var(--obsidian-border)] text-[var(--obsidian-text)]'
+            )}
+          >
+            {children}
+          </h1>
+        ),
+        h2: ({ children }) => (
+          <h2
+            className={twMerge(
+              previewReadableWidthClass,
+              'text-xl font-sans text-[var(--obsidian-text)] font-semibold mt-6 mb-3'
+            )}
+          >
+            {children}
+          </h2>
+        ),
+        h3: ({ children }) => (
+          <h3
+            className={twMerge(
+              previewReadableWidthClass,
+              'text-lg font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
+            )}
+          >
+            {children}
+          </h3>
+        ),
+        h4: ({ children }) => (
+          <h4
+            className={twMerge(
+              previewReadableWidthClass,
+              'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
+            )}
+          >
+            {children}
+          </h4>
+        ),
+        h5: ({ children }) => (
+          <h5
+            className={twMerge(
+              previewReadableWidthClass,
+              'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
+            )}
+          >
+            {children}
+          </h5>
+        ),
+        p: ({ children }) => (
+          <p
+            className={twMerge(
+              previewReadableWidthClass,
+              'mb-4 text-[14px] leading-7 font-sans text-[var(--obsidian-text)]'
+            )}
+          >
+            {children}
+          </p>
+        ),
+        ul: ({ children }) => (
+          <ul
+            className={twMerge(
+              previewReadableWidthClass,
+              'font-sans mb-4 pl-6 space-y-1 text-[var(--obsidian-text)]'
+            )}
+          >
+            {children}
+          </ul>
+        ),
+        ol: ({ children }) => (
+          <ol
+            className={twMerge(
+              previewReadableWidthClass,
+              'text-[var(--obsidian-text)] text-sm font-sans mb-4 pl-6 space-y-1'
+            )}
+          >
+            {children}
+          </ol>
+        ),
+        li: ({ children }) => (
+          <li className="font-sans text-sm text-[var(--obsidian-text)]">
+            {children}
+          </li>
+        ),
+        strong: ({ children }) => (
+          <strong className="font-semibold text-[var(--obsidian-text)]">
+            {children}
+          </strong>
+        ),
+        em: ({ children }) => <em className="italic font-medium text-[var(--obsidian-text)]">{children}</em>,
+        blockquote: ({ children }) => (
+          (() => {
+            const parts = Children.toArray(children).filter((child) => {
+              if (typeof child === 'string') return child.trim().length > 0
+              return child != null
+            })
+            const first = parts[0]
+
+            const firstText = getReactNodeText(first).trim()
+            const match = /^\[!([A-Za-z]+)\]\s*(.*)$/.exec(firstText)
+            if (match) {
+              const meta = getCalloutMeta(match[1])
+              if (meta) {
+                const remainder = (match[2] || '').trim()
+                const rest = parts.slice(1)
+                const Icon = meta.Icon
+                return (
+                  <div
+                    className={twMerge(previewReadableWidthClass, 'my-4 pl-4')}
+                    style={{
+                      borderLeft: `4px solid ${meta.border}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-3" style={{ color: meta.fg }}>
+                      <Icon className="w-5 h-5" />
+                      <div className="text-lg font-semibold">{meta.label}</div>
+                    </div>
+                    <div className="text-[var(--obsidian-text)] [&_p]:mb-0">
+                      {remainder ? <p>{remainder}</p> : null}
+                      {rest}
+                    </div>
+                  </div>
+                )
+              }
+            }
+
+            return (
+              <blockquote
+                className={twMerge(
+                  previewReadableWidthClass,
+                  'pl-2 my-4 italic text-[var(--obsidian-quote-text)] [&_p]:!text-[var(--obsidian-quote-text)] [&_p]:italic [&_li]:!text-[var(--obsidian-quote-text)] [&_li]:italic'
+                )}
+              >
+                {children}
+              </blockquote>
+            )
+          })()
+        ),
+        a: ({ href, children }) => {
+          const isImage = href && (
+            href.toLowerCase().endsWith('.png') || 
+            href.toLowerCase().endsWith('.jpg') || 
+            href.toLowerCase().endsWith('.jpeg') || 
+            href.toLowerCase().endsWith('.gif') || 
+            href.toLowerCase().endsWith('.svg') || 
+            href.toLowerCase().endsWith('.webp')
+          )
+
+          if (isImage) {
+            const finalSrc = href ? toLocalFileUrl(href, selectedNotePath, rootDir) : href
+            return (
+              <div className={previewReadableWidthClass}>
+                <img 
+                  src={finalSrc} 
+                  alt={String(children)} 
+                  className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
+                  style={{ maxWidth: 'min(100%, 720px)' }}
+                />
+              </div>
+            )
+          }
+
+          return (
+            <a 
+              href={href} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[var(--obsidian-accent)] hover:opacity-80 underline underline-offset-4"
+            >
+              {children}
+            </a>
+          )
+        },
+        hr: () => (
+          <hr className={twMerge(previewReadableWidthClass, 'my-8 border-t border-[var(--obsidian-border)]')} />
+        ),
+        table: ({ children }) => (
+          <div className="w-full overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
+            <table className="w-full table-auto border-collapse">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-[var(--obsidian-table-head)] border-b border-[var(--obsidian-border)]">
+            {children}
+          </thead>
+        ),
+        tbody: ({ children }) => (
+          <tbody className="divide-y divide-[var(--obsidian-border-soft)]">
+            {children}
+          </tbody>
+        ),
+        tr: ({ children }) => (
+          <tr className="even:bg-[var(--obsidian-table-row)] transition-colors">
+            {children}
+          </tr>
+        ),
+        th: ({ children }) => (
+          <th className="px-3 py-2 text-left text-[11px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-[var(--obsidian-border)] last:border-r-0 align-top">
+            <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="px-3 py-1.5 text-xs text-[var(--obsidian-text)] border-r border-[var(--obsidian-border-soft)] last:border-r-0 align-top">
+            <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
+          </td>
+        ),
+        code: ({ children, className, ...rest }) => {
+          const match = /language-(\w+)/.exec(className || '')
+          const language = match ? match[1] : ''
+          const isInline = !match
+          const codeContent = String(children).replace(/\n$/, '')
+
+          if (language === 'mermaid') {
+            return <MermaidDiagram chart={codeContent} />
+          }
+
+          if (isInline && codeContent.toLowerCase().startsWith('kbd:')) {
+            const keyText = codeContent.slice(4)
+            return (
+              <kbd className="inline-flex items-center rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--obsidian-text)] shadow-[inset_0_-1px_0_rgba(0,0,0,0.22),0_10px_28px_rgba(0,0,0,0.06)]">
+                {keyText}
+              </kbd>
+            )
+          }
+
+          return isInline ? (
+            <code
+              className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono before:content-none after:content-none"
+              {...rest}
+            >
+              {children}
+            </code>
+          ) : (
+            <SyntaxHighlighter
+              PreTag="div"
+              children={codeContent}
+              language={language}
+              style={isDarkMode ? vs2015 : vs}
+              customStyle={{
+                margin: '1rem 0',
+                borderRadius: '0.2rem',
+                fontSize: '15px',
+                lineHeight: '1.5',
+                overflowWrap: 'break-word',
+                ...(isDarkMode ? {} : { background: 'rgba(0, 0, 0, 0.0175)' }),
+              }}
+              codeTagProps={{
+                style: {
+                  fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
+                },
+              }}
+            />
+          )
+        },
+        pre: ({ children }) => (
+          <pre className={twMerge(previewReadableWidthClass, 'mb-4 bg-transparent overflow-hidden rounded')}>
+            {children}
+          </pre>
+        ),
+        img: ({ src, alt }) => {
+          const finalSrc = src ? toLocalFileUrl(src, selectedNotePath, rootDir) : src
+          return (
+            <div className={previewReadableWidthClass}>
+              <img 
+                src={finalSrc} 
+                alt={alt} 
+                className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
+                style={{ maxWidth: 'min(100%, 720px)' }}
+              />
+            </div>
+          )
+        },
+      }}
+    >
+      {previewMarkdown}
+    </ReactMarkdown>
+  )
+})
