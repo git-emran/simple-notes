@@ -1,6 +1,6 @@
 'use client'
 import { Children, isValidElement, useEffect, useRef, useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Compartment, EditorState } from '@codemirror/state'
+import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, drawSelection } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
 import { vim } from '@replit/codemirror-vim'
@@ -120,6 +120,8 @@ export const MarkdownEditor = () => {
   const [showFAB, setShowFAB] = useState(false)
 
   const previewReadableWidthClass = 'mx-auto w-full min-w-0 max-w-[860px]'
+
+  const suppressNativeFormatUntilRef = useRef({ bold: 0, italic: 0 })
 
   const previewMarkdown = useMemo(() => {
     const lines = debouncedContent.split('\n')
@@ -323,6 +325,30 @@ export const MarkdownEditor = () => {
   const baseExtensions = useMemo(
     () => [
       history(),
+      Prec.highest(
+        keymap.of([
+          {
+            key: 'Mod-b',
+            preventDefault: true,
+            stopPropagation: true,
+            run: (view) => {
+              suppressNativeFormatUntilRef.current.bold = Date.now() + 150
+              commands.applyFormat(view, '**', '**')
+              return true
+            },
+          },
+          {
+            key: 'Mod-i',
+            preventDefault: true,
+            stopPropagation: true,
+            run: (view) => {
+              suppressNativeFormatUntilRef.current.italic = Date.now() + 150
+              commands.applyFormat(view, '*', '*')
+              return true
+            },
+          },
+        ])
+      ),
       themeCompartment.of(getEditorTheme(isDarkMode)),
       keymap.of([...defaultKeymap, ...historyKeymap]),
       vimCompartment.of([]),
@@ -800,11 +826,10 @@ export const MarkdownEditor = () => {
       return
     }
 
-    const ensureView = () => {
-      if (viewRef.current) return
-
-      const state = EditorState.create({
-        doc: '',
+    const buildState = (doc: string) =>
+      EditorState.create({
+        doc,
+        selection: { anchor: 0 },
         extensions: [
           ...baseExtensions,
           EditorView.updateListener.of((update) => {
@@ -815,6 +840,25 @@ export const MarkdownEditor = () => {
             }
           }),
           EditorView.domEventHandlers({
+            beforeinput: (event, view) => {
+              const inputType = (event as InputEvent).inputType
+              if (inputType !== 'formatBold' && inputType !== 'formatItalic') return false
+
+              const now = Date.now()
+              if (inputType === 'formatBold' && now < suppressNativeFormatUntilRef.current.bold) {
+                event.preventDefault()
+                return true
+              }
+              if (inputType === 'formatItalic' && now < suppressNativeFormatUntilRef.current.italic) {
+                event.preventDefault()
+                return true
+              }
+
+              event.preventDefault()
+              if (inputType === 'formatBold') commands.applyFormat(view, '**', '**')
+              else commands.applyFormat(view, '*', '*')
+              return true
+            },
             blur: () => {
               handleBlurSave()
               return false
@@ -828,12 +872,15 @@ export const MarkdownEditor = () => {
               if (!event.dataTransfer?.files?.length) return false
               void handleEditorImageDrop(event, view)
               return true
-            }
+            },
           }),
         ],
       })
 
-      viewRef.current = new EditorView({ state, parent: editorRef.current! })
+    const ensureView = () => {
+      if (viewRef.current) return
+
+      viewRef.current = new EditorView({ state: buildState(''), parent: editorRef.current! })
     }
 
     const switchNote = async () => {
@@ -852,11 +899,7 @@ export const MarkdownEditor = () => {
 
       const view = viewRef.current
       if (view) {
-        const currentDocLength = view.state.doc.length
-        view.dispatch({
-          changes: { from: 0, to: currentDocLength, insert: newContent },
-          selection: { anchor: 0 },
-        })
+        view.setState(buildState(newContent))
       }
       applyEditorSettings()
       isSwitchingRef.current = false
