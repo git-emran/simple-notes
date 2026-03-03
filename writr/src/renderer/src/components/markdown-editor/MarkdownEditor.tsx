@@ -115,6 +115,8 @@ export const MarkdownEditor = () => {
   const [aiError, setAiError] = useState<string | null>(null)
   const [showFAB, setShowFAB] = useState(false)
 
+  const previewReadableWidthClass = 'mx-auto w-full min-w-0 max-w-[860px]'
+
   const getReactNodeText = useCallback((node: unknown): string => {
     if (node == null) return ''
     if (typeof node === 'string' || typeof node === 'number') return String(node)
@@ -1051,48 +1053,88 @@ export const MarkdownEditor = () => {
               className="h-full preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
               style={{ width: isFullPreview ? '100%' : '50%' }}
             >
-              <div className="mx-auto w-full min-w-0 max-w-[860px]">
+              <div className="w-full min-w-0">
                 <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
                     h1: ({ children }) => (
-                      <h1 className="font-sans text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-[var(--obsidian-border)] text-[var(--obsidian-text)]">
+                      <h1
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'font-sans text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-[var(--obsidian-border)] text-[var(--obsidian-text)]'
+                        )}
+                      >
                         {children}
                       </h1>
                     ),
                     h2: ({ children }) => (
-                      <h2 className="text-xl font-sans text-[var(--obsidian-text)] font-semibold mt-6 mb-3">
+                      <h2
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'text-xl font-sans text-[var(--obsidian-text)] font-semibold mt-6 mb-3'
+                        )}
+                      >
                         {children}
                       </h2>
                     ),
                     h3: ({ children }) => (
-                      <h3 className="text-lg font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]">
+                      <h3
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'text-lg font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
+                        )}
+                      >
                         {children}
                       </h3>
                     ),
                     h4: ({ children }) => (
-                      <h4 className="text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]">
+                      <h4
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
+                        )}
+                      >
                         {children}
                       </h4>
                     ),
                     h5: ({ children }) => (
-                      <h5 className="text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]">
+                      <h5
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
+                        )}
+                      >
                         {children}
                       </h5>
                     ),
                     p: ({ children }) => (
-                      <p className="mb-4 text-[14px] leading-7 font-sans text-[var(--obsidian-text)]">
+                      <p
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'mb-4 text-[14px] leading-7 font-sans text-[var(--obsidian-text)]'
+                        )}
+                      >
                         {children}
                       </p>
                     ),
                     ul: ({ children }) => (
-                      <ul className="font-sans mb-4 pl-6 space-y-1 text-[var(--obsidian-text)]">
+                      <ul
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'font-sans mb-4 pl-6 space-y-1 text-[var(--obsidian-text)]'
+                        )}
+                      >
                         {children}
                       </ul>
                     ),
                     ol: ({ children }) => (
-                      <ol className="text-[var(--obsidian-text)] text-sm font-sans mb-4 pl-6 space-y-1">
+                      <ol
+                        className={twMerge(
+                          previewReadableWidthClass,
+                          'text-[var(--obsidian-text)] text-sm font-sans mb-4 pl-6 space-y-1'
+                        )}
+                      >
                         {children}
                       </ol>
                     ),
@@ -1124,7 +1166,7 @@ export const MarkdownEditor = () => {
                             const Icon = meta.Icon
                             return (
                               <div
-                                className="my-4 pl-4"
+                                className={twMerge(previewReadableWidthClass, 'my-4 pl-4')}
                                 style={{
                                   borderLeft: `4px solid ${meta.border}`,
                                 }}
@@ -1143,7 +1185,12 @@ export const MarkdownEditor = () => {
                         }
 
                         return (
-                          <blockquote className="pl-2 my-4 italic text-[var(--obsidian-quote-text)] [&_p]:!text-[var(--obsidian-quote-text)] [&_p]:italic [&_li]:!text-[var(--obsidian-quote-text)] [&_li]:italic">
+                          <blockquote
+                            className={twMerge(
+                              previewReadableWidthClass,
+                              'pl-2 my-4 italic text-[var(--obsidian-quote-text)] [&_p]:!text-[var(--obsidian-quote-text)] [&_p]:italic [&_li]:!text-[var(--obsidian-quote-text)] [&_li]:italic'
+                            )}
+                          >
                             {children}
                           </blockquote>
                         )
@@ -1162,12 +1209,14 @@ export const MarkdownEditor = () => {
                       if (isImage) {
                         const finalSrc = href ? toLocalFileUrl(href, selectedNote.path, rootDir || undefined) : href
                         return (
-                          <img 
-                            src={finalSrc} 
-                            alt={String(children)} 
-                            className="block max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
-                            style={{ maxWidth: 'min(100%, 720px)' }}
-                          />
+                          <div className={previewReadableWidthClass}>
+                            <img 
+                              src={finalSrc} 
+                              alt={String(children)} 
+                              className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
+                              style={{ maxWidth: 'min(100%, 720px)' }}
+                            />
+                          </div>
                         )
                       }
 
@@ -1183,10 +1232,10 @@ export const MarkdownEditor = () => {
                       )
                     },
                     hr: () => (
-                      <hr className="my-8 border-t border-[var(--obsidian-border)]" />
+                      <hr className={twMerge(previewReadableWidthClass, 'my-8 border-t border-[var(--obsidian-border)]')} />
                     ),
                     table: ({ children }) => (
-                      <div className="overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
+                      <div className="w-full overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
                         <table className="w-full table-auto border-collapse">
                           {children}
                         </table>
@@ -1255,19 +1304,21 @@ export const MarkdownEditor = () => {
                       )
                     },
                     pre: ({ children }) => (
-                      <pre className="mb-4 bg-transparent overflow-hidden rounded">
+                      <pre className={twMerge(previewReadableWidthClass, 'mb-4 bg-transparent overflow-hidden rounded')}>
                         {children}
                       </pre>
                     ),
                     img: ({ src, alt }) => {
                       const finalSrc = src ? toLocalFileUrl(src, selectedNote.path, rootDir || undefined) : src
                       return (
-                        <img 
-                          src={finalSrc} 
-                          alt={alt} 
-                          className="block max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
-                          style={{ maxWidth: 'min(100%, 720px)' }}
-                        />
+                        <div className={previewReadableWidthClass}>
+                          <img 
+                            src={finalSrc} 
+                            alt={alt} 
+                            className="block mx-auto max-w-full w-auto h-auto rounded-lg shadow-sm my-4 border border-[var(--obsidian-border)]" 
+                            style={{ maxWidth: 'min(100%, 720px)' }}
+                          />
+                        </div>
                       )
                     }
                   }}
