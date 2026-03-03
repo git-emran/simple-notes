@@ -1,15 +1,20 @@
 import { useAtom } from 'jotai'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { VscAdd, VscClose } from 'react-icons/vsc'
+import { MdDragIndicator } from 'react-icons/md'
 import {
   kanbanStateAtom,
   createKanbanCard,
   createKanbanColumn,
+  pickNewKanbanColumnColor,
+  stableKanbanColumnColor,
   type KanbanCard,
 } from '@renderer/store/kanbanStore'
 
-type DragPayload = { kind: 'card'; columnId: string; cardId: string }
+type DragPayload =
+  | { kind: 'card'; columnId: string; cardId: string }
+  | { kind: 'column'; columnId: string }
 
 const parseDragPayload = (value: string | null): DragPayload | null => {
   if (!value) return null
@@ -20,19 +25,52 @@ const parseDragPayload = (value: string | null): DragPayload | null => {
   }
 }
 
+type ColumnOverHint = { overColumnId: string | null }
+
 export const KanbanBoard = () => {
   const [state, setState] = useAtom(kanbanStateAtom)
 
   const [newBoardTitle, setNewBoardTitle] = useState('')
-  const [dragOver, setDragOver] = useState<{ columnId: string; beforeCardId: string | null } | null>(
-    null
-  )
+  const [cardDragOver, setCardDragOver] = useState<{
+    columnId: string
+    beforeCardId: string | null
+  } | null>(null)
+  const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null)
+  const [columnDropHint, setColumnDropHint] = useState<ColumnOverHint | null>(null)
 
   const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
+  const draggingRef = useRef<DragPayload | null>(null)
+  const columnDropHintRef = useRef<ColumnOverHint | null>(null)
+  const columnElByIdRef = useRef<Record<string, HTMLDivElement | null>>({})
 
   const columns = state.columns ?? []
+
+  const moveColumnToEnd = (columnId: string) => {
+    setState((prev) => {
+      const fromIndex = prev.columns.findIndex((c) => c.id === columnId)
+      if (fromIndex < 0) return prev
+      if (fromIndex === prev.columns.length - 1) return prev
+      const moving = prev.columns[fromIndex]
+      const without = prev.columns.filter((c) => c.id !== columnId)
+      return { ...prev, columns: [...without, moving] }
+    })
+  }
+
+  const swapColumns = (aId: string, bId: string) => {
+    if (aId === bId) return
+    setState((prev) => {
+      const aIndex = prev.columns.findIndex((c) => c.id === aId)
+      const bIndex = prev.columns.findIndex((c) => c.id === bId)
+      if (aIndex < 0 || bIndex < 0) return prev
+      if (aIndex === bIndex) return prev
+
+      const next = prev.columns.slice()
+      ;[next[aIndex], next[bIndex]] = [next[bIndex], next[aIndex]]
+      return { ...prev, columns: next }
+    })
+  }
 
   const beginRenameColumn = (columnId: string) => {
     const col = columns.find((c) => c.id === columnId)
@@ -68,10 +106,26 @@ export const KanbanBoard = () => {
     if (!title) return
     setState((prev) => ({
       ...prev,
-      columns: [...prev.columns, createKanbanColumn(title)],
+      columns: [
+        ...prev.columns,
+        createKanbanColumn(
+          title,
+          pickNewKanbanColumnColor(prev.columns.map((c) => c.color).filter(Boolean) as string[])
+        ),
+      ],
     }))
     setNewBoardTitle('')
   }
+
+  useEffect(() => {
+    if (columns.length === 0) return
+    if (columns.every((c) => Boolean(c.color))) return
+
+    setState((prev) => ({
+      ...prev,
+      columns: prev.columns.map((c) => (c.color ? c : { ...c, color: stableKanbanColumnColor(c.id) })),
+    }))
+  }, [columns, setState])
 
   const removeBoard = (columnId: string) => {
     setState((prev) => ({
@@ -142,32 +196,50 @@ export const KanbanBoard = () => {
     })
   }
 
+  const clearDragUi = () => {
+    draggingRef.current = null
+    setDraggingColumnId(null)
+    setColumnDropHint(null)
+    columnDropHintRef.current = null
+    setCardDragOver(null)
+  }
+
+  const shouldIgnoreColumnDragStart = (target: EventTarget | null) => {
+    const el = target as HTMLElement | null
+    if (!el) return false
+    return Boolean(el.closest('input, textarea, select, button, [contenteditable="true"]'))
+  }
+
   const Card = ({ columnId, card }: { columnId: string; card: KanbanCard }) => {
     return (
       <div
         draggable
         onDragStart={(e) => {
-          e.dataTransfer.setData(
-            'application/json',
-            JSON.stringify({ kind: 'card', columnId, cardId: card.id } satisfies DragPayload)
-          )
+          const payload = { kind: 'card', columnId, cardId: card.id } satisfies DragPayload
+          draggingRef.current = payload
+          e.dataTransfer.setData('application/json', JSON.stringify(payload))
           e.dataTransfer.effectAllowed = 'move'
         }}
+        onDragEnd={() => {
+          clearDragUi()
+        }}
         onDragOver={(e) => {
+          if (draggingRef.current?.kind !== 'card') return
           e.preventDefault()
-          setDragOver({ columnId, beforeCardId: card.id })
+          setCardDragOver({ columnId, beforeCardId: card.id })
         }}
         onDrop={(e) => {
+          if (draggingRef.current?.kind !== 'card') return
           e.preventDefault()
           const payload = parseDragPayload(e.dataTransfer.getData('application/json'))
           if (!payload || payload.kind !== 'card') return
           moveCard(payload.columnId, payload.cardId, columnId, card.id)
-          setDragOver(null)
+          setCardDragOver(null)
         }}
         className={twMerge(
           'rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 shadow-sm',
-          dragOver?.columnId === columnId &&
-            dragOver.beforeCardId === card.id &&
+          cardDragOver?.columnId === columnId &&
+            cardDragOver.beforeCardId === card.id &&
             'ring-2 ring-[var(--obsidian-accent)]'
         )}
       >
@@ -224,24 +296,112 @@ export const KanbanBoard = () => {
       </div>
 
       <div className="h-[calc(100%-72px)] overflow-x-auto overflow-y-hidden px-6 py-5">
-        <div className={twMerge('grid gap-4 min-h-full', gridClass)} style={gridStyle}>
+        <div
+          className={twMerge('grid gap-4 min-h-full', gridClass)}
+          style={gridStyle}
+          onDragOver={(e) => {
+            const payload = draggingRef.current
+            if (!payload || payload.kind !== 'column') return
+            e.preventDefault()
+
+            if (e.currentTarget !== e.target) return
+            const hint = { overColumnId: null } satisfies ColumnOverHint
+            columnDropHintRef.current = hint
+            setColumnDropHint((prev) => (prev?.overColumnId === null ? prev : hint))
+          }}
+          onDrop={(e) => {
+            if (draggingRef.current?.kind !== 'column') return
+            e.preventDefault()
+            const payload = parseDragPayload(e.dataTransfer.getData('application/json'))
+            if (!payload || payload.kind !== 'column') return
+            const hint = columnDropHintRef.current
+            if (hint?.overColumnId === null) moveColumnToEnd(payload.columnId)
+            clearDragUi()
+          }}
+        >
           {columns.map((column) => (
             <div
               key={column.id}
-              className="min-w-[280px] rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)]"
+              ref={(el) => {
+                columnElByIdRef.current[column.id] = el
+              }}
+              draggable
+              style={{
+                willChange: 'transform',
+                backgroundColor: column.color
+                  ? `color-mix(in srgb, var(--obsidian-pane) 88%, ${column.color} 12%)`
+                  : undefined,
+              }}
+              onDragStart={(e) => {
+                if (shouldIgnoreColumnDragStart(e.target)) {
+                  e.preventDefault()
+                  return
+                }
+                const payload = { kind: 'column', columnId: column.id } satisfies DragPayload
+                draggingRef.current = payload
+                setDraggingColumnId(column.id)
+                setColumnDropHint(null)
+                columnDropHintRef.current = null
+                e.dataTransfer.setData('application/json', JSON.stringify(payload))
+                e.dataTransfer.effectAllowed = 'move'
+              }}
+              onDragEnd={() => {
+                clearDragUi()
+              }}
+              className={twMerge(
+                'min-w-[280px] rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] relative',
+                draggingColumnId === column.id && 'opacity-60',
+                columnDropHint?.overColumnId === column.id && 'ring-2 ring-[var(--obsidian-accent)]'
+              )}
               onDragOver={(e) => {
-                e.preventDefault()
-                setDragOver({ columnId: column.id, beforeCardId: null })
+                const payload = draggingRef.current
+                if (!payload) return
+
+                if (payload.kind === 'card') {
+                  e.preventDefault()
+                  setCardDragOver({ columnId: column.id, beforeCardId: null })
+                  return
+                }
+
+                if (payload.kind === 'column') {
+                  if (payload.columnId === column.id) return
+                  e.preventDefault()
+
+                  const hint: ColumnOverHint = { overColumnId: column.id }
+                  columnDropHintRef.current = hint
+                  setColumnDropHint((prev) =>
+                    prev?.overColumnId === hint.overColumnId ? prev : hint
+                  )
+                }
               }}
               onDrop={(e) => {
-                e.preventDefault()
                 const payload = parseDragPayload(e.dataTransfer.getData('application/json'))
-                if (!payload || payload.kind !== 'card') return
-                moveCard(payload.columnId, payload.cardId, column.id, null)
-                setDragOver(null)
+                if (!payload) return
+
+                if (payload.kind === 'card') {
+                  e.preventDefault()
+                  moveCard(payload.columnId, payload.cardId, column.id, null)
+                  setCardDragOver(null)
+                } else if (payload.kind === 'column') {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (payload.columnId === column.id) {
+                    clearDragUi()
+                    return
+                  }
+
+                  swapColumns(payload.columnId, column.id)
+                  clearDragUi()
+                }
               }}
             >
               <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
+                <div
+                  className="p-1 text-[var(--obsidian-text-muted)]"
+                  title="Drag board to reorder"
+                >
+                  <MdDragIndicator className="w-4 h-4" />
+                </div>
                 {renamingColumnId === column.id ? (
                   <input
                     ref={renameInputRef}
@@ -281,7 +441,7 @@ export const KanbanBoard = () => {
                   <Card key={card.id} columnId={column.id} card={card} />
                 ))}
 
-                {dragOver?.columnId === column.id && dragOver.beforeCardId == null && (
+                {cardDragOver?.columnId === column.id && cardDragOver.beforeCardId == null && (
                   <div className="h-10 rounded border-2 border-dashed border-[var(--obsidian-accent)]/60" />
                 )}
               </div>
