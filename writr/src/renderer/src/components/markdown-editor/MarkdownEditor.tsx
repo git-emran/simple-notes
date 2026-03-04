@@ -352,9 +352,7 @@ export const MarkdownEditor = () => {
           },
         ])
       ),
-      themeCompartment.of(getEditorTheme(isDarkMode)),
       keymap.of([...defaultKeymap, ...historyKeymap]),
-      vimCompartment.of([]),
       drawSelection(),
       closeBrackets(),
       autoCloseTags,
@@ -383,21 +381,14 @@ export const MarkdownEditor = () => {
           activeDark: 'rgba(255, 255, 255, 0.1)',
         },
       }),
-      highlightCompartment.of(
-        syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
-      ),
       autocompletion({ activateOnTyping: true, icons: true }),
-      relativeLineNumbersCompartment.of([]),
       markdownTableEnhancement,
-      lineWrappingCompartment.of([]),
       checkboxExtension,
       statusBarExtension,
-      tabIndentCompartment.of([]),
       codeBlockCopy,
       codeBlockBackground,
       quoteLineStyling,
       tripleBacktickExtension,
-      livePreviewImagesCompartment.of([]),
       markdownMarkupColors,
     ],
     [
@@ -833,6 +824,17 @@ export const MarkdownEditor = () => {
         selection: { anchor: 0 },
         extensions: [
           ...baseExtensions,
+          vimCompartment.of(vimModeEnabled ? vim() : []),
+          themeCompartment.of(getEditorTheme(isDarkMode)),
+          highlightCompartment.of(
+            syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
+          ),
+          relativeLineNumbersCompartment.of(
+            relativeLineNumbersEnabled ? relativeLineNumbers() : []
+          ),
+          lineWrappingCompartment.of(lineWrappingEnabled ? EditorView.lineWrapping : []),
+          tabIndentCompartment.of(tabAsSpaces(tabIndentUnit)),
+          livePreviewImagesCompartment.of(createLivePreviewImages(selectedNote?.path, rootDir || undefined)),
           EditorView.updateListener.of((update) => {
             if (update.docChanged && !isSwitchingRef.current) {
               const content = update.state.doc.toString()
