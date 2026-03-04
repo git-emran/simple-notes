@@ -223,8 +223,15 @@ export const getFileTree: GetFileTree = async () => {
 }
 
 export const readFileNew: ReadFile = async (filePath) => {
-  const safePath = ensurePathWithinRoot(filePath)
-  return readFile(safePath, { encoding: fileEncoding })
+  try {
+    const safePath = ensurePathWithinRoot(filePath)
+    return await readFile(safePath, { encoding: fileEncoding })
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return undefined as any
+    }
+    throw error
+  }
 }
 
 export const writeFileNew: WriteFile = async (filePath, content) => {

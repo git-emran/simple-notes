@@ -802,7 +802,9 @@ export const createDailyNoteAtom = atom(null, async (get, set) => {
     const filePath = `${rootDir}${separator}${fileName}`
 
     try {
-      await window.context.readFileNew(filePath)
+      if (await window.context.readFileNew(filePath) === undefined) {
+        throw new Error('Not found')
+      }
     } catch {
       await window.context.writeFileNew(filePath, '')
     }
