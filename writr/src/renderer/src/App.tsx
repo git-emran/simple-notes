@@ -199,7 +199,7 @@ const App = () => {
             style={{ width: 46 + (collapsed ? 0 : sidebarWidth) }}
           />
           {/* Tabs Area */}
-          <div className="flex-1 overflow-hidden" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <div className="flex-1 overflow-hidden">
             <EditorTabs />
           </div>
         </div>

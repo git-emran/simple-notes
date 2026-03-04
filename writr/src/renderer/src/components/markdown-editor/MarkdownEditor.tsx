@@ -1871,7 +1871,7 @@ const MarkdownPreview = memo(({
           )
         },
         pre: ({ children }) => (
-          <pre className={twMerge(previewReadableWidthClass, 'mb-4 bg-transparent overflow-hidden rounded')}>
+          <pre className="w-full mb-4 bg-transparent overflow-hidden rounded">
             {children}
           </pre>
         ),

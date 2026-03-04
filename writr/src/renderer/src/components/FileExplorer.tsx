@@ -118,7 +118,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     return paths
   }, [fileTree])
 
-  const isAllExpanded = allFolderPaths.length > 0 && allFolderPaths.every((path) => expandedNodes.has(path))
+  const hasAnyExpanded = expandedNodes.size > 0
 
   const lastTodoIndexRootRef = useRef<string | null>(null)
   useEffect(() => {
@@ -128,12 +128,43 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     void reindexTodoStats()
   }, [notesRootDir, reindexTodoStats])
 
+  const getAllParentPaths = useCallback((path: string) => {
+    const parents: string[] = []
+    let current = path
+    while (true) {
+      const lastSlash = current.lastIndexOf('/')
+      const lastBackslash = current.lastIndexOf('\\')
+      const idx = Math.max(lastSlash, lastBackslash)
+      if (idx === -1) break
+      current = current.substring(0, idx)
+      if (current) parents.push(current)
+      else break
+    }
+    return parents
+  }, [])
+
   useEffect(() => {
     if (!activeTabPath) return
 
     const treeMatch = fileTreeIndex.get(activeTabPath) ?? null
     if (treeMatch && treeMatch.path) {
       setSelectedNode((prev) => (prev?.path === treeMatch.path ? prev : treeMatch))
+      
+      // Auto-reveal: expand all parents of the active note
+      const parents = getAllParentPaths(activeTabPath)
+      if (parents.length > 0) {
+        setExpandedNodes((prev) => {
+          const next = new Set(prev)
+          let changed = false
+          for (const p of parents) {
+            if (!next.has(p)) {
+              next.add(p)
+              changed = true
+            }
+          }
+          return changed ? next : prev
+        })
+      }
       return
     }
 
@@ -148,7 +179,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         isExpanded: false
       }
     })
-  }, [activeTabPath, fileTreeIndex, setSelectedNode])
+  }, [activeTabPath, fileTreeIndex, setSelectedNode, getAllParentPaths, setExpandedNodes])
 
   useEffect(() => {
     return () => {
@@ -416,10 +447,10 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
             <VscNewFolder className="w-4 h-4" />
           </button>
 
-          {isAllExpanded ? (
+          {hasAnyExpanded ? (
             <button
               onClick={handleCollapseAll}
-              className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+              className="p-1.5 rounded text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
               title="Collapse All"
             >
               <VscCollapseAll className="w-4 h-4" />
