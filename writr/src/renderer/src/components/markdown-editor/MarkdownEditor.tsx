@@ -414,11 +414,11 @@ export const MarkdownEditor = () => {
 
   // Optimized save function with queue
   const executeSave = useCallback(
-    async (content: string, noteTitle: string) => {
-      if (isSwitchingRef.current || currentNoteTitleRef.current !== noteTitle) return
+    async (content: string, notePath: string) => {
+      // Don't bail out if currentNoteTitleRef doesn't match; we might be flushing a save for a previous note!
       isSavingRef.current = true
       try {
-        await saveNote(content)
+        await saveNote({ newContent: content, path: notePath })
       } catch (error) {
         console.error('Save failed:', error)
       } finally {
@@ -429,9 +429,9 @@ export const MarkdownEditor = () => {
   )
 
   const queueSave = useCallback(
-    (content: string, noteTitle: string) => {
+    (content: string, notePath: string) => {
       saveQueueRef.current = saveQueueRef.current.then(() =>
-        executeSave(content, noteTitle)
+        executeSave(content, notePath)
       )
       return saveQueueRef.current
     },
@@ -441,7 +441,7 @@ export const MarkdownEditor = () => {
   const debouncedSave = useMemo(
     () =>
       throttle(
-        (content: string, noteTitle: string) => queueSave(content, noteTitle),
+        (content: string, notePath: string) => queueSave(content, notePath),
         autoSavingTime,
         { leading: false, trailing: true }
       ),
@@ -449,15 +449,13 @@ export const MarkdownEditor = () => {
   )
 
   const handleBlurSave = useCallback(async () => {
-    if (!selectedNote?.path || !viewRef.current || isSwitchingRef.current) return
+    // When focus is lost, we save the content of whatever is currently loaded in the CodeMirror view.
+    if (!currentNotePathRef.current || !viewRef.current || isSwitchingRef.current) return
     const content = viewRef.current.state.doc.toString()
-    const noteTitle = selectedNote.title
-    debouncedSave.cancel()
-    await saveQueueRef.current
-    currentNoteTitleRef.current = noteTitle
-    if (currentNoteTitleRef.current !== noteTitle) return
-    await queueSave(content, noteTitle)
-  }, [selectedNote, queueSave, debouncedSave])
+    const notePath = currentNotePathRef.current
+    debouncedSave.flush()
+    await queueSave(content, notePath)
+  }, [queueSave, debouncedSave])
 
   const insertTextAtCursor = useCallback((view: EditorView, text: string) => {
     const selection = view.state.selection.main
@@ -839,7 +837,7 @@ export const MarkdownEditor = () => {
             if (update.docChanged && !isSwitchingRef.current) {
               const content = update.state.doc.toString()
               setCurrentContent(content)
-              debouncedSave(content, currentNoteTitleRef.current)
+              debouncedSave(content, currentNotePathRef.current)
             }
           }),
           EditorView.domEventHandlers({
@@ -893,10 +891,9 @@ export const MarkdownEditor = () => {
         const newTitle = selectedNote.title
         const newContent = selectedNote.content
   
-        // Cancel pending debounced saves for the OLD note.
-        // We no longer await the Disk I/O (saveQueueRef) in the UI thread.
-        // The save queue ensures sequential writes in the background.
-        debouncedSave.cancel()
+        // FLUSH pending debounced saves for the OLD note before replacing refs
+        // This prevents data loss when rapidly switching tabs while typing
+        debouncedSave.flush()
   
         currentNoteTitleRef.current = newTitle
         currentNotePathRef.current = selectedNote.path
@@ -909,13 +906,8 @@ export const MarkdownEditor = () => {
   
         const view = viewRef.current
         if (view) {
-          // PRODUCTION OPTIMIZATION: Atomic document swap
-          // This is much faster than setState as it preserves extensions and state structure.
-          view.dispatch({
-            changes: { from: 0, to: view.state.doc.length, insert: newContent },
-            selection: { anchor: 0 },
-            scrollIntoView: true
-          })
+          // Replace state entirely to reset undo history and prevent Ctrl+Z cross-contamination
+          view.setState(buildState(newContent))
         }
         applyEditorSettings()
         isSwitchingRef.current = false

@@ -14,16 +14,16 @@ const loadFileTree = async () => {
   return await window.context.getFileTree()
 }
 
-export const saveCanvasAtom = atom(null, async (get, set, jsonContent: string) => {
-  const selectedNode = get(selectedNodeAtom)
-  if (!selectedNode || !selectedNode.path || !selectedNode.path.endsWith('.canvas')) return
+export const saveCanvasAtom = atom(null, async (get, set, payload: { path: string; jsonContent: string }) => {
+  const { path, jsonContent } = payload
+  if (!path || !path.endsWith('.canvas')) return
 
-  await window.context.writeFileNew(selectedNode.path, jsonContent)
+  await window.context.writeFileNew(path, jsonContent)
   const currentTree = get(fileTreeAtom) ?? []
   if (currentTree.length > 0) {
     set(
       fileTreeAtom,
-      updateFileNodeInTree(currentTree, selectedNode.path, {
+      updateFileNodeInTree(currentTree, path, {
         lastEditTime: Date.now()
       })
     )
@@ -466,10 +466,16 @@ export const selectedNoteAtomAsync = atom(async (get) => {
 
   let content = ''
   try {
-    content = await window.context.readFileNew(activeTabPath)
+    const text = await window.context.readFileNew(activeTabPath)
+    if (text === undefined) {
+      throw new Error('Not found')
+    }
+    content = text
   } catch {
     content = ''
   }
+  
+  if (get(activeTabPathAtom) !== activeTabPath) return null
   
   // Extract name for title
   const name = activeTabPath.split('/').pop()?.split('\\').pop() || 'Untitled'
@@ -493,18 +499,18 @@ export const selectedNoteAtom = unwrap(
     }
 )
 
-export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent) => {
-  const selectedNote = get(selectedNoteAtom)
+export const saveNoteAtom = atom(null, async (get, set, payload: { path: string; newContent: NoteContent }) => {
+  const { path, newContent } = payload
 
-  if (!selectedNote || !selectedNote.path) return
+  if (!path) return
 
-  await window.context.writeFileNew(selectedNote.path, newContent)
+  await window.context.writeFileNew(path, newContent)
   const currentTree = get(fileTreeAtom) ?? []
   if (currentTree.length > 0) {
     const todoStats = getTodoStats(newContent)
     const nextCache = {
       ...get(todoStatsByPathAtom),
-      [selectedNote.path]: {
+      [path]: {
         mtimeMs: Date.now(),
         todoTotal: todoStats.todoTotal,
         todoCompleted: todoStats.todoCompleted
@@ -512,7 +518,7 @@ export const saveNoteAtom = atom(null, async (get, set, newContent: NoteContent)
     }
     set(
       fileTreeAtom,
-      updateFileNodeInTree(currentTree, selectedNote.path, {
+      updateFileNodeInTree(currentTree, path, {
         lastEditTime: Date.now(),
         todoTotal: todoStats.todoTotal,
         todoCompleted: todoStats.todoCompleted

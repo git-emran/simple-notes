@@ -103,7 +103,9 @@ export const CanvasEditor = () => {
     if (!isCanvasFile) return
 
     const timeout = setTimeout(() => {
-      saveCanvas(JSON.stringify({ nodes, edges }, null, 2));
+      if (selectedNote?.path) {
+        saveCanvas({ path: selectedNote.path, jsonContent: JSON.stringify({ nodes, edges }, null, 2) });
+      }
     }, 500);
     return () => clearTimeout(timeout);
   }, [nodes, edges, isCanvasFile, isLoaded, saveCanvas]);
