@@ -61,10 +61,8 @@ export const getNotes: GetNotes = async () => {
   const notes = notesFileNames.filter((fileName) => fileName.endsWith('.md'))
 
   if (isEmpty(notes)) {
-    const content = await readFile(welcomeNoteFile, { encoding: fileEncoding })
-    await writeFile(`${rootDir}/${welcomeNoteFileName}`, content, { encoding: fileEncoding })
-
-    notes.push('Welcome.md')
+    await ensureWelcomeNote(rootDir)
+    notes.push(welcomeNoteFileName)
   }
 
   return Promise.all(notes.map(getNoteInfoFromFilename))
@@ -158,6 +156,17 @@ export const getFileTree: GetFileTree = async () => {
   const rootDir = getRootDir()
   await ensureDir(rootDir)
 
+  // Check if root directory has any notes or canvases
+  const dirents = await readdir(rootDir, { withFileTypes: true })
+  const hasNotes = dirents.some((d) => {
+    const name = d.name.toLowerCase()
+    return !d.isDirectory() && (name.endsWith('.md') || name.endsWith('.canvas'))
+  })
+
+  if (!hasNotes) {
+    await ensureWelcomeNote(rootDir)
+  }
+
   const buildTree = async (currentDir: string): Promise<FileNode[]> => {
     const dirents = await readdir(currentDir, { withFileTypes: true })
 
@@ -220,6 +229,15 @@ export const getFileTree: GetFileTree = async () => {
   }
 
   return buildTree(rootDir)
+}
+
+const ensureWelcomeNote = async (rootDir: string) => {
+  const welcomeNotePath = path.join(rootDir, welcomeNoteFileName)
+  // Ensure we don't overwrite if it somehow exists but wasn't detected (e.g. case mismatch)
+  if (!(await pathExists(welcomeNotePath))) {
+    const content = await readFile(welcomeNoteFile, { encoding: fileEncoding })
+    await writeFile(welcomeNotePath, content, { encoding: fileEncoding })
+  }
 }
 
 export const readFileNew: ReadFile = async (filePath) => {

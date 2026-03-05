@@ -24,7 +24,10 @@ import {
   createKanbanTabAtom,
   editorFontAtom,
   editorFontSizeAtom,
-  themeModeAtom
+  themeModeAtom,
+  fileTreeAtom,
+  openTabAtom,
+  tabsAtom
 } from '@renderer/store'
 import {
   VscFiles,
@@ -58,6 +61,20 @@ const App = () => {
   const themeMode = useAtomValue(themeModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
+  const fileTree = useAtomValue(fileTreeAtom)
+  const openTab = useSetAtom(openTabAtom)
+  const tabs = useAtomValue(tabsAtom)
+
+  // Auto-open welcome note if it's a first run/empty root
+  useEffect(() => {
+    // If we have a file tree but only one empty tab, and the tree contains Welcome.md
+    if (fileTree && fileTree.length > 0 && tabs.length === 1 && tabs[0].kind === 'empty') {
+      const welcomeNode = fileTree.find((n) => n.name === 'Welcome.md')
+      if (welcomeNode) {
+        openTab(welcomeNode)
+      }
+    }
+  }, [fileTree, tabs, openTab])
 
   // Automatically switch mode based on selected file extension
   useEffect(() => {

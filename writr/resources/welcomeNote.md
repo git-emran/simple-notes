@@ -11,6 +11,13 @@ Following there's a quick overview of the currently supported Markdown syntax.
 This is a **bold** text.
 This is an _italic_ text.
 
+To Write bold and italic text :
+
+```
+**bold**
+*italic*
+```
+
 ## Headings
 
 Here are all the heading formats currently supported by **_Writer_**:
@@ -21,11 +28,13 @@ Here are all the heading formats currently supported by **_Writer_**:
 
 ### Heading 3
 
-:> [!WARNING]
-
->
-
 #### Heading 4
+
+##### Heading 5
+
+###### Heading 6
+
+Write Headers with `#` symbol. The more `#` symbols you use, the smaller the heading will be.
 
 ### Bulleted list
 
@@ -34,6 +43,20 @@ For example, you can add a list of bullet points:
 - Bullet point 1
 - Bullet point 2
 - Bullet point 3
+
+
+```
+For unordered list :
+- Bullet point 1
+- Bullet point 2
+- Bullet point 3
+
+For ordered list:
+1. Bullet point 1
+2. Bullet point 2
+3. Bullet point 3
+
+```
 
 ### Numbered list
 
@@ -47,6 +70,12 @@ Here we have a numbered list:
 
 > This is a blockquote. You can use it to emphasize some text or to cite someone.
 
+To write a blockquote:
+
+```
+> This is a blockquote. You can use it to emphasize some text or to cite someone.
+```
+
 ### Code blocks
 
 You can write codeblocks ``` with this symbol. It works perfectly
@@ -54,3 +83,9 @@ You can write codeblocks ``` with this symbol. It works perfectly
 # Links
 
 Inline links are also supported.
+
+To write links:
+
+```
+[link text](https://www.google.com)
+```
