@@ -1,7 +1,7 @@
 import { useAtom } from 'jotai'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { VscAdd, VscClose } from 'react-icons/vsc'
+import { VscAdd, VscCheck, VscClose } from 'react-icons/vsc'
 import { MdDragIndicator } from 'react-icons/md'
 import {
   kanbanStateAtom,
@@ -33,7 +33,7 @@ export const KanbanBoard = () => {
   const [newBoardTitle, setNewBoardTitle] = useState('')
   const [cardDragOver, setCardDragOver] = useState<{
     columnId: string
-    beforeCardId: string | null
+    targetCardId: string | null
   } | null>(null)
   const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null)
   const [columnDropHint, setColumnDropHint] = useState<ColumnOverHint | null>(null)
@@ -42,6 +42,7 @@ export const KanbanBoard = () => {
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
   const draggingRef = useRef<DragPayload | null>(null)
+  const cardDragOverRef = useRef<{ columnId: string; targetCardId: string | null } | null>(null)
   const columnDropHintRef = useRef<ColumnOverHint | null>(null)
   const columnElByIdRef = useRef<Record<string, HTMLDivElement | null>>({})
 
@@ -154,14 +155,27 @@ export const KanbanBoard = () => {
     }))
   }
 
+  const toggleCardCompleted = (columnId: string, cardId: string) => {
+    setState((prev) => ({
+      ...prev,
+      columns: prev.columns.map((col) => {
+        if (col.id !== columnId) return col
+        return {
+          ...col,
+          cards: col.cards.map((c) =>
+            c.id === cardId ? { ...c, completed: !Boolean(c.completed) } : c
+          ),
+        }
+      }),
+    }))
+  }
+
   const moveCard = (
     fromColumnId: string,
     cardId: string,
     toColumnId: string,
     beforeCardId: string | null
   ) => {
-    if (fromColumnId === toColumnId && beforeCardId == null) return
-
     setState((prev) => {
       const fromCol = prev.columns.find((c) => c.id === fromColumnId)
       const toCol = prev.columns.find((c) => c.id === toColumnId)
@@ -170,51 +184,123 @@ export const KanbanBoard = () => {
       const card = fromCol.cards.find((c) => c.id === cardId)
       if (!card) return prev
 
-      const nextColumns = prev.columns.map((col) => {
-        if (col.id === fromColumnId) {
-          return { ...col, cards: col.cards.filter((c) => c.id !== cardId) }
+      if (fromColumnId === toColumnId) {
+        if (beforeCardId === cardId) return prev
+
+        const without = fromCol.cards.filter((c) => c.id !== cardId)
+        const rawIndex = beforeCardId == null ? without.length : without.findIndex((c) => c.id === beforeCardId)
+        const insertIndex = rawIndex < 0 ? without.length : rawIndex
+        const nextCards = [...without.slice(0, insertIndex), card, ...without.slice(insertIndex)]
+
+        const sameOrder =
+          nextCards.length === fromCol.cards.length &&
+          nextCards.every((c, idx) => c.id === fromCol.cards[idx]!.id)
+        if (sameOrder) return prev
+
+        return {
+          ...prev,
+          columns: prev.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
         }
-        return col
-      })
+      }
 
-      const destCol = nextColumns.find((c) => c.id === toColumnId)!
-      const insertIndex =
-        beforeCardId == null
-          ? destCol.cards.length
-          : Math.max(0, destCol.cards.findIndex((c) => c.id === beforeCardId))
-
-      const nextCards = [
-        ...destCol.cards.slice(0, insertIndex),
+      const fromWithout = fromCol.cards.filter((c) => c.id !== cardId)
+      const rawDestIndex =
+        beforeCardId == null ? toCol.cards.length : toCol.cards.findIndex((c) => c.id === beforeCardId)
+      const destIndex = rawDestIndex < 0 ? toCol.cards.length : rawDestIndex
+      const nextDestCards = [
+        ...toCol.cards.slice(0, destIndex),
         card,
-        ...destCol.cards.slice(insertIndex),
+        ...toCol.cards.slice(destIndex),
       ]
 
       return {
         ...prev,
-        columns: nextColumns.map((c) => (c.id === toColumnId ? { ...c, cards: nextCards } : c)),
+        columns: prev.columns.map((c) => {
+          if (c.id === fromColumnId) return { ...c, cards: fromWithout }
+          if (c.id === toColumnId) return { ...c, cards: nextDestCards }
+          return c
+        }),
+      }
+    })
+  }
+
+  const swapCards = (fromColumnId: string, cardId: string, toColumnId: string, targetCardId: string) => {
+    setState((prev) => {
+      const fromCol = prev.columns.find((c) => c.id === fromColumnId)
+      const toCol = prev.columns.find((c) => c.id === toColumnId)
+      if (!fromCol || !toCol) return prev
+
+      const fromIndex = fromCol.cards.findIndex((c) => c.id === cardId)
+      const toIndex = toCol.cards.findIndex((c) => c.id === targetCardId)
+      if (fromIndex < 0 || toIndex < 0) return prev
+      if (fromColumnId === toColumnId && fromIndex === toIndex) return prev
+
+      if (fromColumnId === toColumnId) {
+        const nextCards = fromCol.cards.slice()
+        ;[nextCards[fromIndex], nextCards[toIndex]] = [nextCards[toIndex], nextCards[fromIndex]]
+        return {
+          ...prev,
+          columns: prev.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
+        }
+      }
+
+      const nextFromCards = fromCol.cards.slice()
+      const nextToCards = toCol.cards.slice()
+      const draggedCard = nextFromCards[fromIndex]
+      const targetCard = nextToCards[toIndex]
+      nextFromCards[fromIndex] = targetCard
+      nextToCards[toIndex] = draggedCard
+
+      return {
+        ...prev,
+        columns: prev.columns.map((c) => {
+          if (c.id === fromColumnId) return { ...c, cards: nextFromCards }
+          if (c.id === toColumnId) return { ...c, cards: nextToCards }
+          return c
+        }),
       }
     })
   }
 
   const clearDragUi = () => {
     draggingRef.current = null
+    cardDragOverRef.current = null
     setDraggingColumnId(null)
     setColumnDropHint(null)
     columnDropHintRef.current = null
     setCardDragOver(null)
   }
 
+  const setCardDragOverStable = (next: { columnId: string; targetCardId: string | null } | null) => {
+    cardDragOverRef.current = next
+    setCardDragOver((prev) => {
+      if (prev?.columnId === next?.columnId && prev?.targetCardId === next?.targetCardId) {
+        return prev
+      }
+      return next
+    })
+  }
+
+  const getCurrentPayload = (dataTransfer: DataTransfer | null): DragPayload | null => {
+    const fromTransfer = parseDragPayload(dataTransfer?.getData('application/json') ?? null)
+    return fromTransfer ?? draggingRef.current
+  }
+
   const shouldIgnoreColumnDragStart = (target: EventTarget | null) => {
     const el = target as HTMLElement | null
     if (!el) return false
-    return Boolean(el.closest('input, textarea, select, button, [contenteditable="true"]'))
+    return Boolean(
+      el.closest('input, textarea, select, button, [contenteditable="true"], [data-kanban-card="true"]')
+    )
   }
 
   const Card = ({ columnId, card }: { columnId: string; card: KanbanCard }) => {
     return (
       <div
+        data-kanban-card="true"
         draggable
         onDragStart={(e) => {
+          e.stopPropagation()
           const payload = { kind: 'card', columnId, cardId: card.id } satisfies DragPayload
           draggingRef.current = payload
           e.dataTransfer.setData('application/json', JSON.stringify(payload))
@@ -226,25 +312,51 @@ export const KanbanBoard = () => {
         onDragOver={(e) => {
           if (draggingRef.current?.kind !== 'card') return
           e.preventDefault()
-          setCardDragOver({ columnId, beforeCardId: card.id })
+          e.stopPropagation()
+          setCardDragOverStable({ columnId, targetCardId: card.id })
         }}
         onDrop={(e) => {
           if (draggingRef.current?.kind !== 'card') return
           e.preventDefault()
-          const payload = parseDragPayload(e.dataTransfer.getData('application/json'))
+          e.stopPropagation()
+          const payload = getCurrentPayload(e.dataTransfer)
           if (!payload || payload.kind !== 'card') return
-          moveCard(payload.columnId, payload.cardId, columnId, card.id)
-          setCardDragOver(null)
+          if (payload.columnId === columnId && payload.cardId === card.id) {
+            clearDragUi()
+            return
+          }
+          swapCards(payload.columnId, payload.cardId, columnId, card.id)
+          clearDragUi()
         }}
         className={twMerge(
-          'rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 shadow-sm',
+          'rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] px-3 py-2 shadow-md transition-shadow hover:shadow-lg',
           cardDragOver?.columnId === columnId &&
-            cardDragOver.beforeCardId === card.id &&
-            'ring-2 ring-[var(--obsidian-accent)]'
+            cardDragOver.targetCardId === card.id &&
+            'ring-2 ring-[var(--obsidian-accent)]',
+          Boolean(card.completed) && 'opacity-90'
         )}
       >
         <div className="flex items-start gap-2">
-          <div className="flex-1 text-sm text-[var(--obsidian-text)] whitespace-pre-wrap break-words">
+          <button
+            type="button"
+            title={card.completed ? 'Mark as not done' : 'Mark as done'}
+            onClick={() => toggleCardCompleted(columnId, card.id)}
+            className={twMerge(
+              'mt-0.5 h-5 w-5 shrink-0 rounded-full border flex items-center justify-center',
+              card.completed
+                ? 'border-emerald-500 bg-emerald-500/10'
+                : 'border-[var(--obsidian-border)] bg-transparent'
+            )}
+          >
+            {card.completed ? <VscCheck className="h-4 w-4 text-emerald-500" /> : null}
+          </button>
+
+          <div
+            className={twMerge(
+              'flex-1 text-sm text-[var(--obsidian-text)] whitespace-pre-wrap break-words',
+              Boolean(card.completed) && 'line-through text-[var(--obsidian-text-muted)]'
+            )}
+          >
             {card.text}
           </div>
           <button
@@ -260,11 +372,11 @@ export const KanbanBoard = () => {
   }
 
   const gridClass =
-    columns.length <= 3 ? 'grid-cols-3' : 'grid-flow-col auto-cols-[320px]'
+    columns.length <= 3 ? 'grid-cols-3' : 'grid-flow-col auto-cols-[320px] grid-rows-1'
   const gridStyle =
     columns.length <= 3
       ? { gridTemplateColumns: `repeat(${Math.max(1, columns.length)}, minmax(0, 1fr))` }
-      : undefined
+      : { gridTemplateRows: '1fr' }
 
   return (
     <div className="h-full w-full bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]">
@@ -280,7 +392,7 @@ export const KanbanBoard = () => {
             value={newBoardTitle}
             onChange={(e) => setNewBoardTitle(e.target.value)}
             placeholder="Add board..."
-            className="w-52 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
             onKeyDown={(e) => {
               if (e.key === 'Enter') addBoard()
             }}
@@ -334,7 +446,6 @@ export const KanbanBoard = () => {
               }}
               onDragStart={(e) => {
                 if (shouldIgnoreColumnDragStart(e.target)) {
-                  e.preventDefault()
                   return
                 }
                 const payload = { kind: 'column', columnId: column.id } satisfies DragPayload
@@ -359,7 +470,7 @@ export const KanbanBoard = () => {
 
                 if (payload.kind === 'card') {
                   e.preventDefault()
-                  setCardDragOver({ columnId: column.id, beforeCardId: null })
+                  setCardDragOverStable({ columnId: column.id, targetCardId: null })
                   return
                 }
 
@@ -375,13 +486,17 @@ export const KanbanBoard = () => {
                 }
               }}
               onDrop={(e) => {
-                const payload = parseDragPayload(e.dataTransfer.getData('application/json'))
+                const payload = getCurrentPayload(e.dataTransfer)
                 if (!payload) return
 
                 if (payload.kind === 'card') {
                   e.preventDefault()
-                  moveCard(payload.columnId, payload.cardId, column.id, null)
-                  setCardDragOver(null)
+                  const beforeCardId =
+                    cardDragOverRef.current?.columnId === column.id
+                      ? cardDragOverRef.current.targetCardId
+                      : null
+                  moveCard(payload.columnId, payload.cardId, column.id, beforeCardId)
+                  clearDragUi()
                 } else if (payload.kind === 'column') {
                   e.preventDefault()
                   e.stopPropagation()
@@ -440,10 +555,6 @@ export const KanbanBoard = () => {
                 {(column.cards ?? []).map((card) => (
                   <Card key={card.id} columnId={column.id} card={card} />
                 ))}
-
-                {cardDragOver?.columnId === column.id && cardDragOver.beforeCardId == null && (
-                  <div className="h-10 rounded border-2 border-dashed border-[var(--obsidian-accent)]/60" />
-                )}
               </div>
 
               <div className="px-3 py-3 border-t border-[var(--obsidian-border-soft)]">
@@ -468,7 +579,7 @@ const AddCardForm = ({ onAdd }: { onAdd: (text: string) => void }) => {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Add task..."
-        className="flex-1 min-w-0 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+        className="flex-1 min-w-0 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             onAdd(value)

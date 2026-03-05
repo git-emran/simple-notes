@@ -67,13 +67,12 @@ const App = () => {
 
   // Auto-open welcome note if it's a first run/empty root
   useEffect(() => {
-    // If we have a file tree but only one empty tab, and the tree contains Welcome.md
-    if (fileTree && fileTree.length > 0 && tabs.length === 1 && tabs[0].kind === 'empty') {
-      const welcomeNode = fileTree.find((n) => n.name === 'Welcome.md')
-      if (welcomeNode) {
-        openTab(welcomeNode)
-      }
-    }
+    // Only auto-open Welcome.md when the app root folder has nothing else in it.
+    if (!fileTree || fileTree.length === 0) return
+    if (tabs.length !== 1 || tabs[0].kind !== 'empty') return
+    if (fileTree.length !== 1) return
+    if (fileTree[0].name !== 'Welcome.md') return
+    openTab(fileTree[0])
   }, [fileTree, tabs, openTab])
 
   // Automatically switch mode based on selected file extension

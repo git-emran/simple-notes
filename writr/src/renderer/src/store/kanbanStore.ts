@@ -3,6 +3,7 @@ import { atomWithStorage } from 'jotai/utils'
 export type KanbanCard = {
   id: string
   text: string
+  completed?: boolean
 }
 
 export type KanbanColumn = {
@@ -67,6 +68,7 @@ export const createKanbanColumn = (title: string, color?: string): KanbanColumn 
 export const createKanbanCard = (text: string): KanbanCard => ({
   id: makeId('card'),
   text,
+  completed: false,
 })
 
 export const kanbanStateAtom = atomWithStorage<KanbanState>('writr-kanban-state', {

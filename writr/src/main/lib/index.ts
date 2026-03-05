@@ -53,14 +53,13 @@ export const getNotes: GetNotes = async () => {
 
   await ensureDir(rootDir)
 
-  const notesFileNames = await readdir(rootDir, {
-    encoding: fileEncoding,
-    withFileTypes: false
-  })
+  const rootDirents = await readdir(rootDir, { withFileTypes: true })
+  const notes = rootDirents
+    .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.md'))
+    .map((dirent) => dirent.name)
+  const hasRootFile = rootDirents.some((dirent) => dirent.isFile())
 
-  const notes = notesFileNames.filter((fileName) => fileName.endsWith('.md'))
-
-  if (isEmpty(notes)) {
+  if (isEmpty(notes) && !hasRootFile) {
     await ensureWelcomeNote(rootDir)
     notes.push(welcomeNoteFileName)
   }
@@ -156,14 +155,11 @@ export const getFileTree: GetFileTree = async () => {
   const rootDir = getRootDir()
   await ensureDir(rootDir)
 
-  // Check if root directory has any notes or canvases
+  // Show welcome note only when the app root has no files at all.
   const dirents = await readdir(rootDir, { withFileTypes: true })
-  const hasNotes = dirents.some((d) => {
-    const name = d.name.toLowerCase()
-    return !d.isDirectory() && (name.endsWith('.md') || name.endsWith('.canvas'))
-  })
+  const hasRootFile = dirents.some((d) => d.isFile())
 
-  if (!hasNotes) {
+  if (!hasRootFile) {
     await ensureWelcomeNote(rootDir)
   }
 
