@@ -61,6 +61,8 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   onDelete?: (path: string) => void
   onDropNode?: (src: string, dest: string) => void
   onNodeContextMenu?: (node: FileNode, e: MouseEvent) => void
+  onRenameComplete?: () => void
+  isRenaming?: boolean
   renderChildren?: boolean
   noteStatus?: string
   noteTag?: string
@@ -78,6 +80,8 @@ const FileTreeItemComponent = ({
   onDelete,
   onDropNode,
   onNodeContextMenu,
+  onRenameComplete,
+  isRenaming = false,
   renderChildren = true,
   noteStatus,
   noteTag,
@@ -108,6 +112,13 @@ const FileTreeItemComponent = ({
   }, [isEditing, node.name])
 
   useEffect(() => {
+    if (isRenaming) {
+      setIsEditing(true)
+      setEditParts(node.type === 'file' ? splitFileName(node.name) : { base: node.name, ext: '' })
+    }
+  }, [isRenaming, node.name, node.type])
+
+  useEffect(() => {
     if (!isEditing) return
     inputRef.current?.focus()
     inputRef.current?.select()
@@ -119,12 +130,6 @@ const FileTreeItemComponent = ({
       onToggleExpand(node.path)
     }
     onNodeSelect(node)
-  }
-
-  const handleDoubleClick = (e: MouseEvent) => {
-    e.stopPropagation()
-    setIsEditing(true)
-    setEditParts(node.type === 'file' ? splitFileName(node.name) : { base: node.name, ext: '' })
   }
 
   const handleContextMenu = (e: MouseEvent) => {
@@ -174,6 +179,7 @@ const FileTreeItemComponent = ({
 
   const handleSubmitRename = () => {
     setIsEditing(false)
+    onRenameComplete?.()
 
     const newName = `${editParts.base}${editParts.ext}`
     if (newName === node.name) return
@@ -193,6 +199,7 @@ const FileTreeItemComponent = ({
       handleSubmitRename()
     } else if (e.key === 'Escape') {
       setIsEditing(false)
+      onRenameComplete?.()
       setEditParts(splitFileName(node.name))
     }
     e.stopPropagation()
@@ -295,7 +302,10 @@ const FileTreeItemComponent = ({
             type="text"
             value={editParts.base}
             onChange={(e) => setEditParts((prev) => ({ ...prev, base: e.target.value }))}
-            onBlur={handleSubmitRename}
+            onBlur={() => {
+              handleSubmitRename()
+              onRenameComplete?.()
+            }}
             onKeyDown={handleKeyDown}
             className="bg-[var(--obsidian-workspace)] border border-[var(--obsidian-accent)] outline-none text-[11px] px-1 rounded-sm min-w-0 flex-shrink text-[var(--obsidian-text)]"
           />
@@ -336,7 +346,6 @@ const FileTreeItemComponent = ({
           minHeight: rowHeight
         }}
         onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
         draggable={!isEditing}
         onDragStart={handleDragStart}
@@ -400,6 +409,8 @@ const propsAreEqual = (prev: FileTreeItemProps, next: FileTreeItemProps) => {
     prev.noteStatus === next.noteStatus &&
     prev.noteTag === next.noteTag &&
     prev.renderChildren === next.renderChildren &&
+    prev.isRenaming === next.isRenaming &&
+    prev.onRenameComplete === next.onRenameComplete &&
     prev.expandedNodes === next.expandedNodes &&
     prev.onNodeSelect === next.onNodeSelect &&
     prev.onToggleExpand === next.onToggleExpand &&

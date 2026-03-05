@@ -12,8 +12,8 @@ import {
   reconnectEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useAtomValue, useSetAtom } from 'jotai';
-import { selectedNoteAtom, saveCanvasAtom } from '../../store';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { selectedNoteAtom, saveCanvasAtom, movePathAtom } from '../../store';
 import { VscTypeHierarchy, VscFilePdf, VscNote, VscSymbolString } from 'react-icons/vsc';
 import { FaRegSquare, FaRegCircle, } from 'react-icons/fa';
 import { TbDiamond } from 'react-icons/tb';
@@ -38,6 +38,10 @@ export const CanvasEditor = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [isLoaded, setIsLoaded] = React.useState(false);
+  const [isRenaming, setIsRenaming] = React.useState(false);
+  const [editTitle, setEditTitle] = React.useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const movePath = useSetAtom(movePathAtom);
 
   const canvasTitle = selectedNote?.title || 'Canvas'
   const isCanvasFile = !!selectedNote?.path && selectedNote.path.endsWith('.canvas')
@@ -200,6 +204,34 @@ export const CanvasEditor = () => {
     }
   };
 
+  const handleRename = () => {
+    setIsRenaming(false)
+    if (editTitle.trim() && editTitle !== canvasTitle && selectedNote?.path) {
+      const currentPath = selectedNote.path
+      const currentName = currentPath.substring(Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\')) + 1)
+      const ext = currentName.includes('.') ? currentName.substring(currentName.lastIndexOf('.')) : ''
+      const newFileName = editTitle.trim().endsWith(ext) ? editTitle.trim() : `${editTitle.trim()}${ext}`
+      
+      const parentPath = currentPath.substring(0, Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\')))
+      const separator = currentPath.includes('\\') ? '\\' : '/'
+      const newPath = parentPath ? `${parentPath}${separator}${newFileName}` : newFileName
+
+      if (newPath !== currentPath) {
+        void movePath({ src: currentPath, dest: newPath })
+      }
+    }
+  }
+
+  React.useEffect(() => {
+    if (isRenaming) {
+      setEditTitle(canvasTitle)
+      setTimeout(() => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      }, 0)
+    }
+  }, [isRenaming, canvasTitle])
+
   if (!isCanvasFile) {
     return (
       <div className="flex items-center justify-center h-full bg-[var(--obsidian-workspace)]">
@@ -284,9 +316,27 @@ export const CanvasEditor = () => {
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
         <div className="bg-[var(--obsidian-pane)]/90 backdrop-blur-md px-4 py-2 rounded-full border border-[var(--obsidian-border)] shadow-lg flex items-center gap-2 pointer-events-auto">
           <VscTypeHierarchy className="w-4 h-4 text-[var(--obsidian-accent)]" />
-          <span className="text-xs font-bold tracking-wider text-[var(--obsidian-text)] uppercase">
-            {canvasTitle}
-          </span>
+          {isRenaming ? (
+            <input
+              ref={inputRef}
+              type="text"
+              className="text-xs font-bold tracking-wider text-[var(--obsidian-text)] bg-transparent border-none outline-none uppercase w-48"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onBlur={handleRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRename()
+                if (e.key === 'Escape') setIsRenaming(false)
+              }}
+            />
+          ) : (
+            <span 
+              className="text-xs font-bold tracking-wider text-[var(--obsidian-text)] uppercase cursor-text"
+              onDoubleClick={() => setIsRenaming(true)}
+            >
+              {canvasTitle}
+            </span>
+          )}
         </div>
       </div>
     </div>

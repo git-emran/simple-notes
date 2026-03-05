@@ -67,6 +67,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     [rootKey, setFileTreeUiByRoot]
   )
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
+  const [renamingPath, setRenamingPath] = useState<string | null>(null)
   const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
   const [showScrollbar, setShowScrollbar] = useState(false)
   const scrollbarTimerRef = useRef<number | null>(null)
@@ -248,8 +249,8 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     })
   }, [setExpandedNodes])
 
-  const handleCreateNote = useCallback(() => {
-    const parent = getCreationParent()
+  const handleCreateFile = useCallback((parentPath?: string) => {
+    const parent = parentPath ?? getCreationParent()
     createNote(parent)
     if (parent) {
       setExpandedNodes((prev) => {
@@ -259,10 +260,11 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         return next
       })
     }
+    setContextMenu(null)
   }, [createNote, getCreationParent, setExpandedNodes])
 
-  const handleCreateDirectory = useCallback(() => {
-    const parent = getCreationParent()
+  const handleCreateFolder = useCallback((parentPath?: string) => {
+    const parent = parentPath ?? getCreationParent()
     createDirectory(parent)
     if (parent) {
       setExpandedNodes((prev) => {
@@ -272,6 +274,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         return next
       })
     }
+    setContextMenu(null)
   }, [createDirectory, getCreationParent, setExpandedNodes])
 
   const handleCollapseAll = useCallback(() => {
@@ -432,7 +435,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         </span>
         <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={handleCreateNote}
+            onClick={() => handleCreateFile()}
             className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
             title="New File"
           >
@@ -440,7 +443,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
           </button>
 
           <button
-            onClick={handleCreateDirectory}
+            onClick={() => handleCreateFolder()}
             className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
             title="New Folder"
           >
@@ -537,6 +540,8 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
                 onDelete={handleDelete}
                 onDropNode={handleDropNode}
                 onNodeContextMenu={handleNodeContextMenu}
+                isRenaming={renamingPath === node.path}
+                onRenameComplete={() => setRenamingPath(null)}
               />
             ))}
             {shouldWindow && windowing.afterHeight > 0 && (
@@ -555,6 +560,28 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
        {/* Context Menu */}
       {contextMenu && (
         <ContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}>
+          <ContextMenuItem
+            onClick={() => {
+              setRenamingPath(contextMenu.node.path)
+              setContextMenu(null)
+            }}
+          >
+            Rename
+          </ContextMenuItem>
+          {contextMenu.node.type === 'folder' && (
+            <>
+              <ContextMenuItem
+                onClick={() => handleCreateFile(contextMenu.node.path)}
+              >
+                New File
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => handleCreateFolder(contextMenu.node.path)}
+              >
+                New Folder
+              </ContextMenuItem>
+            </>
+          )}
           <ContextMenuItem
             onClick={() => {
               void deleteNode(contextMenu.node.path)

@@ -9,6 +9,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
   createNoteAtom,
   lineWrappingEnabledAtom,
+  movePathAtom,
   noteStatusByPathAtom,
   noteTagByPathAtom,
   relativeLineNumbersEnabledAtom,
@@ -102,6 +103,7 @@ export const MarkdownEditor = () => {
   const [aiProgress, setAiProgress] = useState(0)
   const [aiError, setAiError] = useState<string | null>(null)
   const [showFAB, setShowFAB] = useState(false)
+  const movePath = useSetAtom(movePathAtom)
 
   const previewReadableWidthClass = 'w-full min-w-0 max-w-[860px]'
 
@@ -525,6 +527,21 @@ export const MarkdownEditor = () => {
       setIsExportingPdf(false)
     }
   }, [currentContent, selectedNote?.path, selectedNote?.title])
+
+  const handleHeaderRename = useCallback((newName: string) => {
+    if (!selectedNote?.path) return
+    const currentName = selectedNote.path.substring(Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\')) + 1)
+    const ext = currentName.includes('.') ? currentName.substring(currentName.lastIndexOf('.')) : ''
+    const newFileName = newName.endsWith(ext) ? newName : `${newName}${ext}`
+    
+    const parentPath = selectedNote.path.substring(0, Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\')))
+    const separator = selectedNote.path.includes('\\') ? '\\' : '/'
+    const newPath = parentPath ? `${parentPath}${separator}${newFileName}` : newFileName
+
+    if (newPath !== selectedNote.path) {
+      void movePath({ src: selectedNote.path, dest: newPath })
+    }
+  }, [selectedNote?.path, movePath])
 
   useEffect(() => {
     if (!exportNotice) return
@@ -1168,6 +1185,7 @@ export const MarkdownEditor = () => {
         handleStatusChange={handleStatusChange}
         handleTagChange={handleTagChange}
         handleExportPdf={() => void handleExportPdf()}
+        onRename={handleHeaderRename}
         isExportingPdf={isExportingPdf}
       />
 

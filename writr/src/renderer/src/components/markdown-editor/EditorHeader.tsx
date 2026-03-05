@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 import { VscChevronDown, VscChromeClose } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
@@ -15,6 +16,7 @@ interface EditorHeaderProps {
   handleStatusChange: (status: string) => void;
   handleTagChange: (tag: string) => void;
   handleExportPdf: () => void;
+  onRename?: (newName: string) => void;
   isExportingPdf: boolean;
 }
 
@@ -28,14 +30,55 @@ export const EditorHeader = ({
   handleStatusChange,
   handleTagChange,
   handleExportPdf,
+  onRename,
   isExportingPdf
 }: EditorHeaderProps) => {
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [editValue, setEditValue] = React.useState(title)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  React.useEffect(() => {
+    setEditValue(title)
+  }, [title, isEditing])
+
+  React.useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [isEditing])
+
+  const handleRename = () => {
+    setIsEditing(false)
+    if (editValue.trim() && editValue !== title) {
+      onRename?.(editValue.trim())
+    }
+  }
+
   return (
     <div className="flex flex-col px-6 py-4 bg-[var(--obsidian-workspace)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
       <div className="flex items-start justify-between mb-2">
-        <h1 className="text-2xl font-semibold text-[var(--obsidian-text)] truncate flex-1">
-          {title}
-        </h1>
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            className="text-2xl font-semibold bg-transparent border-b border-[var(--obsidian-accent)] outline-none text-[var(--obsidian-text)] flex-1 mr-4"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleRename()
+              if (e.key === 'Escape') setIsEditing(false)
+            }}
+          />
+        ) : (
+          <h1 
+            className="text-2xl font-semibold text-[var(--obsidian-text)] truncate flex-1 cursor-text"
+            onDoubleClick={() => setIsEditing(true)}
+          >
+            {title}
+          </h1>
+        )}
         <div className="flex items-center gap-1">
           <MoreActionsMenu 
             notePath={path} 
