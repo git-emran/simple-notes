@@ -1,121 +1,145 @@
 import { LanguageDescription, StreamLanguage, LanguageSupport } from '@codemirror/language'
-import { javascript } from '@codemirror/lang-javascript'
-import { python } from '@codemirror/lang-python'
-import { html } from '@codemirror/lang-html'
-import { css } from '@codemirror/lang-css'
-import { json } from '@codemirror/lang-json'
-import { xml } from '@codemirror/lang-xml'
-import { sql } from '@codemirror/lang-sql'
-import { php } from '@codemirror/lang-php'
-import { java } from '@codemirror/lang-java'
-import { cpp } from '@codemirror/lang-cpp'
-import { rust } from '@codemirror/lang-rust'
-import { go } from '@codemirror/lang-go'
 import { languages } from '@codemirror/language-data'
+
+// Cache to store loaded language support objects
+const languageCache = new Map<string, LanguageSupport>()
+
+async function getLanguageSupport(name: string, loader: () => Promise<LanguageSupport>): Promise<LanguageSupport> {
+  if (languageCache.has(name)) return languageCache.get(name)!
+  const support = await loader()
+  languageCache.set(name, support)
+  return support
+}
 
 export const codeLanguages = [
   LanguageDescription.of({
-    name: 'JavaScript',
+    name: 'javascript',
     alias: ['javascript', 'js', 'jsx', 'node'],
     extensions: ['js', 'jsx', 'mjs', 'cjs'],
-    load() {
-      return Promise.resolve(javascript())
+    async load() {
+      return getLanguageSupport('javascript', () => 
+        import('@codemirror/lang-javascript').then((m) => m.javascript())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'TypeScript',
+    name: 'typescript',
     alias: ['typescript', 'ts', 'tsx'],
     extensions: ['ts', 'tsx'],
-    load() {
-      return Promise.resolve(javascript({ typescript: true }))
+    async load() {
+      return getLanguageSupport('typescript', () => 
+        import('@codemirror/lang-javascript').then((m) => m.javascript({ typescript: true }))
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'Python',
+    name: 'python',
     alias: ['python', 'py'],
     extensions: ['py', 'pyw'],
-    load() {
-      return Promise.resolve(python())
+    async load() {
+      return getLanguageSupport('python', () => 
+        import('@codemirror/lang-python').then((m) => m.python())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'HTML',
+    name: 'html',
     alias: ['html', 'htm'],
     extensions: ['html', 'htm', 'xhtml'],
-    load() {
-      return Promise.resolve(html())
+    async load() {
+      return getLanguageSupport('html', () => 
+        import('@codemirror/lang-html').then((m) => m.html())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'CSS',
+    name: 'css',
     alias: ['css'],
     extensions: ['css'],
-    load() {
-      return Promise.resolve(css())
+    async load() {
+      return getLanguageSupport('css', () => 
+        import('@codemirror/lang-css').then((m) => m.css())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'JSON',
+    name: 'json',
     alias: ['json'],
     extensions: ['json'],
-    load() {
-      return Promise.resolve(json())
+    async load() {
+      return getLanguageSupport('json', () => 
+        import('@codemirror/lang-json').then((m) => m.json())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'XML',
+    name: 'xml',
     alias: ['xml'],
     extensions: ['xml'],
-    load() {
-      return Promise.resolve(xml())
+    async load() {
+      return getLanguageSupport('xml', () => 
+        import('@codemirror/lang-xml').then((m) => m.xml())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'SQL',
+    name: 'sql',
     alias: ['sql'],
     extensions: ['sql'],
-    load() {
-      return Promise.resolve(sql())
+    async load() {
+      return getLanguageSupport('sql', () => 
+        import('@codemirror/lang-sql').then((m) => m.sql({ dialect: m.StandardSQL }))
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'PHP',
+    name: 'php',
     alias: ['php'],
     extensions: ['php'],
-    load() {
-      return Promise.resolve(php())
+    async load() {
+      return getLanguageSupport('php', () => 
+        import('@codemirror/lang-php').then((m) => m.php())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'Java',
+    name: 'java',
     alias: ['java'],
     extensions: ['java'],
-    load() {
-      return Promise.resolve(java())
+    async load() {
+      return getLanguageSupport('java', () => 
+        import('@codemirror/lang-java').then((m) => m.java())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'C++',
-    alias: ['cpp', 'c++', 'cxx', 'cc', 'c'],
-    extensions: ['cpp', 'cxx', 'cc', 'c', 'h'],
-    load() {
-      return Promise.resolve(cpp())
+    name: 'cpp',
+    alias: ['cpp', 'c++', 'cxx', 'cc', 'c', 'C++', 'CPP'],
+    extensions: ['cpp', 'cxx', 'cc', 'c', 'h', 'hpp', 'hxx'],
+    async load() {
+      return getLanguageSupport('cpp', () => 
+        import('@codemirror/lang-cpp').then((m) => m.cpp())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'Rust',
+    name: 'rust',
     alias: ['rust', 'rs'],
     extensions: ['rs'],
-    load() {
-      return Promise.resolve(rust())
+    async load() {
+      return getLanguageSupport('rust', () => 
+        import('@codemirror/lang-rust').then((m) => m.rust())
+      )
     }
   }),
   LanguageDescription.of({
-    name: 'Go',
+    name: 'go',
     alias: ['go', 'golang'],
     extensions: ['go'],
-    load() {
-      return Promise.resolve(go())
+    async load() {
+      return getLanguageSupport('go', () => 
+        import('@codemirror/lang-go').then((m) => m.go())
+      )
     }
   }),
   LanguageDescription.of({
@@ -133,18 +157,7 @@ export const codeLanguages = [
             const word = stream.current()
             if (
               [
-                'if',
-                'then',
-                'else',
-                'elif',
-                'fi',
-                'for',
-                'while',
-                'do',
-                'done',
-                'case',
-                'esac',
-                'function'
+                'if', 'then', 'else', 'elif', 'fi', 'for', 'while', 'do', 'done', 'case', 'esac', 'function'
               ].includes(word)
             ) {
               return 'keyword'

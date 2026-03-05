@@ -17,20 +17,44 @@ const sanitizeSvg = (svgMarkup: string): string => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(svgMarkup, 'image/svg+xml')
 
-  doc.querySelectorAll('script, foreignObject').forEach((node) => node.remove())
+  // Allowlist of safe SVG tags
+  const allowedTags = new Set([
+    'svg', 'g', 'path', 'rect', 'circle', 'line', 'polyline', 'polygon', 'ellipse',
+    'text', 'tspan', 'style', 'defs', 'marker', 'linearGradient', 'radialGradient',
+    'stop', 'clipPath', 'use', 'image', 'desc', 'title', 'symbol'
+  ]);
+
+  // Allowlist of safe SVG attributes
+  const allowedAttributes = new Set([
+     'width', 'height', 'viewbox', 'fill', 'stroke', 'stroke-width', 'd', 'points',
+     'cx', 'cy', 'r', 'x', 'y', 'x1', 'x2', 'y1', 'y2', 'transform', 'style', 'class',
+     'id', 'text-anchor', 'font-family', 'font-size', 'font-weight', 'opacity',
+     'marker-start', 'marker-mid', 'marker-end', 'clip-path', 'gradientunits',
+     'spreadmethod', 'offset', 'stop-color', 'stop-opacity'
+  ]);
 
   const allElements = doc.querySelectorAll('*')
   for (const element of allElements) {
+    const tagName = element.tagName.toLowerCase()
+    
+    // Remove tags not in the allowlist
+    if (!allowedTags.has(tagName)) {
+      element.remove()
+      continue
+    }
+
     const attributes = Array.from(element.attributes)
     for (const attribute of attributes) {
       const name = attribute.name.toLowerCase()
       const value = attribute.value.trim().toLowerCase()
 
-      if (name.startsWith('on')) {
+      // Remove attributes not in the allowlist or that look like event handlers
+      if (!allowedAttributes.has(name) || name.startsWith('on')) {
         element.removeAttribute(attribute.name)
         continue
       }
 
+      // Special check for href/xlink:href to prevent javascript: URIs
       if ((name === 'href' || name === 'xlink:href') && value.startsWith('javascript:')) {
         element.removeAttribute(attribute.name)
       }

@@ -67,6 +67,9 @@ export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) 
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="off"
             placeholder="Search files, status or tags..."
             className="w-full pl-8 pr-2 py-1.5 text-xs rounded bg-[var(--obsidian-workspace)] border border-[var(--obsidian-border)] text-[var(--obsidian-text)] placeholder:text-[var(--obsidian-text-muted)] outline-none focus:border-[var(--obsidian-accent)]"
           />

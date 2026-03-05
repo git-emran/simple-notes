@@ -19,34 +19,18 @@ import {
   vimModeEnabledAtom,
 } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
-import ReactMarkdown from 'react-markdown'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
-import { HiOutlineEye } from "react-icons/hi2";
 import { markdown } from '@codemirror/lang-markdown'
-import { syntaxHighlighting } from '@codemirror/language'
+import { syntaxHighlighting, syntaxTree, ensureSyntaxTree, LanguageDescription, LanguageSupport } from '@codemirror/language'
 import { markdownLanguage } from "@codemirror/lang-markdown"
-import SyntaxHighlighter from 'react-syntax-highlighter'
-import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import { gutterTheme, getEditorTheme, markdownHighlightStyle, markdownHighlightStyleDark } from './editorTheme'
 import { codeLanguages } from './languageConfig'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { autoCloseTags } from '@codemirror/lang-html'
-import { javascript } from '@codemirror/lang-javascript'
-import { python } from '@codemirror/lang-python'
-import { rust } from '@codemirror/lang-rust'
-import { php } from '@codemirror/lang-php'
-import { typescriptLanguage } from '@codemirror/lang-javascript'
-import { go } from '@codemirror/lang-go'
-import { cpp } from '@codemirror/lang-cpp'
-import { html } from '@codemirror/lang-html'
-import { css } from '@codemirror/lang-css'
-import { java } from '@codemirror/lang-java'
-import { sql } from '@codemirror/lang-sql'
+import { lintGutter } from '@codemirror/lint'
 import { indentationMarkers } from '@replit/codemirror-indentation-markers'
 import { checkboxExtension } from './checkboxExtension'
 import { statusBarExtension } from './statusbar'
-import remarkGfm from 'remark-gfm'
-import { MermaidDiagram } from './MermaidDiagram'
 import { MarkdownToolbar } from './MarkdownToolbar'
 const MarkdownToolbarMemo = memo(MarkdownToolbar)
 import { tabAsSpaces } from './tabAsSpaces'
@@ -63,18 +47,16 @@ import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import * as commands from './editorCommands'
 import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
 import { markdownMarkupColors } from './markdownMarkupColors'
-import { 
-  FaBold, FaItalic, FaStrikethrough, FaQuoteRight, 
-  FaListUl, FaCheckSquare, FaCode, 
-  FaLink, FaImage, FaTable, FaHeading, FaKeyboard
-} from 'react-icons/fa'
-import { MdHorizontalRule } from 'react-icons/md'
-import { VscSparkle } from 'react-icons/vsc'
-import { VscChevronDown, VscChromeClose, VscError, VscInfo, VscLightbulb, VscSplitHorizontal, VscWarning } from 'react-icons/vsc'
+import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
 import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
 import { MoreActionsMenu } from './MoreActionsMenu'
+import { MarkdownPreview } from './MarkdownPreview'
+import { AiModal } from './AiModal'
+import { EditorHeader } from './EditorHeader'
+import { EditorFAB } from './EditorFAB'
+import { getEditorMenuEntries, EditorMenuEntry } from './editorMenuLogic'
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -98,6 +80,7 @@ export const MarkdownEditor = () => {
 
   const currentNoteTitleRef = useRef<string>('')
   const isSwitchingRef = useRef(false)
+  const lastLanguageRef = useRef<string | null>(null)
   const lastScrollPercentageRef = useRef<number>(0)
   const [isPreview, setIsPreview] = useState(false)
   const [isFullPreview, setIsFullPreview] = useState(false) // New state for full preview
@@ -224,6 +207,18 @@ export const MarkdownEditor = () => {
   const lineWrappingCompartment = useMemo(() => new Compartment(), [])
   const tabIndentCompartment = useMemo(() => new Compartment(), [])
   const livePreviewImagesCompartment = useMemo(() => new Compartment(), [])
+  const languageSupportCompartment = useMemo(() => new Compartment(), [])
+
+  const reconfigureLanguage = useMemo(
+    () =>
+      debounce((view: EditorView, support: LanguageSupport | []) => {
+        if (!view.state) return;
+        view.dispatch({
+          effects: languageSupportCompartment.reconfigure(support)
+        });
+      }, 100),
+    [languageSupportCompartment]
+  )
 
   const applyEditorSettings = useCallback(() => {
     const view = viewRef.current
@@ -242,6 +237,7 @@ export const MarkdownEditor = () => {
         lineWrappingCompartment.reconfigure(lineWrappingEnabled ? EditorView.lineWrapping : []),
         tabIndentCompartment.reconfigure(tabAsSpaces(tabIndentUnit)),
         livePreviewImagesCompartment.reconfigure(createLivePreviewImages(selectedNote?.path, rootDir || undefined)),
+        languageSupportCompartment.reconfigure([]),
       ],
     })
   }, [
@@ -259,6 +255,7 @@ export const MarkdownEditor = () => {
     vimCompartment,
     vimModeEnabled,
     rootDir,
+    languageSupportCompartment,
   ])
 
   useEffect(() => {
@@ -358,17 +355,7 @@ export const MarkdownEditor = () => {
       autoCloseTags,
       gutterTheme,
       markdown({ base: markdownLanguage, codeLanguages, addKeymap: true, completeHTMLTags: false }),
-      javascript(),
-      python(),
-      rust(),
-      html(),
-      php(),
-      go(),
-      java(),
-      cpp(),
-      css(),
-      sql(),
-      typescriptLanguage,
+      lintGutter(),
       indentationMarkers({
         highlightActiveBlock: false,
         hideFirstIndent: true,
@@ -390,6 +377,7 @@ export const MarkdownEditor = () => {
       quoteLineStyling,
       tripleBacktickExtension,
       markdownMarkupColors,
+      EditorView.contentAttributes.of({ spellcheck: 'false' }),
     ],
     [
       highlightCompartment,
@@ -565,163 +553,10 @@ export const MarkdownEditor = () => {
     }
   }, [])
 
-  type EditorMenuEntry =
-    | { type: 'separator'; id: string }
-    | {
-        type: 'item'
-        id: string
-        label: string
-        icon?: ReactNode
-        shortcut?: string
-        keywords?: string[]
-        run: () => void
-      }
+  // EditorMenuEntry type is now imported from editorMenuLogic
 
   const editorMenuEntries: EditorMenuEntry[] = useMemo(
-    () => [
-      {
-        type: 'item',
-        id: 'bold',
-        label: 'Bold',
-        icon: <FaBold className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+B',
-        keywords: ['strong'],
-        run: () => commands.applyFormat(viewRef.current, '**', '**'),
-      },
-      {
-        type: 'item',
-        id: 'italic',
-        label: 'Italic',
-        icon: <FaItalic className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+I',
-        keywords: ['emphasis'],
-        run: () => commands.applyFormat(viewRef.current, '*', '*'),
-      },
-      {
-        type: 'item',
-        id: 'strikethrough',
-        label: 'Strikethrough',
-        icon: <FaStrikethrough className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+D',
-        keywords: ['strike'],
-        run: () => commands.applyFormat(viewRef.current, '~~', '~~'),
-      },
-      {
-        type: 'item',
-        id: 'kbd',
-        label: 'Keyboard Key',
-        icon: <FaKeyboard className="h-3 w-3 opacity-60" />,
-        keywords: ['kbd', 'keyboard', 'key', 'shortcut'],
-        run: () => commands.insertKbd(viewRef.current),
-      },
-      {
-        type: 'item',
-        id: 'write-with-ai',
-        label: 'Write with AI',
-        icon: <VscSparkle className="h-3 w-3 opacity-60" />,
-        keywords: ['ai', 'generate', 'rewrite'],
-        run: () => void openAiModal(),
-      },
-      { type: 'separator', id: 'sep-1' },
-      {
-        type: 'item',
-        id: 'header-1',
-        label: 'Header 1',
-        icon: <FaHeading className="h-3 w-3 opacity-60" />,
-        keywords: ['heading', 'h1', 'title'],
-        run: () => commands.applyHeaderFormat(viewRef.current, 1),
-      },
-      {
-        type: 'item',
-        id: 'header-2',
-        label: 'Header 2',
-        icon: <FaHeading className="h-3 w-3 opacity-60" />,
-        keywords: ['heading', 'h2'],
-        run: () => commands.applyHeaderFormat(viewRef.current, 2),
-      },
-      {
-        type: 'item',
-        id: 'header-3',
-        label: 'Header 3',
-        icon: <FaHeading className="h-3 w-3 opacity-60" />,
-        keywords: ['heading', 'h3'],
-        run: () => commands.applyHeaderFormat(viewRef.current, 3),
-      },
-      { type: 'separator', id: 'sep-2' },
-      {
-        type: 'item',
-        id: 'quote',
-        label: 'Quote',
-        icon: <FaQuoteRight className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+Q',
-        keywords: ['blockquote'],
-        run: () => commands.applyLineFormat(viewRef.current, '> '),
-      },
-      {
-        type: 'item',
-        id: 'bullet-list',
-        label: 'Bullet List',
-        icon: <FaListUl className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+L',
-        keywords: ['list', 'unordered'],
-        run: () => commands.applyLineFormat(viewRef.current, '- '),
-      },
-      {
-        type: 'item',
-        id: 'task-list',
-        label: 'Task List',
-        icon: <FaCheckSquare className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+T',
-        keywords: ['checkbox', 'todo'],
-        run: () => commands.insertCheckbox(viewRef.current),
-      },
-      { type: 'separator', id: 'sep-3' },
-      {
-        type: 'item',
-        id: 'link',
-        label: 'Link',
-        icon: <FaLink className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+K',
-        keywords: ['url', 'hyperlink'],
-        run: () => commands.applyLinkFormat(viewRef.current),
-      },
-      {
-        type: 'item',
-        id: 'image',
-        label: 'Image',
-        icon: <FaImage className="h-3 w-3 opacity-60" />,
-        keywords: ['img', 'picture'],
-        run: () => commands.applyImageFormat(viewRef.current),
-      },
-      {
-        type: 'item',
-        id: 'table',
-        label: 'Table',
-        icon: <FaTable className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+Shift+T',
-        keywords: ['grid'],
-        run: () => commands.insertTable(viewRef.current),
-      },
-      {
-        type: 'item',
-        id: 'horizontal-rule',
-        label: 'Horizontal Rule',
-        icon: <MdHorizontalRule className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+H',
-        keywords: ['divider', 'hr'],
-        run: () => commands.insertHorizontalRule(viewRef.current),
-      },
-      { type: 'separator', id: 'sep-4' },
-      {
-        type: 'item',
-        id: 'code-block',
-        label: 'Code Block',
-        icon: <FaCode className="h-3 w-3 opacity-60" />,
-        shortcut: 'Ctrl+Shift+`',
-        keywords: ['code', 'fence', 'triple backtick'],
-        run: () => commands.insertCodeBlock(viewRef.current),
-      },
-    ],
+    () => getEditorMenuEntries(openAiModal),
     [openAiModal]
   )
 
@@ -735,7 +570,7 @@ export const MarkdownEditor = () => {
           icon,
           shortcut,
           keywords,
-          run,
+          run: () => run(viewRef.current),
         })),
     [editorMenuEntries]
   )
@@ -835,7 +670,56 @@ export const MarkdownEditor = () => {
           lineWrappingCompartment.of(lineWrappingEnabled ? EditorView.lineWrapping : []),
           tabIndentCompartment.of(tabAsSpaces(tabIndentUnit)),
           livePreviewImagesCompartment.of(createLivePreviewImages(selectedNote?.path, rootDir || undefined)),
+          languageSupportCompartment.of([]),
           EditorView.updateListener.of((update) => {
+            if (update.docChanged || update.selectionSet) {
+               // Only check for language changes if the cursor moved or content changed
+               const pos = update.state.selection.main.head;
+               
+               // Optimization: skip if cursor didn't move much and we already know the language
+               // This is handled by resolveInner being fast enough usually, 
+               // but we can be more strategic.
+               
+               const tree = ensureSyntaxTree(update.state, pos, 50) || syntaxTree(update.state);
+               const node = tree.resolveInner(pos, -1);
+               let fence = node;
+               while (fence && fence.name !== "FencedCode") {
+                 fence = fence.parent!;
+                 if (!fence) break;
+               }
+               
+               let langName: string | null = null;
+               if (fence) {
+                 const info = fence.getChild("CodeInfo");
+                 if (info) {
+                   langName = update.state.sliceDoc(info.from, info.to).trim().split(/\s+/)[0].toLowerCase();
+                 }
+               }
+
+               if (langName !== lastLanguageRef.current) {
+                 lastLanguageRef.current = langName;
+                 
+                 if (langName) {
+                    const desc = LanguageDescription.matchLanguageName(codeLanguages, langName) || 
+                                 LanguageDescription.matchFilename(codeLanguages, `f.${langName}`);
+                    
+                    if (desc) {
+                      desc.load().then(support => {
+                        if (lastLanguageRef.current === langName) {
+                          reconfigureLanguage(update.view, support);
+                        }
+                      }).catch(err => {
+                        console.error(`[Editor] Language support load failed for ${langName}:`, err);
+                        reconfigureLanguage(update.view, []);
+                      });
+                    } else {
+                      reconfigureLanguage(update.view, []);
+                    }
+                 } else {
+                   reconfigureLanguage(update.view, []);
+                 }
+               }
+            }
             if (update.docChanged && !isSwitchingRef.current) {
               const content = update.state.doc.toString()
               setCurrentContent(content)
@@ -899,6 +783,7 @@ export const MarkdownEditor = () => {
   
         currentNoteTitleRef.current = newTitle
         currentNotePathRef.current = selectedNote.path
+        lastLanguageRef.current = null
         
         // Update state immediately for visual snappiness
         setCurrentContent(newContent)
@@ -1273,91 +1158,18 @@ export const MarkdownEditor = () => {
           {exportNotice}
         </div>
       )}
-      <div className="flex flex-col px-6 py-4 bg-[var(--obsidian-workspace)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
-        <div className="flex items-start justify-between mb-2">
-          <h1 className="text-2xl font-semibold text-[var(--obsidian-text)] truncate flex-1">
-            {selectedNote.title}
-          </h1>
-          <div className="flex items-center gap-1">
-            <MoreActionsMenu 
-              notePath={selectedNote.path} 
-              onExportPdf={() => void handleExportPdf()} 
-              isExportingPdf={isExportingPdf}
-            />
-          </div>
-        </div>
-
-        <div className='flex items-center flex-wrap gap-3 text-[12px]'>
-          <div className="flex items-center gap-1 text-[var(--obsidian-text-muted)] opacity-80">
-            <span className="truncate max-w-[200px]">{selectedNote.path}</span>
-          </div>
-
-          <div className="w-px h-3 bg-[var(--obsidian-border)]" />
-
-          <div className="relative group">
-            <div className="flex items-center gap-1 cursor-pointer text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]">
-               {currentNoteStatus ? (
-                 <span className={twMerge(
-                   "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
-                   NOTE_STATUS_META[currentNoteStatus].className
-                 )}>
-                   {NOTE_STATUS_META[currentNoteStatus].label}
-                 </span>
-               ) : (
-                 <span>Status</span>
-               )}
-               <VscChevronDown className="w-3 h-3" />
-            </div>
-            <select
-              value={currentNoteStatus ?? ''}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              title="Set note status"
-            >
-              <option value="">No Status</option>
-              {NOTE_STATUS_VALUES.map((statusValue) => (
-                <option key={statusValue} value={statusValue}>
-                  {NOTE_STATUS_META[statusValue].label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="w-px h-3 bg-[var(--obsidian-border)]" />
-
-          <div className="flex items-center gap-2">
-            {currentNoteTag ? (
-              <div 
-                className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-colors ${CUSTOM_TAG_STYLE}`}
-              >
-                <span>{currentNoteTag}</span>
-                <button
-                  onClick={() => handleTagChange('')}
-                  className="p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
-                >
-                  <VscChromeClose className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            ) : (
-              <div className="relative group">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && tagInput.trim()) {
-                      handleTagChange(tagInput.trim())
-                      setTagInput('')
-                    }
-                  }}
-                  placeholder="Add Tag"
-                  className="bg-transparent border-none outline-none text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] focus:text-[var(--obsidian-text)] placeholder:text-[var(--obsidian-text-muted)] w-16 focus:w-32 transition-all"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <EditorHeader
+        title={selectedNote.title}
+        path={selectedNote.path}
+        currentStatus={currentNoteStatus}
+        currentTag={currentNoteTag}
+        tagInput={tagInput}
+        setTagInput={setTagInput}
+        handleStatusChange={handleStatusChange}
+        handleTagChange={handleTagChange}
+        handleExportPdf={() => void handleExportPdf()}
+        isExportingPdf={isExportingPdf}
+      />
 
       {!isFullPreview && showToolbar && (
         <MarkdownToolbarMemo view={viewRef.current} onWriteWithAi={() => void openAiModal()} />
@@ -1373,36 +1185,13 @@ export const MarkdownEditor = () => {
         }}
       >
         {/* Floating Action Button (FAB) */}
-        <div className={twMerge(
-          "absolute bottom-10 right-4 flex flex-col items-center gap-0.5 bg-[var(--obsidian-workspace)] border border-[var(--obsidian-border)] rounded-xl shadow-xl z-[100] p-1 transition-all duration-300 transform",
-          showFAB ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-        )}>
-          <button
-            onClick={handleFullPreviewToggle}
-            className={twMerge(
-              "p-1.5 rounded-lg transition-all",
-              isFullPreview 
-                ? "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-accent)]" 
-                : "text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]"
-            )}
-            title="Toggle Preview Mode"
-          >
-            <HiOutlineEye className="w-4 h-4" />
-          </button>
-          <div className="w-5 h-px bg-[var(--obsidian-border-soft)]" />
-          <button
-            onClick={handleSplitViewToggle}
-            className={twMerge(
-              "p-1.5 rounded-lg transition-all",
-              isPreview && !isFullPreview
-                ? "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-accent)]"
-                : "text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]"
-            )}
-            title="Toggle Split View"
-          >
-             <VscSplitHorizontal className="w-4 h-4" />
-          </button>
-        </div>
+        <EditorFAB
+          showFAB={showFAB}
+          isFullPreview={isFullPreview}
+          isPreview={isPreview}
+          handleFullPreviewToggle={handleFullPreviewToggle}
+          handleSplitViewToggle={handleSplitViewToggle}
+        />
         <div
           ref={editorContainerRef}
           className="h-full"
@@ -1450,99 +1239,22 @@ export const MarkdownEditor = () => {
           </div>
         </div>
       </div>
-      {isAiModalOpen && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
-          <div className="w-full max-w-2xl rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-xl">
-            <div className="flex items-center justify-between border-b border-[var(--obsidian-border-soft)] px-4 py-3">
-              <h3 className="text-sm font-semibold text-[var(--obsidian-text)]">Write with AI</h3>
-              <button
-                type="button"
-                className="rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]"
-                onClick={() => setIsAiModalOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <div className="space-y-3 px-4 py-4">
-              <div>
-                <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">OpenRouter API Key</label>
-                <input
-                  type="password"
-                  value={aiApiKey}
-                  onChange={(e) => setAiApiKey(e.target.value)}
-                  placeholder="sk-or-v1-..."
-                  className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">Free Model</label>
-                <select
-                  value={selectedAiModel}
-                  onChange={(e) => setSelectedAiModel(e.target.value)}
-                  disabled={isLoadingAiModels}
-                  className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)] disabled:opacity-60"
-                >
-                  {aiModels.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">Prompt</label>
-                <textarea
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Example: Rewrite my note in a clearer and concise way."
-                  rows={6}
-                  className="w-full resize-y rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
-                />
-              </div>
-
-              {isGeneratingWithAi && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] text-[var(--obsidian-text-muted)]">
-                    <span>Generating with AI...</span>
-                    <span>{Math.min(aiProgress, 99)}%</span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded bg-[var(--obsidian-border-soft)]">
-                    <div
-                      className="h-full rounded bg-[var(--obsidian-accent)] transition-all duration-300 ease-out"
-                      style={{ width: `${Math.min(aiProgress, 99)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {aiError && (
-                <div className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-                  {aiError}
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col-reverse gap-2 border-t border-[var(--obsidian-border-soft)] px-4 py-3 sm:flex-row sm:items-center sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setIsAiModalOpen(false)}
-                className="w-full rounded border border-[var(--obsidian-border)] px-3 py-1.5 text-xs text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] sm:w-auto"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleGenerateWithAi()}
-                disabled={isGeneratingWithAi || isLoadingAiModels}
-                className="w-full rounded bg-black px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-black/85 disabled:opacity-60 sm:w-auto"
-              >
-                {isGeneratingWithAi ? 'Generating...' : 'Submit'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AiModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        aiApiKey={aiApiKey}
+        setAiApiKey={setAiApiKey}
+        selectedAiModel={selectedAiModel}
+        setSelectedAiModel={setSelectedAiModel}
+        aiModels={aiModels}
+        isLoadingAiModels={isLoadingAiModels}
+        aiPrompt={aiPrompt}
+        setAiPrompt={setAiPrompt}
+        isGeneratingWithAi={isGeneratingWithAi}
+        aiProgress={aiProgress}
+        aiError={aiError}
+        onGenerate={() => void handleGenerateWithAi()}
+      />
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -1565,7 +1277,7 @@ export const MarkdownEditor = () => {
                 key={entry.id}
                 onClick={() => {
                   setContextMenu(null)
-                  entry.run()
+                  entry.run(viewRef.current)
                 }}
               >
                 {entry.icon}
@@ -1590,307 +1302,4 @@ export const MarkdownEditor = () => {
   )
 }
 
-interface MarkdownPreviewProps {
-  previewMarkdown: string;
-  selectedNotePath: string;
-  rootDir?: string;
-  isDarkMode: boolean;
-  previewReadableWidthClass: string;
-  getReactNodeText: (node: any) => string;
-  getCalloutMeta: (type: string) => any;
-}
-
-const MarkdownPreview = memo(({ 
-  previewMarkdown, 
-  selectedNotePath, 
-  rootDir, 
-  isDarkMode, 
-  previewReadableWidthClass,
-  getReactNodeText,
-  getCalloutMeta
-}: MarkdownPreviewProps) => {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        h1: ({ children }) => (
-          <h1
-            className={twMerge(
-              previewReadableWidthClass,
-              'font-sans text-2xl font-semibold mt-8 mb-4 pb-2 border-b border-[var(--obsidian-border)] text-[var(--obsidian-text)]'
-            )}
-          >
-            {children}
-          </h1>
-        ),
-        h2: ({ children }) => (
-          <h2
-            className={twMerge(
-              previewReadableWidthClass,
-              'text-xl font-sans text-[var(--obsidian-text)] font-semibold mt-6 mb-3'
-            )}
-          >
-            {children}
-          </h2>
-        ),
-        h3: ({ children }) => (
-          <h3
-            className={twMerge(
-              previewReadableWidthClass,
-              'text-lg font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
-            )}
-          >
-            {children}
-          </h3>
-        ),
-        h4: ({ children }) => (
-          <h4
-            className={twMerge(
-              previewReadableWidthClass,
-              'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
-            )}
-          >
-            {children}
-          </h4>
-        ),
-        h5: ({ children }) => (
-          <h5
-            className={twMerge(
-              previewReadableWidthClass,
-              'text-md font-sans font-medium mt-5 mb-2 text-[var(--obsidian-text)]'
-            )}
-          >
-            {children}
-          </h5>
-        ),
-        p: ({ children }) => (
-          <p
-            className={twMerge(
-              previewReadableWidthClass,
-              'mb-4 text-[14px] leading-7 font-sans text-[var(--obsidian-text)]'
-            )}
-          >
-            {children}
-          </p>
-        ),
-        ul: ({ children }) => (
-          <ul
-            className={twMerge(
-              previewReadableWidthClass,
-              'font-sans mb-4 pl-6 space-y-1 text-[var(--obsidian-text)]'
-            )}
-          >
-            {children}
-          </ul>
-        ),
-        ol: ({ children }) => (
-          <ol
-            className={twMerge(
-              previewReadableWidthClass,
-              'text-[var(--obsidian-text)] text-sm font-sans mb-4 pl-6 space-y-1'
-            )}
-          >
-            {children}
-          </ol>
-        ),
-        li: ({ children }) => (
-          <li className="font-sans text-sm text-[var(--obsidian-text)]">
-            {children}
-          </li>
-        ),
-        strong: ({ children }) => (
-          <strong className="font-semibold text-[var(--obsidian-text)]">
-            {children}
-          </strong>
-        ),
-        em: ({ children }) => <em className="italic font-medium text-[var(--obsidian-text)]">{children}</em>,
-        blockquote: ({ children }) => (
-          (() => {
-            const parts = Children.toArray(children).filter((child) => {
-              if (typeof child === 'string') return child.trim().length > 0
-              return child != null
-            })
-            const first = parts[0]
-
-            const firstText = getReactNodeText(first).trim()
-            const match = /^\[!([A-Za-z]+)\]\s*(.*)$/.exec(firstText)
-            if (match) {
-              const meta = getCalloutMeta(match[1])
-              if (meta) {
-                const remainder = (match[2] || '').trim()
-                const rest = parts.slice(1)
-                const Icon = meta.Icon
-                return (
-                  <div
-                    className={twMerge(previewReadableWidthClass, 'my-4 pl-4')}
-                    style={{
-                      borderLeft: `4px solid ${meta.border}`,
-                    }}
-                  >
-                    <div className="flex items-center gap-2 mb-3" style={{ color: meta.fg }}>
-                      <Icon className="w-5 h-5" />
-                      <div className="text-lg font-semibold">{meta.label}</div>
-                    </div>
-                    <div className="text-[var(--obsidian-text)] [&_p]:mb-0">
-                      {remainder ? <p>{remainder}</p> : null}
-                      {rest}
-                    </div>
-                  </div>
-                )
-              }
-            }
-
-            return (
-              <blockquote
-                className={twMerge(
-                  previewReadableWidthClass,
-                  'pl-2 my-4 italic text-[var(--obsidian-quote-text)] [&_p]:!text-[var(--obsidian-quote-text)] [&_p]:italic [&_li]:!text-[var(--obsidian-quote-text)] [&_li]:italic'
-                )}
-              >
-                {children}
-              </blockquote>
-            )
-          })()
-        ),
-        a: ({ href, children }) => {
-          const isImage = href && (
-            href.toLowerCase().endsWith('.png') || 
-            href.toLowerCase().endsWith('.jpg') || 
-            href.toLowerCase().endsWith('.jpeg') || 
-            href.toLowerCase().endsWith('.gif') || 
-            href.toLowerCase().endsWith('.svg') || 
-            href.toLowerCase().endsWith('.webp')
-          )
-
-          if (isImage) {
-            const finalSrc = href ? toLocalFileUrl(href, selectedNotePath, rootDir) : href
-            return (
-              <div className={previewReadableWidthClass}>
-                <img 
-                  src={finalSrc} 
-                  alt={String(children)} 
-                  className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
-                  style={{ maxWidth: 'min(100%, 720px)' }}
-                />
-              </div>
-            )
-          }
-
-          return (
-            <a 
-              href={href} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-[var(--obsidian-accent)] hover:opacity-80 underline underline-offset-4"
-            >
-              {children}
-            </a>
-          )
-        },
-        hr: () => (
-          <hr className={twMerge(previewReadableWidthClass, 'my-8 border-t border-[var(--obsidian-border)]')} />
-        ),
-        table: ({ children }) => (
-          <div className="w-full overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
-            <table className="w-full table-auto border-collapse">
-              {children}
-            </table>
-          </div>
-        ),
-        thead: ({ children }) => (
-          <thead className="bg-[var(--obsidian-table-head)] border-b border-[var(--obsidian-border)]">
-            {children}
-          </thead>
-        ),
-        tbody: ({ children }) => (
-          <tbody className="divide-y divide-[var(--obsidian-border-soft)]">
-            {children}
-          </tbody>
-        ),
-        tr: ({ children }) => (
-          <tr className="even:bg-[var(--obsidian-table-row)] transition-colors">
-            {children}
-          </tr>
-        ),
-        th: ({ children }) => (
-          <th className="px-3 py-2 text-left text-[11px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-[var(--obsidian-border)] last:border-r-0 align-top">
-            <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
-          </th>
-        ),
-        td: ({ children }) => (
-          <td className="px-3 py-1.5 text-xs text-[var(--obsidian-text)] border-r border-[var(--obsidian-border-soft)] last:border-r-0 align-top">
-            <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
-          </td>
-        ),
-        code: ({ children, className, ...rest }) => {
-          const match = /language-(\w+)/.exec(className || '')
-          const language = match ? match[1] : ''
-          const isInline = !match
-          const codeContent = String(children).replace(/\n$/, '')
-
-          if (language === 'mermaid') {
-            return <MermaidDiagram chart={codeContent} />
-          }
-
-          if (isInline && codeContent.toLowerCase().startsWith('kbd:')) {
-            const keyText = codeContent.slice(4)
-            return (
-              <kbd className="inline-flex items-center rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--obsidian-text)] shadow-[inset_0_-1px_0_rgba(0,0,0,0.22),0_10px_28px_rgba(0,0,0,0.06)]">
-                {keyText}
-              </kbd>
-            )
-          }
-
-          return isInline ? (
-            <code
-              className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono before:content-none after:content-none"
-              {...rest}
-            >
-              {children}
-            </code>
-          ) : (
-            <SyntaxHighlighter
-              PreTag="div"
-              children={codeContent}
-              language={language}
-              style={isDarkMode ? vs2015 : vs}
-              customStyle={{
-                margin: '1rem 0',
-                borderRadius: '0.2rem',
-                fontSize: '15px',
-                lineHeight: '1.5',
-                overflowWrap: 'break-word',
-                ...(isDarkMode ? {} : { background: 'rgba(0, 0, 0, 0.0175)' }),
-              }}
-              codeTagProps={{
-                style: {
-                  fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
-                },
-              }}
-            />
-          )
-        },
-        pre: ({ children }) => (
-          <pre className="w-full mb-4 bg-transparent overflow-hidden rounded">
-            {children}
-          </pre>
-        ),
-        img: ({ src, alt }) => {
-          const finalSrc = src ? toLocalFileUrl(src, selectedNotePath, rootDir) : src
-          return (
-            <div className={previewReadableWidthClass}>
-              <img 
-                src={finalSrc} 
-                alt={alt} 
-                className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]" 
-                style={{ maxWidth: 'min(100%, 720px)' }}
-              />
-            </div>
-          )
-        },
-      }}
-    >
-      {previewMarkdown}
-    </ReactMarkdown>
-  )
-})
+// MarkdownPreview component has been moved to MarkdownPreview.tsx
