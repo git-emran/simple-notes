@@ -104,7 +104,10 @@ export const KanbanBoard = () => {
 
   const addBoard = () => {
     const title = newBoardTitle.trim()
-    if (!title) return
+    if (!title) {
+      alert('You need to add a name to the board')
+      return
+    }
     setState((prev) => ({
       ...prev,
       columns: [
