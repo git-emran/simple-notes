@@ -2,7 +2,7 @@ import { EditorView } from '@codemirror/view'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 
-// Solarized color palettes
+/* Solarized color palettes */
 const solarizedBase = {
   dark: {
     background: '#002b36', // base03
@@ -22,7 +22,7 @@ const solarizedBase = {
   }
 }
 
-// Define syntax highlighting for both themes
+/* Define syntax highlighting for both themes */
 const solarizedSyntaxHighlighting = HighlightStyle.define([
   { tag: tags.heading1, color: '#b58900' },
   { tag: tags.heading2, color: '#cb4b16' },
@@ -34,7 +34,7 @@ const solarizedSyntaxHighlighting = HighlightStyle.define([
   { tag: tags.blockComment, color: '#6c71c4' }
 ])
 
-// Solarized Light theme as an array of Extensions
+/* Solarized Light theme as an array of Extensions */
 export const solarizedLight = [
   EditorView.theme(
     {
@@ -56,7 +56,7 @@ export const solarizedLight = [
   syntaxHighlighting(solarizedSyntaxHighlighting)
 ]
 
-// Solarized Dark theme as an array of Extensions
+/* Solarized Dark theme as an array of Extensions */
 export const solarizedDark = [
   EditorView.theme(
     {

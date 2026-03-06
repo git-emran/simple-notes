@@ -421,5 +421,5 @@ const propsAreEqual = (prev: FileTreeItemProps, next: FileTreeItemProps) => {
   )
 }
 
-// Memoization is critical for scroll performance, especially with large trees.
+/* Memoization is critical for scroll performance, especially with large trees. */
 export const FileTreeItem = memo(FileTreeItemComponent, propsAreEqual)

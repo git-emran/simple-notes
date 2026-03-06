@@ -1,7 +1,7 @@
 import { LanguageDescription, StreamLanguage, LanguageSupport } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 
-// Cache to store loaded language support objects
+/* Cache to store loaded language support objects */
 const languageCache = new Map<string, LanguageSupport>()
 
 async function getLanguageSupport(name: string, loader: () => Promise<LanguageSupport>): Promise<LanguageSupport> {

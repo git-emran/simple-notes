@@ -155,7 +155,7 @@ export const getFileTree: GetFileTree = async () => {
   const rootDir = getRootDir()
   await ensureDir(rootDir)
 
-  // Show welcome note only when the app root has no files at all.
+  /* Show welcome note only when the app root has no files at all. */
   const dirents = await readdir(rootDir, { withFileTypes: true })
   const hasRootFile = dirents.some((d) => d.isFile())
 
@@ -172,7 +172,7 @@ export const getFileTree: GetFileTree = async () => {
         const isDirectory = dirent.isDirectory()
 
         if (isDirectory) {
-          // Hide the root-level image storage folder from the notes file tree
+          /* Hide the root-level image storage folder from the notes file tree */
           if (currentDir === rootDir && dirent.name === 'image') return null
 
           return {
@@ -199,7 +199,7 @@ export const getFileTree: GetFileTree = async () => {
 
     const nodes = nodesWithPotentialDuplicates.filter((n): n is FileNode => n !== null)
 
-    // Process file stats in chunks
+    /* Process file stats in chunks */
     const fileNodes = nodes.filter((n) => n.type === 'file')
     const CHUNK_SIZE = 10
     for (let i = 0; i < fileNodes.length; i += CHUNK_SIZE) {
@@ -229,7 +229,7 @@ export const getFileTree: GetFileTree = async () => {
 
 const ensureWelcomeNote = async (rootDir: string) => {
   const welcomeNotePath = path.join(rootDir, welcomeNoteFileName)
-  // Ensure we don't overwrite if it somehow exists but wasn't detected (e.g. case mismatch)
+  /* Ensure we don't overwrite if it somehow exists but wasn't detected (e.g. case mismatch) */
   if (!(await pathExists(welcomeNotePath))) {
     const content = await readFile(welcomeNoteFile, { encoding: fileEncoding })
     await writeFile(welcomeNotePath, content, { encoding: fileEncoding })
@@ -299,7 +299,7 @@ export const createCanvasNew = async (parentDir?: string) => {
     }
   }
 
-  // Initialize with an empty canvas structure
+  /* Initialize with an empty canvas structure */
   const emptyCanvas = { nodes: [], edges: [] }
   await writeFile(filePath, JSON.stringify(emptyCanvas, null, 2))
   return filePath
@@ -358,9 +358,9 @@ export const movePath: MovePath = async (src, dest) => {
     const safeDest = ensurePathWithinRoot(dest, { allowRoot: false })
     const exists = await pathExists(safeDest)
     if (exists) {
-      // Should we support overwrite? For now, no.
-      // Or strictly speaking, if it's DnD, we might be moving into a folder,
-      // but the caller sends the full destination path.
+      /* Should we support overwrite? For now, no. */
+      /* Or strictly speaking, if it's DnD, we might be moving into a folder, */
+      /* but the caller sends the full destination path. */
       console.warn(`Destination ${safeDest} already exists`)
       return false
     }

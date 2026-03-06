@@ -22,10 +22,10 @@ import { FileTreeItem } from './FileTreeItem'
 import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll } from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 
-// Compact row height (Obsidian-like density). Must match FileTreeItem styling.
-// Heights are per-row to keep dense UI without sacrificing metadata readability.
+/* Compact row height (Obsidian-like density). Must match FileTreeItem styling. */
+/* Heights are per-row to keep dense UI without sacrificing metadata readability. */
 const FILE_TREE_FOLDER_ROW_HEIGHT = 26
-// Two-line layout (meta + title). Needs a little extra headroom for tag pills on some fonts.
+/* Two-line layout (meta + title). Needs a little extra headroom for tag pills on some fonts. */
 const FILE_TREE_FILE_ROW_HEIGHT = 44
 const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 54
 const WINDOWED_THRESHOLD = 200
@@ -151,7 +151,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     if (treeMatch && treeMatch.path) {
       setSelectedNode((prev) => (prev?.path === treeMatch.path ? prev : treeMatch))
       
-      // Auto-reveal: expand all parents of the active note
+      /* Auto-reveal: expand all parents of the active note */
       const parents = getAllParentPaths(activeTabPath)
       if (parents.length > 0) {
         setExpandedNodes((prev) => {
@@ -366,7 +366,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
     return rows
   }, [expandedNodes, fileTree, noteStatuses, noteTags])
 
-  // Virtualization: windowed rendering for large vaults
+  /* Virtualization: windowed rendering for large vaults */
   const overscan = 8
   const totalRows = visibleNodes.length
   const shouldWindow = totalRows > WINDOWED_THRESHOLD
@@ -497,7 +497,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
         onDragLeave={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          // Only unhighlight if leaving the container, not entering a child
+          /* Only unhighlight if leaving the container, not entering a child */
           if (e.currentTarget.contains(e.relatedTarget as Node)) return
           setIsDraggingOverRoot(false)
         }}

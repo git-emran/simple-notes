@@ -19,7 +19,7 @@ function isTableLine(text: string) {
  * Utility: split a Markdown table row into cells
  */
 function splitCells(line: string) {
-  // remove leading/trailing pipes and split
+  /* remove leading/trailing pipes and split */
   return line
     .replace(/^\||\|$/g, '')
     .split('|')
@@ -34,7 +34,7 @@ function formatTableString(text: string): string {
   const tableLines = allLines.filter((l) => isTableLine(l))
   if (!tableLines.length) return text
 
-  // Identify separator line (contains ---)
+  /* Identify separator line (contains ---) */
   const isSeparator = (l: string) => /^[|\s-:]+$/.test(l) && l.includes('---')
   
   const rows = tableLines.map((line) => {
@@ -42,16 +42,16 @@ function formatTableString(text: string): string {
     return splitCells(line)
   })
 
-  // Remove existing separator to recalibrate
+  /* Remove existing separator to recalibrate */
   const cleanRows = rows.filter(r => r !== 'SEPARATOR') as string[][]
   const colCount = Math.max(...cleanRows.map((r) => r.length))
 
-  // Normalize column lengths
+  /* Normalize column lengths */
   cleanRows.forEach((r) => {
     while (r.length < colCount) r.push('')
   })
 
-  // Calculate max width for each column
+  /* Calculate max width for each column */
   const colWidths = new Array(colCount).fill(0)
   cleanRows.forEach((r) => {
     r.forEach((c, i) => {
@@ -59,12 +59,12 @@ function formatTableString(text: string): string {
     })
   })
 
-  // Rebuild lines
+  /* Rebuild lines */
   const formattedRows = cleanRows.map((r) => {
     return '| ' + r.map((c, i) => c.padEnd(colWidths[i], ' ')).join(' | ') + ' |'
   })
 
-  // Re-insert separator after first row
+  /* Re-insert separator after first row */
   const sep = '| ' + colWidths.map((w) => '-'.repeat(w)).join(' | ') + ' |'
   formattedRows.splice(1, 0, sep)
 
@@ -79,7 +79,7 @@ function formatTableCommand(view: EditorView): boolean {
   const line = state.doc.lineAt(state.selection.main.head)
   if (!isTableLine(line.text)) return false
 
-  // Find full table block
+  /* Find full table block */
   let start = line.number
   let end = line.number
   while (start > 1 && isTableLine(state.doc.line(start - 1).text)) start--
@@ -94,7 +94,7 @@ function formatTableCommand(view: EditorView): boolean {
     changes: { from, to, insert: formatted }
   })
 
-  // Restore cursor roughly to the same cell can be improved later if needed.
+  /* Restore cursor roughly to the same cell can be improved later if needed. */
   
   return true
 }
@@ -115,15 +115,15 @@ const tableKeymap = [
       const line = state.doc.lineAt(head)
       if (!isTableLine(line.text)) return false
 
-      // Always format on Tab
+      /* Always format on Tab */
       formatTableCommand(view)
 
-      // Refresh state after format
+      /* Refresh state after format */
       const newLine = view.state.doc.lineAt(view.state.selection.main.head)
       const cells = newLine.text.split('|')
       const currentPosInLine = view.state.selection.main.head - newLine.from
       
-      // Find which cell we are in
+      /* Find which cell we are in */
       let accumulated = 0
       let cellIndex = -1
       for (let i = 0; i < cells.length; i++) {
@@ -134,13 +134,13 @@ const tableKeymap = [
         }
       }
 
-      // If we are in the last cell or past the last pipe, move to next row
+      /* If we are in the last cell or past the last pipe, move to next row */
       if (cellIndex >= cells.length - 1 || cellIndex === -1) {
         const nextLineNum = newLine.number + 1
         if (nextLineNum <= view.state.doc.lines) {
           const nextLine = view.state.doc.line(nextLineNum)
           if (isTableLine(nextLine.text)) {
-             // Move to first cell of next row
+             /* Move to first cell of next row */
              const firstPipe = nextLine.text.indexOf('|')
              view.dispatch({
                selection: { anchor: nextLine.from + firstPipe + 2 },
@@ -149,7 +149,7 @@ const tableKeymap = [
              return true
           }
         }
-        // If at the end of last row, create a new row
+        /* If at the end of last row, create a new row */
         const rowCells = splitCells(newLine.text)
         const emptyRow = '| ' + rowCells.map(() => ' '.repeat(3)).join(' | ') + ' |'
         view.dispatch({
@@ -160,7 +160,7 @@ const tableKeymap = [
         return true
       }
 
-      // Move to next cell
+      /* Move to next cell */
       let nextPipePos = newLine.text.indexOf('|', currentPosInLine)
       if (nextPipePos === -1) nextPipePos = newLine.text.length
       
@@ -191,7 +191,7 @@ const tableKeymap = [
         return true
       }
 
-      // Move to previous row's last cell
+      /* Move to previous row's last cell */
       if (line.number > 1) {
         const prevLine = state.doc.line(line.number - 1)
         if (isTableLine(prevLine.text)) {
@@ -215,17 +215,17 @@ const tableKeymap = [
       const line = state.doc.lineAt(head)
       if (!isTableLine(line.text)) return false
 
-      // Format first
+      /* Format first */
       formatTableCommand(view)
       
       const currentLine = view.state.doc.lineAt(view.state.selection.main.head)
       const nextLineNum = currentLine.number + 1
       
-      // If there is a next line and it's a table, move to it
+      /* If there is a next line and it's a table, move to it */
       if (nextLineNum <= view.state.doc.lines) {
         const nextLine = view.state.doc.line(nextLineNum)
         if (isTableLine(nextLine.text)) {
-          // If separator line, skip it
+          /* If separator line, skip it */
           if (/^[|\s-:]+$/.test(nextLine.text) && nextLine.text.includes('---')) {
              const afterSep = view.state.doc.line(nextLineNum + 1)
              if (afterSep && isTableLine(afterSep.text)) {
@@ -238,11 +238,11 @@ const tableKeymap = [
         }
       }
 
-      // Otherwise create new row
+      /* Otherwise create new row */
       const cells = splitCells(currentLine.text)
       const newRow = '| ' + cells.map(() => '   ').join(' | ') + ' |'
       
-      // Check if we need a separator (if this was the header and no separator exists)
+      /* Check if we need a separator (if this was the header and no separator exists) */
       let insertText = '\n' + newRow
       let finalAnchor = currentLine.to + 3
 
@@ -303,7 +303,7 @@ const tableHighlight = ViewPlugin.fromClass(
           const isFocused = selection.from >= line.from && selection.to <= line.to
           const isSeparatorLine = /^[|\s-:]+$/.test(line.text) && line.text.includes('---')
 
-          // Line level decoration
+          /* Line level decoration */
           const lineClass = isSeparatorLine ? 'cm-table-sep-line' : 'cm-table-line'
           const headerClass = (i === 1 || !isTableLine(state.doc.line(i - 1).text)) ? ' cm-table-header' : ''
           
@@ -312,11 +312,11 @@ const tableHighlight = ViewPlugin.fromClass(
           }))
 
           if (!isFocused) {
-            // Hide separator lines completely when not focused
+            /* Hide separator lines completely when not focused */
             if (isSeparatorLine) {
               builder.add(line.from, line.to, Decoration.replace({}))
             } else {
-              // Hide pipes in normal table rows
+              /* Hide pipes in normal table rows */
               const text = line.text
               for (let j = 0; j < text.length; j++) {
                 if (text[j] === '|') {

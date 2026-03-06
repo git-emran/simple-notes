@@ -54,7 +54,7 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 function createWindow(): void {
-  // Create the browser window.
+  /* Create the browser window. */
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -87,7 +87,7 @@ function createWindow(): void {
         shell.openExternal(details.url)
       }
     } catch {
-      // ignore invalid URLs
+      /* ignore invalid URLs */
     }
     return { action: 'deny' }
   })
@@ -102,7 +102,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
 
-  // Set a custom application menu to stabilize native menu model on macOS
+  /* Set a custom application menu to stabilize native menu model on macOS */
   const menuTemplate: any[] = [
     {
       label: app.name,
@@ -162,7 +162,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
+  /* IPC test */
   ipcMain.handle('getNotes', (_, ...args: Parameters<GetNotes>) => getNotes(...args))
   ipcMain.handle('readNote', (_, ...args: Parameters<ReadNote>) => readNote(...args))
   ipcMain.handle('writeNote', (_, ...args: Parameters<WriteNote>) => writeNote(...args))
@@ -205,12 +205,12 @@ app.whenReady().then(() => {
       const pathPart = decodeURIComponent(url.pathname || '')
       let filePath = pathPart
 
-      // Handle malformed URLs like local-file://image.png/ where path becomes "/"
+      /* Handle malformed URLs like local-file://image.png/ where path becomes "/" */
       if ((filePath === '/' || filePath === '') && hostPart) {
         filePath = hostPart
       }
 
-      // local-file://host/path -> /host/path on POSIX, host/path on Windows.
+      /* local-file://host/path -> /host/path on POSIX, host/path on Windows. */
       if (hostPart && pathPart && pathPart !== '/') {
         if (pathPart.startsWith('/')) {
           filePath = `/${hostPart}${pathPart}`
@@ -219,13 +219,13 @@ app.whenReady().then(() => {
         }
       }
 
-      // Remove leading slash on Windows if present (e.g. /C:/ -> C:/)
+      /* Remove leading slash on Windows if present (e.g. /C:/ -> C:/) */
       if (process.platform === 'win32' && filePath.startsWith('/') && !filePath.startsWith('//')) {
           filePath = filePath.slice(1);
       }
 
-      // Some renderers/inputs may produce URLs like local-file://users/<name>/...
-      // Normalize to the real macOS/Linux /Users/... path.
+      /* Some renderers/inputs may produce URLs like local-file://users/<name>/... */
+      /* Normalize to the real macOS/Linux /Users/... path. */
       if (process.platform !== 'win32') {
         if (!filePath.startsWith('/') && /^users\//i.test(filePath)) {
           filePath = `/${filePath}`
@@ -235,7 +235,7 @@ app.whenReady().then(() => {
         }
       }
 
-      // Normalize POSIX paths like //Users/... -> /Users/...
+      /* Normalize POSIX paths like //Users/... -> /Users/... */
       if (process.platform !== 'win32' && filePath.startsWith('//')) {
         filePath = filePath.replace(/^\/+/, '/')
       }

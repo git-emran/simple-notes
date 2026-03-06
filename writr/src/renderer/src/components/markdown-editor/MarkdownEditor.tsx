@@ -274,7 +274,7 @@ export const MarkdownEditor = () => {
     }
   }, [])
 
-  // Save queue management
+  /* Save queue management */
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
   const isSavingRef = useRef(false)
 
@@ -393,10 +393,10 @@ export const MarkdownEditor = () => {
     ]
   )
 
-  // Optimized save function with queue
+  /* Optimized save function with queue */
   const executeSave = useCallback(
     async (content: string, notePath: string) => {
-      // Don't bail out if currentNoteTitleRef doesn't match; we might be flushing a save for a previous note!
+      /* Don't bail out if currentNoteTitleRef doesn't match; we might be flushing a save for a previous note! */
       isSavingRef.current = true
       try {
         await saveNote({ newContent: content, path: notePath })
@@ -430,7 +430,7 @@ export const MarkdownEditor = () => {
   )
 
   const handleBlurSave = useCallback(async () => {
-    // When focus is lost, we save the content of whatever is currently loaded in the CodeMirror view.
+    /* When focus is lost, we save the content of whatever is currently loaded in the CodeMirror view. */
     if (!currentNotePathRef.current || !viewRef.current || isSwitchingRef.current) return
     const content = viewRef.current.state.doc.toString()
     const notePath = currentNotePathRef.current
@@ -570,7 +570,7 @@ export const MarkdownEditor = () => {
     }
   }, [])
 
-  // EditorMenuEntry type is now imported from editorMenuLogic
+  /* EditorMenuEntry type is now imported from editorMenuLogic */
 
   const editorMenuEntries: EditorMenuEntry[] = useMemo(
     () => getEditorMenuEntries(openAiModal),
@@ -663,7 +663,7 @@ export const MarkdownEditor = () => {
     return () => window.clearInterval(timer)
   }, [isGeneratingWithAi])
 
-  // Initialize editor (once per mount) + switch documents without recreating the view
+  /* Initialize editor (once per mount) + switch documents without recreating the view */
   useEffect(() => {
     if (!selectedNote?.path || !editorRef.current) {
       setCurrentContent('')
@@ -690,12 +690,12 @@ export const MarkdownEditor = () => {
           languageSupportCompartment.of([]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged || update.selectionSet) {
-               // Only check for language changes if the cursor moved or content changed
+               /* Only check for language changes if the cursor moved or content changed */
                const pos = update.state.selection.main.head;
                
-               // Optimization: skip if cursor didn't move much and we already know the language
-               // This is handled by resolveInner being fast enough usually, 
-               // but we can be more strategic.
+               /* Optimization: skip if cursor didn't move much and we already know the language */
+               /* This is handled by resolveInner being fast enough usually,  */
+               /* but we can be more strategic. */
                
                const tree = ensureSyntaxTree(update.state, pos, 50) || syntaxTree(update.state);
                const node = tree.resolveInner(pos, -1);
@@ -794,15 +794,15 @@ export const MarkdownEditor = () => {
         const newTitle = selectedNote.title
         const newContent = selectedNote.content
   
-        // FLUSH pending debounced saves for the OLD note before replacing refs
-        // This prevents data loss when rapidly switching tabs while typing
+        /* FLUSH pending debounced saves for the OLD note before replacing refs */
+        /* This prevents data loss when rapidly switching tabs while typing */
         debouncedSave.flush()
   
         currentNoteTitleRef.current = newTitle
         currentNotePathRef.current = selectedNote.path
         lastLanguageRef.current = null
         
-        // Update state immediately for visual snappiness
+        /* Update state immediately for visual snappiness */
         setCurrentContent(newContent)
         startTransition(() => {
           setDebouncedContent(newContent)
@@ -810,7 +810,7 @@ export const MarkdownEditor = () => {
   
         const view = viewRef.current
         if (view) {
-          // Replace state entirely to reset undo history and prevent Ctrl+Z cross-contamination
+          /* Replace state entirely to reset undo history and prevent Ctrl+Z cross-contamination */
           view.setState(buildState(newContent))
         }
         applyEditorSettings()
@@ -834,7 +834,7 @@ export const MarkdownEditor = () => {
     applyEditorSettings()
   }, [applyEditorSettings])
 
-  // Destroy editor if no note is selected
+  /* Destroy editor if no note is selected */
   useEffect(() => {
     if (!selectedNote?.path && viewRef.current) {
         viewRef.current.destroy()
@@ -842,7 +842,7 @@ export const MarkdownEditor = () => {
     }
   }, [selectedNote?.path])
 
-  // Clean up editor
+  /* Clean up editor */
   useEffect(() => {
     return () => {
       if (viewRef.current) {
@@ -853,7 +853,7 @@ export const MarkdownEditor = () => {
     }
   }, [debouncedSave])
 
-  // Draggable resize
+  /* Draggable resize */
   useEffect(() => {
     if (!isPreview || isFullPreview) return // Disabled for full preview mode
     const dragBar = dragBarRef.current
@@ -895,7 +895,7 @@ export const MarkdownEditor = () => {
     }
   }, [isPreview, isFullPreview])
 
-  // FAB Visibility & Inactivity Timer
+  /* FAB Visibility & Inactivity Timer */
   const fabTimerRef = useRef<any>(null)
 
   useEffect(() => {
@@ -935,7 +935,7 @@ export const MarkdownEditor = () => {
   }, [selectedNote?.path, isPreview, isFullPreview])
 
   useEffect(() => {
-      // Reset FAB when switching notes
+      /* Reset FAB when switching notes */
       setShowFAB(false)
   }, [selectedNote?.path])
 
@@ -962,7 +962,7 @@ export const MarkdownEditor = () => {
     const percentage = lastScrollPercentageRef.current
     if (percentage <= 0) return
 
-    // Restore Editor Scroll
+    /* Restore Editor Scroll */
     if (viewRef.current) {
       const { scrollDOM } = viewRef.current
       const { scrollHeight, clientHeight } = scrollDOM
@@ -971,7 +971,7 @@ export const MarkdownEditor = () => {
       }
     }
 
-    // Restore Preview Scroll
+    /* Restore Preview Scroll */
     if (previewContainerRef.current) {
       const { scrollHeight, clientHeight } = previewContainerRef.current
       if (scrollHeight > clientHeight) {
@@ -980,9 +980,9 @@ export const MarkdownEditor = () => {
     }
   }, [])
 
-  // Restore scroll when mode changes
+  /* Restore scroll when mode changes */
   useEffect(() => {
-    // 50ms is a good compromise for layout stabilization
+    /* 50ms is a good compromise for layout stabilization */
     const timer = setTimeout(restoreScrollPosition, 50)
     return () => clearTimeout(timer)
   }, [isPreview, isFullPreview, restoreScrollPosition])
@@ -991,7 +991,7 @@ export const MarkdownEditor = () => {
   const scrollSyncRafRef = useRef<number | null>(null)
   const lastProgrammaticScrollRef = useRef<{ editor: number; preview: number }>({ editor: 0, preview: 0 })
 
-  // Sync scroll between editor + preview in split view
+  /* Sync scroll between editor + preview in split view */
   useEffect(() => {
     if (!isPreview || isFullPreview) return
 
@@ -1094,7 +1094,7 @@ export const MarkdownEditor = () => {
 
   const handleFullPreviewToggle = () => {
     captureScrollPercentage()
-    // Synchronize preview content immediately for a safe and efficient transition
+    /* Synchronize preview content immediately for a safe and efficient transition */
     setDebouncedContent(currentContent)
 
     if (isFullPreview) {
@@ -1108,7 +1108,7 @@ export const MarkdownEditor = () => {
 
   const handleSplitViewToggle = () => {
     captureScrollPercentage()
-    // Synchronize preview content immediately for a safe and efficient transition
+    /* Synchronize preview content immediately for a safe and efficient transition */
     setDebouncedContent(currentContent)
     if (isFullPreview) {
       setIsFullPreview(false)
@@ -1320,4 +1320,4 @@ export const MarkdownEditor = () => {
   )
 }
 
-// MarkdownPreview component has been moved to MarkdownPreview.tsx
+/* MarkdownPreview component has been moved to MarkdownPreview.tsx */

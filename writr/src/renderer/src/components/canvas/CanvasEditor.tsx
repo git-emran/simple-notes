@@ -74,7 +74,7 @@ export const CanvasEditor = () => {
   const canvasPath = selectedNote?.path ?? ''
   const canvasContent = selectedNote?.content ?? ''
 
-  // Reset state when switching between canvas files
+  /* Reset state when switching between canvas files */
   useEffect(() => {
     if (!isCanvasFile) return
     setIsLoaded(false)
@@ -82,7 +82,7 @@ export const CanvasEditor = () => {
     setEdges([])
   }, [canvasPath, isCanvasFile, setEdges, setNodes])
 
-  // Load from file content
+  /* Load from file content */
   React.useEffect(() => {
     if (!isCanvasFile) return
 
@@ -101,7 +101,7 @@ export const CanvasEditor = () => {
     }
   }, [canvasContent, hydrateNodes, isCanvasFile, isLoaded, setEdges, setNodes]);
 
-  // Persistence effect - save on change
+  /* Persistence effect - save on change */
   React.useEffect(() => {
     if (!isLoaded) return;
     if (!isCanvasFile) return
@@ -148,7 +148,7 @@ export const CanvasEditor = () => {
 
   const onNodeDragStart = useCallback(
     (event: React.MouseEvent, node: any) => {
-      // If Alt is pressed, duplicate the node
+      /* If Alt is pressed, duplicate the node */
       if (event.altKey) {
         const newNode = {
           ...node,

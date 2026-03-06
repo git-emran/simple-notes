@@ -19,14 +19,14 @@ function buildDecorations(view: EditorView): DecorationSet {
       const line = doc.lineAt(pos)
       const lineText = line.text
 
-      // Headings: color only the leading # marks
+      /* Headings: color only the leading # marks */
       const headingMatch = /^(#{1,6})\s/.exec(lineText)
       if (headingMatch) {
         const len = headingMatch[1].length
         decorations.push(headingMark.range(line.from, line.from + len))
       }
 
-      // Bold/italic marks: color only the * / ** markers
+      /* Bold/italic marks: color only the * / ** markers */
       let inInlineCode = false
       for (let i = 0; i < lineText.length; i++) {
         const ch = lineText[i]
@@ -41,7 +41,7 @@ function buildDecorations(view: EditorView): DecorationSet {
         const next = lineText[i + 1]
         const prev = lineText[i - 1]
 
-        // Bold: **...**
+        /* Bold: **...** */
         if (next === '*') {
           const close = lineText.indexOf('**', i + 2)
           if (close !== -1 && !isEscaped(lineText, close)) {
@@ -52,7 +52,7 @@ function buildDecorations(view: EditorView): DecorationSet {
           continue
         }
 
-        // Italic: *...* (avoid matching **)
+        /* Italic: *...* (avoid matching **) */
         if (prev !== '*' && next !== '*') {
           let close = lineText.indexOf('*', i + 1)
           while (close !== -1) {

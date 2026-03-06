@@ -20,7 +20,7 @@ class CheckboxWidget extends WidgetType {
     input.addEventListener('change', () => {
       const replacement = input.checked ? '- [x]' : '- [ ]'
 
-      // Preserve cursor and selection
+      /* Preserve cursor and selection */
       const selection = view.state.selection
       view.dispatch({
         changes: { from: this.from, to: this.to, insert: replacement },

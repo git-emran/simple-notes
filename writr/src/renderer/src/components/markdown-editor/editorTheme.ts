@@ -50,7 +50,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     backgroundColor: isDark ? 'rgba(124, 158, 251, 0.24)' : 'rgba(37, 99, 235, 0.2)'
   },
 
-  // Autocomplete Tooltip Styles
+  /* Autocomplete Tooltip Styles */
   '.cm-tooltip': {
     backgroundColor: isDark ? '#252833' : '#ffffff',
     border: isDark ? '1px solid #333744' : '1px solid #e5e7eb',
@@ -108,7 +108,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     color: 'var(--obsidian-quote-text) !important',
     fontStyle: 'italic'
   },
-  // Hide/dim backtick markers for inline code in the editor
+  /* Hide/dim backtick markers for inline code in the editor */
   '.cm-code-punctuation': {
     opacity: '0.3',
     fontSize: '0.9em'

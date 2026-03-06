@@ -63,16 +63,16 @@ function getDecorations(view: EditorView, notePath?: string, rootDir?: string) {
     imageRegex.lastIndex = 0
     wikilinkImageRegex.lastIndex = 0
     
-    // Markdown Images / Links
+    /* Markdown Images / Links */
     let match
     while ((match = imageRegex.exec(text)) !== null) {
       const [, hasExclamation, alt, url] = match
       const start = from + match.index
       const line = view.state.doc.lineAt(start)
       
-      // Render as image if it has '!' OR if it ends in an image extension
+      /* Render as image if it has '!' OR if it ends in an image extension */
       if (hasExclamation === '!' || isImageUrl(url)) {
-        // Hide if cursor is not on the line
+        /* Hide if cursor is not on the line */
         if (selection.from < line.from || selection.from > line.to) {
           decorations.push(Decoration.widget({
             widget: new ImageWidget(url, alt, notePath, rootDir),
@@ -82,14 +82,14 @@ function getDecorations(view: EditorView, notePath?: string, rootDir?: string) {
       }
     }
 
-    // Wikilink Images / Links
+    /* Wikilink Images / Links */
     while ((match = wikilinkImageRegex.exec(text)) !== null) {
       const [, hasExclamation, url] = match
       const start = from + match.index
       const line = view.state.doc.lineAt(start)
       
       if (hasExclamation === '!' || isImageUrl(url)) {
-        // Hide if cursor is not on the line
+        /* Hide if cursor is not on the line */
         if (selection.from < line.from || selection.from > line.to) {
           decorations.push(Decoration.widget({
             widget: new ImageWidget(url, "", notePath, rootDir),

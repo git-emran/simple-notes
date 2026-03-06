@@ -28,7 +28,7 @@ export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: tions
 
 
 
-  // Close when clicking outside
+  /* Close when clicking outside */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (

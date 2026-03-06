@@ -26,7 +26,7 @@ if (!process.contextIsolated) {
   throw new Error('contextIsolation must be enabled in the BrowserWindow')
 }
 
-//Contextbridge Parameters
+/* Contextbridge Parameters */
 
 try {
   contextBridge.exposeInMainWorld('context', {

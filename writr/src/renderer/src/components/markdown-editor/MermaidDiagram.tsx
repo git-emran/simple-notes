@@ -17,14 +17,14 @@ const sanitizeSvg = (svgMarkup: string): string => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(svgMarkup, 'image/svg+xml')
 
-  // Allowlist of safe SVG tags
+  /* Allowlist of safe SVG tags */
   const allowedTags = new Set([
     'svg', 'g', 'path', 'rect', 'circle', 'line', 'polyline', 'polygon', 'ellipse',
     'text', 'tspan', 'style', 'defs', 'marker', 'linearGradient', 'radialGradient',
     'stop', 'clipPath', 'use', 'image', 'desc', 'title', 'symbol'
   ]);
 
-  // Allowlist of safe SVG attributes
+  /* Allowlist of safe SVG attributes */
   const allowedAttributes = new Set([
      'width', 'height', 'viewbox', 'fill', 'stroke', 'stroke-width', 'd', 'points',
      'cx', 'cy', 'r', 'x', 'y', 'x1', 'x2', 'y1', 'y2', 'transform', 'style', 'class',
@@ -37,7 +37,7 @@ const sanitizeSvg = (svgMarkup: string): string => {
   for (const element of allElements) {
     const tagName = element.tagName.toLowerCase()
     
-    // Remove tags not in the allowlist
+    /* Remove tags not in the allowlist */
     if (!allowedTags.has(tagName)) {
       element.remove()
       continue
@@ -48,13 +48,13 @@ const sanitizeSvg = (svgMarkup: string): string => {
       const name = attribute.name.toLowerCase()
       const value = attribute.value.trim().toLowerCase()
 
-      // Remove attributes not in the allowlist or that look like event handlers
+      /* Remove attributes not in the allowlist or that look like event handlers */
       if (!allowedAttributes.has(name) || name.startsWith('on')) {
         element.removeAttribute(attribute.name)
         continue
       }
 
-      // Special check for href/xlink:href to prevent javascript: URIs
+      /* Special check for href/xlink:href to prevent javascript: URIs */
       if ((name === 'href' || name === 'xlink:href') && value.startsWith('javascript:')) {
         element.removeAttribute(attribute.name)
       }

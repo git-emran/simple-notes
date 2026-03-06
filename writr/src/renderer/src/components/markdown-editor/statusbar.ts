@@ -32,7 +32,7 @@ export const statusBarExtension = ViewPlugin.fromClass(
         parent.style.position = 'relative'
         parent.appendChild(this.dom)
       } else {
-        // Fallback or wait
+        /* Fallback or wait */
         requestAnimationFrame(() => {
           const p = view.dom.parentElement
           if (p) {
@@ -42,13 +42,13 @@ export const statusBarExtension = ViewPlugin.fromClass(
         })
       }
 
-      // initial dark mode check
+      /* initial dark mode check */
       this.darkMode = getIsDarkMode()
 
       this.applyColors()
       this.updateStatus(view)
 
-      // Observe changes to html class
+      /* Observe changes to html class */
       const observer = new MutationObserver(() => {
         const isDark = getIsDarkMode()
         if (isDark !== this.darkMode) {

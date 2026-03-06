@@ -65,9 +65,9 @@ const App = () => {
   const openTab = useSetAtom(openTabAtom)
   const tabs = useAtomValue(tabsAtom)
 
-  // Auto-open welcome note if it's a first run/empty root
+  /* Auto-open welcome note if it's a first run/empty root */
   useEffect(() => {
-    // Only auto-open Welcome.md when the app root folder has nothing else in it.
+    /* Only auto-open Welcome.md when the app root folder has nothing else in it. */
     if (!fileTree || fileTree.length === 0) return
     if (tabs.length !== 1 || tabs[0].kind !== 'empty') return
     if (fileTree.length !== 1) return
@@ -75,7 +75,7 @@ const App = () => {
     openTab(fileTree[0])
   }, [fileTree, tabs, openTab])
 
-  // Automatically switch mode based on selected file extension
+  /* Automatically switch mode based on selected file extension */
   useEffect(() => {
     if (selectedNode?.path) {
       if (selectedNode.path.endsWith('.canvas')) {
@@ -88,12 +88,12 @@ const App = () => {
 
   const handleCanvasClick = async () => {
     if (selectedNode?.path && selectedNode.path.endsWith('.canvas')) {
-      // Already on a canvas file, just ensure mode is correct
+      /* Already on a canvas file, just ensure mode is correct */
       setAppMode('canvas')
       return
     }
 
-    // Attempt to create a new canvas file
+    /* Attempt to create a new canvas file */
     const parentDir = selectedNode?.type === 'folder' 
       ? selectedNode.path 
       : selectedNode?.path?.substring(0, Math.max(selectedNode.path.lastIndexOf('/'), selectedNode.path.lastIndexOf('\\'))) || ''
@@ -135,7 +135,7 @@ const App = () => {
     root.style.setProperty('--writr-editor-font-size', `${Math.max(11, Math.min(20, editorFontSize))}px`)
   }, [editorFont, editorFontSize])
 
-  // Drag to resize logic
+  /* Drag to resize logic */
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       if ((e.target as HTMLElement).id === 'resize-handle') {
@@ -154,33 +154,33 @@ const App = () => {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd + ,
+      /* Cmd + , */
       if ((e.metaKey || e.ctrlKey) && (e.key === ',' || e.code === 'Comma')) {
         e.preventDefault()
         setIsSettingsOpen(true)
         return
       }
 
-      // Esc closes settings
+      /* Esc closes settings */
       if (e.key === 'Escape' && isSettingsOpen) {
         e.preventDefault()
         setIsSettingsOpen(false)
         return
       }
 
-      // Cmd + W
+      /* Cmd + W */
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'w') {
         e.preventDefault()
         closeActiveTab()
       }
       
-      // Cmd + Shift + T
+      /* Cmd + Shift + T */
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 't') {
         e.preventDefault()
         restoreClosedTab()
       }
 
-      // Cmd + 1-9 (or Ctrl on Windows)
+      /* Cmd + 1-9 (or Ctrl on Windows) */
       if ((e.metaKey || e.ctrlKey) && /^[1-9]$/.test(e.key)) {
         e.preventDefault()
         const index = parseInt(e.key) - 1

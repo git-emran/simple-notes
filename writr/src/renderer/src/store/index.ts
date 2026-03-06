@@ -5,7 +5,7 @@ import { NoteStatus } from '@renderer/constants/noteStatus'
 export * from './settingsStore'
 export * from './kanbanStore'
 
-// File Tree Atoms
+/* File Tree Atoms */
 const loadFileTree = async () => {
   if (!window.context) {
     console.warn('window.context is not defined. Are you running in Electron?')
@@ -63,7 +63,7 @@ export const fileTreeIndexAtom = atom<Map<string, FileNode>>((get) => {
 
 export const selectedNodeAtom = atom<FileNode | null>(null)
 
-// Tabs State
+/* Tabs State */
 export type EditorTab = {
   id: string
   kind: 'empty' | 'file' | 'kanban'
@@ -365,7 +365,7 @@ export const reindexTodoStatsAtom = atom(null, async (get, set) => {
   const index = get(fileTreeIndexAtom)
   const cache = get(todoStatsByPathAtom)
 
-  // 1) Apply cached stats immediately (so progress bars show on reload)
+  /* 1) Apply cached stats immediately (so progress bars show on reload) */
   const cachedPatches = new Map<string, Partial<FileNode>>()
   for (const [path, entry] of Object.entries(cache)) {
     const node = index.get(path)
@@ -378,7 +378,7 @@ export const reindexTodoStatsAtom = atom(null, async (get, set) => {
     set(fileTreeAtom, patchFileNodesInTree(tree, cachedPatches))
   }
 
-  // 2) Find files missing cached stats for their current mtime
+  /* 2) Find files missing cached stats for their current mtime */
   const needsScan: Array<{ path: string; mtimeMs: number }> = []
   for (const [path, node] of index.entries()) {
     if (node.type !== 'file') continue
@@ -392,7 +392,7 @@ export const reindexTodoStatsAtom = atom(null, async (get, set) => {
 
   if (needsScan.length === 0) return
 
-  // 3) Background scan in small chunks; keep UI responsive
+  /* 3) Background scan in small chunks; keep UI responsive */
   const CONCURRENCY = 4
   const BATCH_PATCH_MAX = 16
 
@@ -434,7 +434,7 @@ export const reindexTodoStatsAtom = atom(null, async (get, set) => {
       set(fileTreeAtom, patchFileNodesInTree(currentTree, pendingPatchMap))
       set(todoStatsByPathAtom, nextCache)
       pendingPatchMap = new Map()
-      // Yield back to the event loop
+      /* Yield back to the event loop */
       await new Promise((resolve) => setTimeout(resolve, 0))
     }
   }
@@ -448,7 +448,7 @@ export const reindexTodoStatsAtom = atom(null, async (get, set) => {
   set(todoStatsByPathAtom, nextCache)
 })
 
-// Notes Atoms (derived from selectedNode)
+/* Notes Atoms (derived from selectedNode) */
 export const selectedNoteAtomAsync = atom(async (get) => {
   const activeTabPath = get(activeTabPathAtom)
 
@@ -477,7 +477,7 @@ export const selectedNoteAtomAsync = atom(async (get) => {
   
   if (get(activeTabPathAtom) !== activeTabPath) return null
   
-  // Extract name for title
+  /* Extract name for title */
   const name = activeTabPath.split('/').pop()?.split('\\').pop() || 'Untitled'
   
   return {
@@ -543,7 +543,7 @@ export const duplicateNoteAtom = atom(null, async (_get, set, path: string) => {
     await window.context.writeFileNew(newPath, content)
     set(fileTreeAtom, await loadFileTree())
     
-    // Open the new note
+    /* Open the new note */
     const newNode = createFileNodeFromPath(newPath)
     set(openTabAtom, newNode)
   } catch (error) {
@@ -579,15 +579,15 @@ export const createNoteAtom = atom(null, async (get, set, parentDir: string) => 
     })
   }
 
-  // If parentDir is empty string, getRootDir() might be relevant, but Main returns absolute path.
-  // We need to know where it was created. main/lib/index.ts:237 returns absolute filePath.
-  // Extracting parent path from filePath:
+  /* If parentDir is empty string, getRootDir() might be relevant, but Main returns absolute path. */
+  /* We need to know where it was created. main/lib/index.ts:237 returns absolute filePath. */
+  /* Extracting parent path from filePath: */
   const lastSlash = filePath.lastIndexOf('/')
   const lastBackslash = filePath.lastIndexOf('\\')
   const maxIndex = Math.max(lastSlash, lastBackslash)
   const actualParent = maxIndex === -1 ? '' : filePath.substring(0, maxIndex)
 
-  // Find root path from tree if not provided
+  /* Find root path from tree if not provided */
   const root = inferRootDirFromTree(currentTree)
   const targetPath = actualParent === root ? '' : actualParent
 
@@ -643,7 +643,7 @@ export const createDirectoryAtom = atom(null, async (_, set, parentDir: string) 
   const dirPath = await window.context.createDirectory(parentDir)
   if (!dirPath) return
 
-  // Refresh tree
+  /* Refresh tree */
   set(fileTreeAtom, await loadFileTree())
 })
 
@@ -665,7 +665,7 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   set(fileTreeAtom, removeNodeFromTree([...currentTree], path))
   set(selectedNodeAtom, null)
   
-  // Close tab if it was open
+  /* Close tab if it was open */
   const tabs = get(tabsAtom)
   const idsToClose = tabs.filter((t) => t.path === path).map((t) => t.id)
   for (const tabId of idsToClose) {
@@ -676,13 +676,13 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
 export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: string; dest: string }) => {
   const success = await window.context.movePath(src, dest)
   if (success) {
-    // Load tree first so we can remap cache keys to the exact path formatting returned by the backend.
+    /* Load tree first so we can remap cache keys to the exact path formatting returned by the backend. */
     const loadedTree = await loadFileTree()
     const normalizedLookup = buildNormalizedPathLookup(loadedTree)
 
     const canonicalize = (path: string) => normalizedLookup.get(normalizePath(path)) ?? path
 
-    // Move any per-path metadata (status/tag/todos/pins) so it persists after move.
+    /* Move any per-path metadata (status/tag/todos/pins) so it persists after move. */
     const todoCache = get(todoStatsByPathAtom)
     const statusByPath = get(noteStatusByPathAtom)
     const tagByPath = get(noteTagByPathAtom)
@@ -740,7 +740,7 @@ export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: st
         const nextPath = remapPathPrefix(p, src, dest)
         return nextPath ? canonicalize(nextPath) : p
       })
-      // Remove any duplicates created by renames/moves.
+      /* Remove any duplicates created by renames/moves. */
       .filter((p, i, arr) => arr.indexOf(p) === i)
     if (nextPinned.length !== pinnedPaths.length || nextPinned.some((p, i) => p !== pinnedPaths[i])) {
       set(pinnedNotePathsAtom, nextPinned)
@@ -748,7 +748,7 @@ export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: st
 
     let nextTree = loadedTree
 
-    // Re-apply todo stats for moved nodes immediately so progress bars don't disappear.
+    /* Re-apply todo stats for moved nodes immediately so progress bars don't disappear. */
     if (todoMoves.size > 0) {
       const patchMap = new Map<string, Partial<FileNode>>()
       for (const [path, entry] of todoMoves.entries()) {
@@ -759,7 +759,7 @@ export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: st
 
     set(fileTreeAtom, nextTree)
 
-    // Update tabs if any tab matches the moved path
+    /* Update tabs if any tab matches the moved path */
     const tabs = get(tabsAtom)
     
     let tabMatched = false
@@ -777,7 +777,7 @@ export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: st
       set(tabsAtom, newTabs)
     }
 
-    // Update selected node if it was the one moved/renamed
+    /* Update selected node if it was the one moved/renamed */
     const selectedNode = get(selectedNodeAtom)
     if (selectedNode?.path) {
       const nextPath = remapPathPrefix(selectedNode.path, src, dest)

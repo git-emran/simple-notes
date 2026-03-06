@@ -30,12 +30,12 @@ export const codeBlockBackground = ViewPlugin.fromClass(class {
                 let endLine = view.state.doc.lineAt(node.to).number
                 for (let i = startLine; i <= endLine; i++) {
                     const line = view.state.doc.line(i)
-                    // Avoid adding multiple decorations to the same line if blocks overlap 
-                    // (though they shouldn't in standard markdown)
+                    /* Avoid adding multiple decorations to the same line if blocks overlap  */
+                    /* (though they shouldn't in standard markdown) */
                     builder.add(line.from, line.from, codeBlockDecoration)
                 }
             } catch (e) {
-                // Ignore range errors during fast typing
+                /* Ignore range errors during fast typing */
             }
           }
         }

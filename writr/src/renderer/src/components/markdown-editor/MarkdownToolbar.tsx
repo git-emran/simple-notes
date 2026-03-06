@@ -32,7 +32,7 @@ export const MarkdownToolbar = ({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const headerButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Keyboard shortcuts
+  /* Keyboard shortcuts */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!view || (!e.ctrlKey && !e.metaKey)) return
@@ -91,7 +91,7 @@ export const MarkdownToolbar = ({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [view])
 
-  // Close dropdown when clicking outside
+  /* Close dropdown when clicking outside */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -108,17 +108,17 @@ export const MarkdownToolbar = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Position dropdown dynamically
+  /* Position dropdown dynamically */
   useEffect(() => {
     if (showHeaderDropdown && dropdownRef.current && headerButtonRef.current) {
       const buttonRect = headerButtonRef.current.getBoundingClientRect()
       const dropdown = dropdownRef.current
 
-      // Position dropdown below the button
+      /* Position dropdown below the button */
       dropdown.style.top = `${buttonRect.bottom + window.scrollY}px`
       dropdown.style.left = `${buttonRect.left + window.scrollX}px`
 
-      // Prevent overflow by adjusting if near right edge
+      /* Prevent overflow by adjusting if near right edge */
       const dropdownRect = dropdown.getBoundingClientRect()
       const viewportWidth = window.innerWidth
       if (buttonRect.left + dropdownRect.width > viewportWidth) {
