@@ -26,7 +26,8 @@ Another Big update for the Writer. Fresh new features and big leap toward improv
 
 - New Kanban board to manage your backlog of tasks more efficiently.
 
-<img width="1252" height="892" alt="kanban" src="https://github.com/user-attachments/assets/dfc7237c-a2d6-4db5-ad03-dba470830aa1" />
+<img width="1256" height="997" alt="kanban" src="https://github.com/user-attachments/assets/1cda9e05-141e-4eff-8240-ee6508605c7c" />
+
 
 ### **Daily Note:**
 
@@ -128,6 +129,9 @@ Writr is a simple **note-taking app** that uses **Markdown** syntax to format yo
 You can create your first note by clicking on the top-left icon on the sidebar, or delete one by clicking on top right icon.
 
 Following there's a quick overview of the currently supported Markdown syntax.
+
+
+# How to Write Markdown:
 
 ## Text formatting
 
