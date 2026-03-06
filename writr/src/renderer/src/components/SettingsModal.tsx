@@ -4,6 +4,7 @@ import {
   editorFontSizeAtom,
   lineWrappingEnabledAtom,
   relativeLineNumbersEnabledAtom,
+  showFolderIconsAtom,
   showToolbarAtom,
   tabIndentUnitAtom,
   themeModeAtom,
@@ -22,6 +23,7 @@ const fontOptions: EditorFontOption[] = ['SFMono-Regular', 'Menlo', 'JetBrains M
 export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const [themeMode, setThemeMode] = useAtom(themeModeAtom)
   const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
+  const [showFolderIcons, setShowFolderIcons] = useAtom(showFolderIconsAtom)
   const [vimModeEnabled, setVimModeEnabled] = useAtom(vimModeEnabledAtom)
 
   const [relativeLineNumbers, setRelativeLineNumbers] = useAtom(relativeLineNumbersEnabledAtom)
@@ -102,6 +104,18 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
             <div className={sectionTitleClass}>INTERFACE</div>
             <div className={cardClass}>
               <div className="space-y-4">
+                <label className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className={labelClass}>Folder icons</div>
+                    <div className={helpClass}>Show folder glyphs next to folder names in the file tree.</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showFolderIcons}
+                    onChange={(e) => setShowFolderIcons(e.target.checked)}
+                  />
+                </label>
+
                 <label className="flex items-center justify-between gap-4">
                   <div>
                     <div className={labelClass}>Relative line numbers</div>

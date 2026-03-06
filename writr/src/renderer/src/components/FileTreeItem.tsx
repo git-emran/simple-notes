@@ -66,6 +66,7 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   renderChildren?: boolean
   noteStatus?: string
   noteTag?: string
+  showFolderIcons?: boolean
 }
 
 const FileTreeItemComponent = ({
@@ -85,6 +86,7 @@ const FileTreeItemComponent = ({
   renderChildren = true,
   noteStatus,
   noteTag,
+  showFolderIcons = false,
   className,
   ...props
 }: FileTreeItemProps) => {
@@ -218,7 +220,7 @@ const FileTreeItemComponent = ({
     ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
     : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
 
-  const contentLeftMargin = isMarkdownOrCanvas ? 'ml-0' : 'ml-1'
+  const contentLeftMargin = node.type === 'folder' || isMarkdownOrCanvas || !showFolderIcons ? 'ml-0' : 'ml-1'
 
   const renderMetaRow = () => {
     if (!showMeta) return null
@@ -273,7 +275,7 @@ const FileTreeItemComponent = ({
   }
 
   const renderNodeIcon = () => {
-    if (node.type === 'folder') {
+    if (node.type === 'folder' && showFolderIcons) {
       const FolderIcon = isExpanded ? VscFolderOpened : VscFolder
       return (
         <FolderIcon
@@ -292,6 +294,8 @@ const FileTreeItemComponent = ({
 
     return null
   }
+
+  const nodeIcon = renderNodeIcon()
 
   const renderContent = () => {
     if (isEditing) {
@@ -359,7 +363,7 @@ const FileTreeItemComponent = ({
             (isExpanded ? <VscChevronDown className="w-3.5 h-3.5" /> : <VscChevronRight className="w-3.5 h-3.5" />)}
         </span>
 
-        <span className="flex-shrink-0">{renderNodeIcon()}</span>
+        {nodeIcon && <span className="flex-shrink-0">{nodeIcon}</span>}
 
         {renderContent()}
 
@@ -391,6 +395,7 @@ const FileTreeItemComponent = ({
               onDelete={onDelete}
               onDropNode={onDropNode}
               onNodeContextMenu={onNodeContextMenu}
+              showFolderIcons={showFolderIcons}
             />
           ))}
         </ul>
@@ -408,6 +413,7 @@ const propsAreEqual = (prev: FileTreeItemProps, next: FileTreeItemProps) => {
     prev.isExpanded === next.isExpanded &&
     prev.noteStatus === next.noteStatus &&
     prev.noteTag === next.noteTag &&
+    prev.showFolderIcons === next.showFolderIcons &&
     prev.renderChildren === next.renderChildren &&
     prev.isRenaming === next.isRenaming &&
     prev.onRenameComplete === next.onRenameComplete &&

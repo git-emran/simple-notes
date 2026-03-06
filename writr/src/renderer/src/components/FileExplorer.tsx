@@ -13,6 +13,7 @@ import {
   noteTagByPathAtom,
   openTabAtom,
   reindexTodoStatsAtom,
+  showFolderIconsAtom,
   selectedNodeAtom
 } from '@renderer/store'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -39,6 +40,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const [fileTreeUiByRoot, setFileTreeUiByRoot] = useAtom(fileTreeUiByRootAtom)
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteTags = useAtomValue(noteTagByPathAtom)
+  const showFolderIcons = useAtomValue(showFolderIconsAtom)
   const createNote = useSetAtom(createNoteAtom)
   const createDirectory = useSetAtom(createDirectoryAtom)
   const deleteNode = useSetAtom(deleteNodeAtom)
@@ -540,6 +542,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
                 onDelete={handleDelete}
                 onDropNode={handleDropNode}
                 onNodeContextMenu={handleNodeContextMenu}
+                showFolderIcons={showFolderIcons}
                 isRenaming={renamingPath === node.path}
                 onRenameComplete={() => setRenamingPath(null)}
               />

@@ -5,6 +5,7 @@ export type ThemeMode = 'system' | 'light' | 'dark'
 export const themeModeAtom = atomWithStorage<ThemeMode>('writr-theme-mode', 'system')
 
 export const showToolbarAtom = atomWithStorage<boolean>('writr-show-toolbar', true)
+export const showFolderIconsAtom = atomWithStorage<boolean>('writr-show-folder-icons', true)
 export const relativeLineNumbersEnabledAtom = atomWithStorage<boolean>(
   'writr-relative-line-numbers',
   true
