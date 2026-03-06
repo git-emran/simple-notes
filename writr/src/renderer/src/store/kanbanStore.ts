@@ -65,6 +65,16 @@ export const pickNewKanbanColumnColor = (used: Iterable<string> = []): string =>
   return palette[Math.floor(Math.random() * palette.length)]
 }
 
+const pickRandomKanbanColumnColors = (count: number): string[] => {
+  const shuffled = [...KANBAN_COLUMN_COLORS]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+
+  return Array.from({ length: count }, (_, index) => shuffled[index % shuffled.length])
+}
+
 export const createKanbanColumn = (title: string, color?: string): KanbanColumn => ({
   id: makeId('col'),
   title,
@@ -78,31 +88,41 @@ export const createKanbanCard = (text: string): KanbanCard => ({
   completed: false,
 })
 
-export const createDefaultKanbanColumns = (): KanbanColumn[] => [
-  {
-    id: 'col-todo',
-    title: 'To-do',
-    cards: [],
-    color: stableKanbanColumnColor('col-todo'),
-  },
-  {
-    id: 'col-in-progress',
-    title: 'In-progress',
-    cards: [],
-    color: stableKanbanColumnColor('col-in-progress'),
-  },
-  {
-    id: 'col-done',
-    title: 'Done',
-    cards: [],
-    color: stableKanbanColumnColor('col-done'),
-  },
-]
+export const createDefaultKanbanColumns = (options?: { randomizeColors?: boolean }): KanbanColumn[] => {
+  const [todoColor, inProgressColor, doneColor] = options?.randomizeColors
+    ? pickRandomKanbanColumnColors(3)
+    : [
+        stableKanbanColumnColor('col-todo'),
+        stableKanbanColumnColor('col-in-progress'),
+        stableKanbanColumnColor('col-done'),
+      ]
+
+  return [
+    {
+      id: 'col-todo',
+      title: 'To-do',
+      cards: [],
+      color: todoColor,
+    },
+    {
+      id: 'col-in-progress',
+      title: 'In-progress',
+      cards: [],
+      color: inProgressColor,
+    },
+    {
+      id: 'col-done',
+      title: 'Done',
+      cards: [],
+      color: doneColor,
+    },
+  ]
+}
 
 export const createKanbanWorkspace = (name: string): KanbanWorkspace => ({
   id: makeId('workspace'),
   name,
-  columns: createDefaultKanbanColumns(),
+  columns: createDefaultKanbanColumns({ randomizeColors: true }),
 })
 
 const defaultWorkspace = createKanbanWorkspace('My Tasks')

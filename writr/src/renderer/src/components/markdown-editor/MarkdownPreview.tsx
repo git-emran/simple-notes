@@ -217,17 +217,13 @@ export const MarkdownPreview = memo(({
           </div>
         ),
         thead: ({ children }) => (
-          <thead className="bg-[var(--obsidian-table-head)] border-b border-[var(--obsidian-border)]">
+          <thead className="bg-[var(--obsidian-table-head)] border-b border-[var(--obsidian-border-soft)]">
             {children}
           </thead>
         ),
-        tbody: ({ children }) => (
-          <tbody className="divide-y divide-[var(--obsidian-border-soft)]">
-            {children}
-          </tbody>
-        ),
+        tbody: ({ children }) => <tbody>{children}</tbody>,
         tr: ({ children }) => (
-          <tr className="even:bg-[var(--obsidian-table-row)] transition-colors">
+          <tr className="border-b border-[var(--obsidian-border-soft)] even:bg-[var(--obsidian-table-row)] transition-colors last:border-b-0">
             {children}
           </tr>
         ),
