@@ -151,6 +151,25 @@ header {
   height: 4px;
 }
 
+.kanban-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #3e4354 transparent;
+  scrollbar-gutter: stable;
+}
+
+.kanban-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background-color: #3e4354;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #4a5065;
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

@@ -18,6 +18,13 @@ export type KanbanColumn = {
 }
 
 export type KanbanState = {
+  activeWorkspaceId: string
+  workspaces: KanbanWorkspace[]
+}
+
+export type KanbanWorkspace = {
+  id: string
+  name: string
   columns: KanbanColumn[]
 }
 
@@ -71,25 +78,86 @@ export const createKanbanCard = (text: string): KanbanCard => ({
   completed: false,
 })
 
-export const kanbanStateAtom = atomWithStorage<KanbanState>('writr-kanban-state', {
-  columns: [
-    {
-      id: 'col-todo',
-      title: 'To do',
-      cards: [],
-      color: stableKanbanColumnColor('col-todo'),
-    },
-    {
-      id: 'col-doing',
-      title: 'Doing',
-      cards: [],
-      color: stableKanbanColumnColor('col-doing'),
-    },
-    {
-      id: 'col-done',
-      title: 'Done',
-      cards: [],
-      color: stableKanbanColumnColor('col-done'),
-    },
-  ],
+export const createDefaultKanbanColumns = (): KanbanColumn[] => [
+  {
+    id: 'col-todo',
+    title: 'To-do',
+    cards: [],
+    color: stableKanbanColumnColor('col-todo'),
+  },
+  {
+    id: 'col-in-progress',
+    title: 'In-progress',
+    cards: [],
+    color: stableKanbanColumnColor('col-in-progress'),
+  },
+  {
+    id: 'col-done',
+    title: 'Done',
+    cards: [],
+    color: stableKanbanColumnColor('col-done'),
+  },
+]
+
+export const createKanbanWorkspace = (name: string): KanbanWorkspace => ({
+  id: makeId('workspace'),
+  name,
+  columns: createDefaultKanbanColumns(),
 })
+
+const defaultWorkspace = createKanbanWorkspace('My Tasks')
+
+const DEFAULT_KANBAN_STATE: KanbanState = {
+  activeWorkspaceId: defaultWorkspace.id,
+  workspaces: [defaultWorkspace],
+}
+
+const normalizeColumn = (column: KanbanColumn): KanbanColumn => {
+  const title =
+    column.id === 'col-todo' && (column.title === 'To do' || column.title === 'Todo')
+      ? 'To-do'
+      : column.id === 'col-doing' && column.title === 'Doing'
+        ? 'In-progress'
+        : column.title
+
+  return {
+    ...column,
+    title,
+    color: column.color ?? stableKanbanColumnColor(column.id),
+    cards: Array.isArray(column.cards) ? column.cards : [],
+  }
+}
+
+export const normalizeKanbanState = (value: unknown): KanbanState => {
+  const raw = value as Partial<KanbanState & { columns?: KanbanColumn[] }> | null | undefined
+
+  if (raw && Array.isArray(raw.workspaces) && raw.workspaces.length > 0) {
+    const workspaces = raw.workspaces.map((workspace) => ({
+      id: workspace.id,
+      name: workspace.name || 'Workspace',
+      columns:
+        Array.isArray(workspace.columns) && workspace.columns.length > 0
+          ? workspace.columns.map(normalizeColumn)
+          : createDefaultKanbanColumns(),
+    }))
+    const activeWorkspaceId =
+      typeof raw.activeWorkspaceId === 'string' &&
+      workspaces.some((workspace) => workspace.id === raw.activeWorkspaceId)
+        ? raw.activeWorkspaceId
+        : workspaces[0].id
+
+    return { activeWorkspaceId, workspaces }
+  }
+
+  if (raw && Array.isArray(raw.columns) && raw.columns.length > 0) {
+    const workspace = createKanbanWorkspace('My Tasks')
+    return {
+      activeWorkspaceId: workspace.id,
+      workspaces: [{ ...workspace, columns: raw.columns.map(normalizeColumn) }],
+    }
+  }
+
+  return DEFAULT_KANBAN_STATE
+}
+
+export const kanbanStateAtom = atomWithStorage<KanbanState>('writr-kanban-state', DEFAULT_KANBAN_STATE)

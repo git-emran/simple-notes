@@ -3,13 +3,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { VscAdd, VscCheck, VscClose } from 'react-icons/vsc'
 import { MdDragIndicator } from 'react-icons/md'
+import { ContextMenu, ContextMenuItem } from '@renderer/components/ContextMenu'
 import {
   kanbanStateAtom,
   createKanbanCard,
   createKanbanColumn,
+  createKanbanWorkspace,
+  normalizeKanbanState,
   pickNewKanbanColumnColor,
-  stableKanbanColumnColor,
   type KanbanCard,
+  type KanbanWorkspace,
 } from '@renderer/store/kanbanStore'
 
 type DragPayload =
@@ -28,9 +31,17 @@ const parseDragPayload = (value: string | null): DragPayload | null => {
 type ColumnOverHint = { overColumnId: string | null }
 
 export const KanbanBoard = () => {
-  const [state, setState] = useAtom(kanbanStateAtom)
+  const [storedState, setState] = useAtom(kanbanStateAtom)
+  const state = useMemo(() => normalizeKanbanState(storedState), [storedState])
 
-  const [newBoardTitle, setNewBoardTitle] = useState('')
+  const [newColumnTitle, setNewColumnTitle] = useState('')
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
+  const [newWorkspaceName, setNewWorkspaceName] = useState('')
+  const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{
+    x: number
+    y: number
+    workspaceId: string
+  } | null>(null)
   const [cardDragOver, setCardDragOver] = useState<{
     columnId: string
     targetCardId: string | null
@@ -45,31 +56,57 @@ export const KanbanBoard = () => {
   const cardDragOverRef = useRef<{ columnId: string; targetCardId: string | null } | null>(null)
   const columnDropHintRef = useRef<ColumnOverHint | null>(null)
   const columnElByIdRef = useRef<Record<string, HTMLDivElement | null>>({})
+  const newWorkspaceInputRef = useRef<HTMLInputElement>(null)
 
-  const columns = state.columns ?? []
+  useEffect(() => {
+    const normalized = normalizeKanbanState(storedState)
+    if (JSON.stringify(normalized) !== JSON.stringify(storedState)) {
+      setState(normalized)
+    }
+  }, [setState, storedState])
+
+  const activeWorkspace = useMemo(
+    () =>
+      state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) ?? state.workspaces[0],
+    [state.activeWorkspaceId, state.workspaces]
+  )
+
+  const columns = activeWorkspace?.columns ?? []
+
+  const updateActiveWorkspace = (updater: (workspace: KanbanWorkspace) => KanbanWorkspace) => {
+    setState((prevStored) => {
+      const prev = normalizeKanbanState(prevStored)
+      return {
+        ...prev,
+        workspaces: prev.workspaces.map((workspace) =>
+          workspace.id === prev.activeWorkspaceId ? updater(workspace) : workspace
+        ),
+      }
+    })
+  }
 
   const moveColumnToEnd = (columnId: string) => {
-    setState((prev) => {
-      const fromIndex = prev.columns.findIndex((c) => c.id === columnId)
-      if (fromIndex < 0) return prev
-      if (fromIndex === prev.columns.length - 1) return prev
-      const moving = prev.columns[fromIndex]
-      const without = prev.columns.filter((c) => c.id !== columnId)
-      return { ...prev, columns: [...without, moving] }
+    updateActiveWorkspace((workspace) => {
+      const fromIndex = workspace.columns.findIndex((c) => c.id === columnId)
+      if (fromIndex < 0) return workspace
+      if (fromIndex === workspace.columns.length - 1) return workspace
+      const moving = workspace.columns[fromIndex]
+      const without = workspace.columns.filter((c) => c.id !== columnId)
+      return { ...workspace, columns: [...without, moving] }
     })
   }
 
   const swapColumns = (aId: string, bId: string) => {
     if (aId === bId) return
-    setState((prev) => {
-      const aIndex = prev.columns.findIndex((c) => c.id === aId)
-      const bIndex = prev.columns.findIndex((c) => c.id === bId)
-      if (aIndex < 0 || bIndex < 0) return prev
-      if (aIndex === bIndex) return prev
+    updateActiveWorkspace((workspace) => {
+      const aIndex = workspace.columns.findIndex((c) => c.id === aId)
+      const bIndex = workspace.columns.findIndex((c) => c.id === bId)
+      if (aIndex < 0 || bIndex < 0) return workspace
+      if (aIndex === bIndex) return workspace
 
-      const next = prev.columns.slice()
+      const next = workspace.columns.slice()
       ;[next[aIndex], next[bIndex]] = [next[bIndex], next[aIndex]]
-      return { ...prev, columns: next }
+      return { ...workspace, columns: next }
     })
   }
 
@@ -88,9 +125,9 @@ export const KanbanBoard = () => {
     if (!renamingColumnId) return
     const nextTitle = renameDraft.trim()
     if (nextTitle) {
-      setState((prev) => ({
-        ...prev,
-        columns: prev.columns.map((c) => (c.id === renamingColumnId ? { ...c, title: nextTitle } : c)),
+      updateActiveWorkspace((workspace) => ({
+        ...workspace,
+        columns: workspace.columns.map((c) => (c.id === renamingColumnId ? { ...c, title: nextTitle } : c)),
       }))
     }
     setRenamingColumnId(null)
@@ -102,66 +139,109 @@ export const KanbanBoard = () => {
     setRenameDraft('')
   }
 
-  const addBoard = () => {
-    const title = newBoardTitle.trim()
+  const addColumn = () => {
+    const title = newColumnTitle.trim()
     if (!title) {
-      alert('You need to add a name to the board')
+      alert('You need to add a name to the column')
       return
     }
-    setState((prev) => ({
-      ...prev,
+    updateActiveWorkspace((workspace) => ({
+      ...workspace,
       columns: [
-        ...prev.columns,
+        ...workspace.columns,
         createKanbanColumn(
           title,
-          pickNewKanbanColumnColor(prev.columns.map((c) => c.color).filter(Boolean) as string[])
+          pickNewKanbanColumnColor(workspace.columns.map((c) => c.color).filter(Boolean) as string[])
         ),
       ],
     }))
-    setNewBoardTitle('')
+    setNewColumnTitle('')
+  }
+
+  const addWorkspace = () => {
+    const name = newWorkspaceName.trim()
+    if (!name) {
+      alert('You need to add a workspace name')
+      return
+    }
+
+    const workspace = createKanbanWorkspace(name)
+    setState((prevStored) => {
+      const prev = normalizeKanbanState(prevStored)
+      return {
+        ...prev,
+        activeWorkspaceId: workspace.id,
+        workspaces: [...prev.workspaces, workspace],
+      }
+    })
+    setNewWorkspaceName('')
+    setIsWorkspaceModalOpen(false)
+  }
+
+  const removeWorkspace = (workspaceId: string) => {
+    setState((prevStored) => {
+      const prev = normalizeKanbanState(prevStored)
+      if (prev.workspaces.length <= 1) {
+        alert('At least one workspace is required.')
+        return prev
+      }
+
+      const workspace = prev.workspaces.find((item) => item.id === workspaceId)
+      if (!workspace) return prev
+
+      const confirmed = window.confirm(`Delete workspace "${workspace.name}"? This cannot be undone.`)
+      if (!confirmed) return prev
+
+      const nextWorkspaces = prev.workspaces.filter((item) => item.id !== workspaceId)
+      const nextActiveWorkspaceId =
+        prev.activeWorkspaceId === workspaceId
+          ? (nextWorkspaces[0]?.id ?? prev.activeWorkspaceId)
+          : prev.activeWorkspaceId
+
+      return {
+        ...prev,
+        activeWorkspaceId: nextActiveWorkspaceId,
+        workspaces: nextWorkspaces,
+      }
+    })
   }
 
   useEffect(() => {
-    if (columns.length === 0) return
-    if (columns.every((c) => Boolean(c.color))) return
+    if (!isWorkspaceModalOpen) return
+    requestAnimationFrame(() => newWorkspaceInputRef.current?.focus())
+  }, [isWorkspaceModalOpen])
 
-    setState((prev) => ({
-      ...prev,
-      columns: prev.columns.map((c) => (c.color ? c : { ...c, color: stableKanbanColumnColor(c.id) })),
-    }))
-  }, [columns, setState])
-
-  const removeBoard = (columnId: string) => {
-    setState((prev) => ({
-      ...prev,
-      columns: prev.columns.filter((c) => c.id !== columnId),
+  const removeColumn = (columnId: string) => {
+    updateActiveWorkspace((workspace) => ({
+      ...workspace,
+      columns: workspace.columns.filter((c) => c.id !== columnId),
     }))
   }
 
   const addCard = (columnId: string, text: string) => {
     const trimmed = text.trim()
     if (!trimmed) return
-    setState((prev) => ({
-      ...prev,
-      columns: prev.columns.map((col) =>
+    updateActiveWorkspace((workspace) => ({
+      ...workspace,
+      columns: workspace.columns.map((col) =>
         col.id === columnId ? { ...col, cards: [...col.cards, createKanbanCard(trimmed)] } : col
       ),
     }))
   }
 
   const removeCard = (columnId: string, cardId: string) => {
-    setState((prev) => ({
-      ...prev,
-      columns: prev.columns.map((col) =>
+    updateActiveWorkspace((workspace) => ({
+      ...workspace,
+      columns: workspace.columns.map((col) =>
         col.id === columnId ? { ...col, cards: col.cards.filter((c) => c.id !== cardId) } : col
       ),
     }))
   }
 
   const toggleCardCompleted = (columnId: string, cardId: string) => {
-    setState((prev) => ({
-      ...prev,
-      columns: prev.columns.map((col) => {
+    updateActiveWorkspace((workspace) => ({
+      ...workspace,
+      columns: workspace.columns.map((col) => {
         if (col.id !== columnId) return col
         return {
           ...col,
@@ -179,16 +259,16 @@ export const KanbanBoard = () => {
     toColumnId: string,
     beforeCardId: string | null
   ) => {
-    setState((prev) => {
-      const fromCol = prev.columns.find((c) => c.id === fromColumnId)
-      const toCol = prev.columns.find((c) => c.id === toColumnId)
-      if (!fromCol || !toCol) return prev
+    updateActiveWorkspace((workspace) => {
+      const fromCol = workspace.columns.find((c) => c.id === fromColumnId)
+      const toCol = workspace.columns.find((c) => c.id === toColumnId)
+      if (!fromCol || !toCol) return workspace
 
       const card = fromCol.cards.find((c) => c.id === cardId)
-      if (!card) return prev
+      if (!card) return workspace
 
       if (fromColumnId === toColumnId) {
-        if (beforeCardId === cardId) return prev
+        if (beforeCardId === cardId) return workspace
 
         const without = fromCol.cards.filter((c) => c.id !== cardId)
         const rawIndex = beforeCardId == null ? without.length : without.findIndex((c) => c.id === beforeCardId)
@@ -198,11 +278,11 @@ export const KanbanBoard = () => {
         const sameOrder =
           nextCards.length === fromCol.cards.length &&
           nextCards.every((c, idx) => c.id === fromCol.cards[idx]!.id)
-        if (sameOrder) return prev
+        if (sameOrder) return workspace
 
         return {
-          ...prev,
-          columns: prev.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
+          ...workspace,
+          columns: workspace.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
         }
       }
 
@@ -217,8 +297,8 @@ export const KanbanBoard = () => {
       ]
 
       return {
-        ...prev,
-        columns: prev.columns.map((c) => {
+        ...workspace,
+        columns: workspace.columns.map((c) => {
           if (c.id === fromColumnId) return { ...c, cards: fromWithout }
           if (c.id === toColumnId) return { ...c, cards: nextDestCards }
           return c
@@ -228,22 +308,22 @@ export const KanbanBoard = () => {
   }
 
   const swapCards = (fromColumnId: string, cardId: string, toColumnId: string, targetCardId: string) => {
-    setState((prev) => {
-      const fromCol = prev.columns.find((c) => c.id === fromColumnId)
-      const toCol = prev.columns.find((c) => c.id === toColumnId)
-      if (!fromCol || !toCol) return prev
+    updateActiveWorkspace((workspace) => {
+      const fromCol = workspace.columns.find((c) => c.id === fromColumnId)
+      const toCol = workspace.columns.find((c) => c.id === toColumnId)
+      if (!fromCol || !toCol) return workspace
 
       const fromIndex = fromCol.cards.findIndex((c) => c.id === cardId)
       const toIndex = toCol.cards.findIndex((c) => c.id === targetCardId)
-      if (fromIndex < 0 || toIndex < 0) return prev
-      if (fromColumnId === toColumnId && fromIndex === toIndex) return prev
+      if (fromIndex < 0 || toIndex < 0) return workspace
+      if (fromColumnId === toColumnId && fromIndex === toIndex) return workspace
 
       if (fromColumnId === toColumnId) {
         const nextCards = fromCol.cards.slice()
         ;[nextCards[fromIndex], nextCards[toIndex]] = [nextCards[toIndex], nextCards[fromIndex]]
         return {
-          ...prev,
-          columns: prev.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
+          ...workspace,
+          columns: workspace.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
         }
       }
 
@@ -255,8 +335,8 @@ export const KanbanBoard = () => {
       nextToCards[toIndex] = draggedCard
 
       return {
-        ...prev,
-        columns: prev.columns.map((c) => {
+        ...workspace,
+        columns: workspace.columns.map((c) => {
           if (c.id === fromColumnId) return { ...c, cards: nextFromCards }
           if (c.id === toColumnId) return { ...c, cards: nextToCards }
           return c
@@ -383,26 +463,58 @@ export const KanbanBoard = () => {
 
   return (
     <div className="h-full w-full bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--obsidian-border-soft)] bg-[var(--obsidian-pane)]">
-        <div>
-          <div className="text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
-            KANBAN
-          </div>
-          <div className="text-xl font-semibold text-[var(--obsidian-text)]">Board</div>
+      <div className="px-6 py-4 border-b border-[var(--obsidian-border-soft)] bg-[var(--obsidian-pane)]">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {state.workspaces.map((workspace) => (
+            <button
+              key={workspace.id}
+              type="button"
+              onClick={() => {
+                setState((prevStored) => ({
+                  ...normalizeKanbanState(prevStored),
+                  activeWorkspaceId: workspace.id,
+                }))
+              }}
+              className={twMerge(
+                'inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-sm transition-colors',
+                workspace.id === state.activeWorkspaceId
+                  ? 'bg-[var(--obsidian-hover)] font-semibold text-[var(--obsidian-text)]'
+                  : 'text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]'
+              )}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                setWorkspaceContextMenu({
+                  x: e.clientX,
+                  y: e.clientY,
+                  workspaceId: workspace.id,
+                })
+              }}
+            >
+              {workspace.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setIsWorkspaceModalOpen(true)}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)] hover:text-[var(--obsidian-text)]"
+            title="Create workspace"
+          >
+            <VscAdd className="h-5 w-5" />
+          </button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="mt-4 flex items-center gap-2">
           <input
-            value={newBoardTitle}
-            onChange={(e) => setNewBoardTitle(e.target.value)}
-            placeholder="Add board..."
+            value={newColumnTitle}
+            onChange={(e) => setNewColumnTitle(e.target.value)}
+            placeholder="Add column..."
             className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
             onKeyDown={(e) => {
-              if (e.key === 'Enter') addBoard()
+              if (e.key === 'Enter') addColumn()
             }}
           />
           <button
-            onClick={addBoard}
-            className="inline-flex items-center gap-2 rounded bg-[var(--obsidian-accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+            onClick={addColumn}
+            className="inline-flex items-center gap-2 rounded bg-[#098fe8] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
           >
             <VscAdd className="w-4 h-4" />
             Add board
@@ -410,7 +522,7 @@ export const KanbanBoard = () => {
         </div>
       </div>
 
-      <div className="h-[calc(100%-72px)] overflow-x-auto overflow-y-hidden px-6 py-5">
+      <div className="h-[calc(100%-72px)] kanban-scroll overflow-x-scroll overflow-y-hidden px-6 py-5">
         <div
           className={twMerge('grid gap-4 min-h-full', gridClass)}
           style={gridStyle}
@@ -516,7 +628,7 @@ export const KanbanBoard = () => {
               <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
                 <div
                   className="p-1 text-[var(--obsidian-text-muted)]"
-                  title="Drag board to reorder"
+                  title="Drag column to reorder"
                 >
                   <MdDragIndicator className="w-4 h-4" />
                 </div>
@@ -533,22 +645,26 @@ export const KanbanBoard = () => {
                     }}
                   />
                 ) : (
-                  <div
-                    className="flex-1 min-w-0 truncate text-sm font-semibold text-[var(--obsidian-text)] select-none"
-                    title="Double click to rename"
-                    onDoubleClick={() => beginRenameColumn(column.id)}
-                  >
-                    {column.title}
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="inline-flex max-w-full items-center gap-2 rounded-full px-2.5 py-1 text-sm font-semibold text-[var(--obsidian-text)] select-none"
+                      style={{
+                        backgroundColor: column.color
+                          ? `color-mix(in srgb, var(--obsidian-workspace) 78%, ${column.color} 22%)`
+                          : 'var(--obsidian-workspace)',
+                      }}
+                      title="Double click to rename"
+                      onDoubleClick={() => beginRenameColumn(column.id)}
+                    >
+                      <span className="truncate">{column.title}</span>
+                      <span className="text-[var(--obsidian-text-muted)]">{(column.cards ?? []).length}</span>
+                    </div>
                   </div>
                 )}
-
-                <div className="text-xs text-[var(--obsidian-text-muted)]">
-                  {(column.cards ?? []).length}
-                </div>
                 <button
                   className="p-1 rounded hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)]"
-                  title="Remove board"
-                  onClick={() => removeBoard(column.id)}
+                  title="Remove column"
+                  onClick={() => removeColumn(column.id)}
                 >
                   <VscClose className="w-4 h-4" />
                 </button>
@@ -567,6 +683,67 @@ export const KanbanBoard = () => {
           ))}
         </div>
       </div>
+
+      {isWorkspaceModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+          <div className="w-full max-w-md rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-5 shadow-2xl">
+            <div className="text-lg font-semibold text-[var(--obsidian-text)]">Create workspace</div>
+            <div className="mt-1 text-sm text-[var(--obsidian-text-muted)]">
+              Add a name for your new Kanban tab.
+            </div>
+            <input
+              ref={newWorkspaceInputRef}
+              value={newWorkspaceName}
+              onChange={(e) => setNewWorkspaceName(e.target.value)}
+              placeholder="Workspace name"
+              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') addWorkspace()
+                if (e.key === 'Escape') {
+                  setIsWorkspaceModalOpen(false)
+                  setNewWorkspaceName('')
+                }
+              }}
+            />
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsWorkspaceModalOpen(false)
+                  setNewWorkspaceName('')
+                }}
+                className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={addWorkspace}
+                className="rounded bg-[var(--obsidian-accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {workspaceContextMenu ? (
+        <ContextMenu
+          x={workspaceContextMenu.x}
+          y={workspaceContextMenu.y}
+          onClose={() => setWorkspaceContextMenu(null)}
+        >
+          <ContextMenuItem
+            onClick={() => {
+              removeWorkspace(workspaceContextMenu.workspaceId)
+              setWorkspaceContextMenu(null)
+            }}
+          >
+            Delete
+          </ContextMenuItem>
+        </ContextMenu>
+      ) : null}
     </div>
   )
 }
