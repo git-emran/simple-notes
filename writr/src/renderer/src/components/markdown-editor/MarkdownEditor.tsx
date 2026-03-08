@@ -43,6 +43,7 @@ import { createLivePreviewImages } from './livePreviewImages'
 import { toLocalFileUrl } from './localFileUrl'
 import { tripleBacktickExtension } from './tripleBacktick'
 import { quoteLineStyling } from './quoteLineStyling'
+import { createClipboardExperience } from './clipboardExperience'
 import { MdDragIndicator } from "react-icons/md";
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import * as commands from './editorCommands'
@@ -324,6 +325,80 @@ export const MarkdownEditor = () => {
     return debouncedSetContent.cancel
   }, [currentContent, debouncedSetContent])
 
+  const insertTextAtCursor = useCallback((view: EditorView, text: string) => {
+    const selection = view.state.selection.main
+    view.dispatch({
+      changes: { from: selection.from, to: selection.to, insert: text },
+      selection: { anchor: selection.from + text.length }
+    })
+    view.focus()
+  }, [])
+
+  const extensionFromMimeType = useCallback((mimeType: string) => {
+    switch (mimeType.toLowerCase()) {
+      case 'image/png':
+        return '.png'
+      case 'image/jpeg':
+        return '.jpg'
+      case 'image/gif':
+        return '.gif'
+      case 'image/webp':
+        return '.webp'
+      case 'image/svg+xml':
+        return '.svg'
+      case 'image/bmp':
+        return '.bmp'
+      default:
+        return ''
+    }
+  }, [])
+
+  const importImageFilesAsMarkdownLinks = useCallback(
+    async (files: File[]) => {
+      if (!selectedNote?.path || files.length === 0) return []
+
+      const insertedLinks: string[] = []
+
+      for (const file of files) {
+        const sourcePath = (file as File & { path?: string }).path
+        const result = sourcePath
+          ? await window.context.importImageToRootImageFolder({ sourcePath })
+          : await (async () => {
+              const buffer = new Uint8Array(await file.arrayBuffer())
+              const originalName = file.name?.trim() || 'image'
+              const hasExtension = /\.[a-z0-9]+$/i.test(originalName)
+              const effectiveName = hasExtension
+                ? originalName
+                : `${originalName}${extensionFromMimeType(file.type)}`
+              return window.context.importImageToRootImageFolder({
+                fileName: effectiveName,
+                data: buffer,
+              })
+            })()
+
+        if (result?.markdownPath) insertedLinks.push(`![[${result.markdownPath}]]`)
+      }
+
+      return insertedLinks
+    },
+    [extensionFromMimeType, selectedNote?.path]
+  )
+
+  const handleClipboardImagePaste = useCallback(
+    async (clipboardData: DataTransfer) => {
+      const itemFiles = Array.from(clipboardData.items ?? [])
+        .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null)
+      const imageFiles = itemFiles.length
+        ? itemFiles
+        : Array.from(clipboardData.files ?? []).filter((file) => file.type.startsWith('image/'))
+
+      return importImageFilesAsMarkdownLinks(imageFiles)
+    },
+    [importImageFilesAsMarkdownLinks]
+  )
+
   const baseExtensions = useMemo(
     () => [
       history(),
@@ -373,6 +448,7 @@ export const MarkdownEditor = () => {
       autocompletion({ activateOnTyping: true, icons: true }),
       markdownTableEnhancement,
       checkboxExtension,
+      createClipboardExperience({ importImages: handleClipboardImagePaste }),
       statusBarExtension,
       codeBlockCopy,
       codeBlockBackground,
@@ -390,6 +466,7 @@ export const MarkdownEditor = () => {
       tabIndentCompartment,
       themeCompartment,
       vimCompartment,
+      handleClipboardImagePaste,
     ]
   )
 
@@ -438,15 +515,6 @@ export const MarkdownEditor = () => {
     await queueSave(content, notePath)
   }, [queueSave, debouncedSave])
 
-  const insertTextAtCursor = useCallback((view: EditorView, text: string) => {
-    const selection = view.state.selection.main
-    view.dispatch({
-      changes: { from: selection.from, to: selection.to, insert: text },
-      selection: { anchor: selection.from + text.length }
-    })
-    view.focus()
-  }, [])
-
   const handleEditorImageDrop = useCallback(
     async (event: DragEvent, view: EditorView) => {
       if (!selectedNote?.path) return false
@@ -460,46 +528,7 @@ export const MarkdownEditor = () => {
       if (imageFiles.length === 0) return false
 
       event.preventDefault()
-
-      const insertedLinks: string[] = []
-      const extensionFromMimeType = (mimeType: string) => {
-        switch (mimeType.toLowerCase()) {
-          case 'image/png':
-            return '.png'
-          case 'image/jpeg':
-            return '.jpg'
-          case 'image/gif':
-            return '.gif'
-          case 'image/webp':
-            return '.webp'
-          case 'image/svg+xml':
-            return '.svg'
-          case 'image/bmp':
-            return '.bmp'
-          default:
-            return ''
-        }
-      }
-
-      for (const file of imageFiles) {
-        const sourcePath = (file as File & { path?: string }).path
-        const result = sourcePath
-          ? await window.context.importImageToRootImageFolder({ sourcePath })
-          : await (async () => {
-              const buffer = new Uint8Array(await file.arrayBuffer())
-              const originalName = file.name?.trim() || 'image'
-              const hasExtension = /\.[a-z0-9]+$/i.test(originalName)
-              const effectiveName = hasExtension
-                ? originalName
-                : `${originalName}${extensionFromMimeType(file.type)}`
-              return window.context.importImageToRootImageFolder({
-                fileName: effectiveName,
-                data: buffer,
-              })
-            })()
-
-        if (result?.markdownPath) insertedLinks.push(`![[${result.markdownPath}]]`)
-      }
+      const insertedLinks = await importImageFilesAsMarkdownLinks(imageFiles)
 
       if (insertedLinks.length > 0) {
         insertTextAtCursor(view, `${insertedLinks.join('\n')}\n`)
@@ -507,7 +536,7 @@ export const MarkdownEditor = () => {
 
       return insertedLinks.length > 0
     },
-    [insertTextAtCursor, selectedNote?.path]
+    [importImageFilesAsMarkdownLinks, insertTextAtCursor, selectedNote?.path]
   )
 
   const handleExportPdf = useCallback(async () => {
