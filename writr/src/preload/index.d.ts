@@ -18,7 +18,12 @@ import {
   ImportImageToRootImageFolder,
   GetRootDir,
   ListFreeAiModels,
-  GenerateWithAi
+  GenerateWithAi,
+  CreateTerminalSession,
+  GetTerminalSnapshot,
+  CloseTerminalSession,
+  TerminalDataEvent,
+  TerminalExitEvent
 } from '@shared/types'
 
 declare global {
@@ -45,6 +50,13 @@ declare global {
       getRootDir: GetRootDir
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi
+      createTerminalSession: CreateTerminalSession
+      getTerminalSnapshot: GetTerminalSnapshot
+      closeTerminalSession: CloseTerminalSession
+      writeTerminalInput: (sessionId: string, data: string) => void
+      resizeTerminalSession: (sessionId: string, cols: number, rows: number) => void
+      onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void
+      onTerminalExit: (callback: (event: TerminalExitEvent) => void) => () => void
     }
   }
 }

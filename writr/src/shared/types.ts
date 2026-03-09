@@ -48,3 +48,40 @@ export type GenerateWithAiParams = {
 export type GenerateWithAi = (
   params: GenerateWithAiParams
 ) => Promise<{ text: string } | { error: string }>
+
+export type CreateTerminalSessionParams = {
+  cwd?: string
+  cols?: number
+  rows?: number
+}
+
+export type TerminalSessionInfo = {
+  sessionId: string
+  cwd: string
+  shell: string
+}
+
+export type TerminalSnapshot = TerminalSessionInfo & {
+  buffer: string
+  sequence: number
+}
+
+export type TerminalDataEvent = {
+  sessionId: string
+  data: string
+  sequence: number
+}
+
+export type TerminalExitEvent = {
+  sessionId: string
+  exitCode: number
+  signal?: number
+}
+
+export type CreateTerminalSession = (
+  params?: CreateTerminalSessionParams
+) => Promise<TerminalSessionInfo>
+export type GetTerminalSnapshot = (sessionId: string) => Promise<TerminalSnapshot | null>
+export type CloseTerminalSession = (sessionId: string) => Promise<void>
+export type WriteTerminalInput = (sessionId: string, data: string) => void
+export type ResizeTerminalSession = (sessionId: string, cols: number, rows: number) => void

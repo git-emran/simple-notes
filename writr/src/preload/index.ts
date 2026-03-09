@@ -18,7 +18,12 @@ import {
   ImportImageToRootImageFolder,
   GetRootDir,
   ListFreeAiModels,
-  GenerateWithAi
+  GenerateWithAi,
+  CreateTerminalSession,
+  GetTerminalSnapshot,
+  CloseTerminalSession,
+  TerminalDataEvent,
+  TerminalExitEvent
 } from '@shared/types'
 import { contextBridge, ipcRenderer } from 'electron'
 
@@ -59,7 +64,29 @@ try {
     listFreeAiModels: (...args: Parameters<ListFreeAiModels>) =>
       ipcRenderer.invoke('listFreeAiModels', ...args),
     generateWithAi: (...args: Parameters<GenerateWithAi>) =>
-      ipcRenderer.invoke('generateWithAi', ...args)
+      ipcRenderer.invoke('generateWithAi', ...args),
+    createTerminalSession: (...args: Parameters<CreateTerminalSession>) =>
+      ipcRenderer.invoke('terminal:create', ...args),
+    getTerminalSnapshot: (...args: Parameters<GetTerminalSnapshot>) =>
+      ipcRenderer.invoke('terminal:snapshot', ...args),
+    closeTerminalSession: (...args: Parameters<CloseTerminalSession>) =>
+      ipcRenderer.invoke('terminal:close', ...args),
+    writeTerminalInput: (sessionId: string, data: string) =>
+      ipcRenderer.send('terminal:input', { sessionId, data }),
+    resizeTerminalSession: (sessionId: string, cols: number, rows: number) =>
+      ipcRenderer.send('terminal:resize', { sessionId, cols, rows }),
+    onTerminalData: (callback: (event: TerminalDataEvent) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: TerminalDataEvent) =>
+        callback(payload)
+      ipcRenderer.on('terminal:data', listener)
+      return () => ipcRenderer.removeListener('terminal:data', listener)
+    },
+    onTerminalExit: (callback: (event: TerminalExitEvent) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: TerminalExitEvent) =>
+        callback(payload)
+      ipcRenderer.on('terminal:exit', listener)
+      return () => ipcRenderer.removeListener('terminal:exit', listener)
+    }
   })
 } catch (error) {
   console.error(error)

@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import { activeTabIdAtom, closeTabAtom, createNewTabAtom, setActiveTabAtom, tabsAtom } from '@renderer/store'
-import { VscAdd, VscClose } from 'react-icons/vsc'
+import { VscAdd, VscClose, VscProject, VscTerminal } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { type CSSProperties } from 'react'
 
@@ -39,6 +39,12 @@ export const EditorTabs = () => {
             {!isActive && (
                 <div className="absolute right-0 top-2 bottom-2 w-[1px] bg-[var(--obsidian-border-soft)]" />
             )}
+
+            {tab.kind === 'terminal' ? (
+              <VscTerminal className="mr-2 h-3.5 w-3.5 shrink-0 opacity-80" />
+            ) : tab.kind === 'kanban' ? (
+              <VscProject className="mr-2 h-3.5 w-3.5 shrink-0 opacity-80" />
+            ) : null}
 
             <span className={twMerge(
                 "text-[11px] font-medium truncate flex-1 tracking-tight",

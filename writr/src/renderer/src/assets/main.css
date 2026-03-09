@@ -198,6 +198,39 @@ header {
   background-color: transparent;
 }
 
+.terminal-host {
+  contain: layout paint;
+}
+
+.terminal-host .xterm {
+  height: 100%;
+  background-color: inherit;
+  overflow-anchor: none;
+}
+
+.terminal-host .xterm.terminal-resizing {
+  will-change: width, height;
+}
+
+.terminal-host .xterm.terminal-resizing .xterm-cursor-layer {
+  visibility: hidden;
+}
+
+.terminal-host .xterm-viewport {
+  background-color: inherit !important;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.terminal-host .xterm-screen canvas {
+  image-rendering: optimizeSpeed;
+}
+
+.terminal-host .xterm .xterm-helpers textarea {
+  opacity: 0;
+}
+
 /* Print Styles for Canvas Export */
 .canvas-printing {
   background: white !important;

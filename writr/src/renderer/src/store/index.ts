@@ -66,9 +66,10 @@ export const selectedNodeAtom = atom<FileNode | null>(null)
 /* Tabs State */
 export type EditorTab = {
   id: string
-  kind: 'empty' | 'file' | 'kanban'
+  kind: 'empty' | 'file' | 'kanban' | 'terminal'
   path: string | null
   name: string
+  terminalSessionId?: string | null
 }
 
 const getNameFromPath = (filePath: string) => {
@@ -99,6 +100,12 @@ export const activeTabKindAtom = atom<EditorTab['kind']>((get) => {
   const activeId = get(activeTabIdAtom)
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0]
   return activeTab?.kind ?? 'empty'
+})
+
+export const activeTabAtom = atom<EditorTab | null>((get) => {
+  const tabs = get(tabsAtom)
+  const activeId = get(activeTabIdAtom)
+  return tabs.find((t) => t.id === activeId) ?? tabs[0] ?? null
 })
 
 export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
@@ -146,6 +153,41 @@ export const createKanbanTabAtom = atom(null, (get, set) => {
   set(selectedNodeAtom, null)
 })
 
+export const createTerminalTabAtom = atom(null, (get, set) => {
+  const tabs = get(tabsAtom)
+  const existing = tabs.find((tab) => tab.kind === 'terminal')
+  if (existing) {
+    set(activeTabIdAtom, existing.id)
+    set(selectedNodeAtom, null)
+    return
+  }
+
+  const nextTab: EditorTab = {
+    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    kind: 'terminal',
+    path: null,
+    name: 'Terminal',
+    terminalSessionId: null,
+  }
+
+  set(tabsAtom, [...tabs, nextTab])
+  set(activeTabIdAtom, nextTab.id)
+  set(selectedNodeAtom, null)
+})
+
+export const setTerminalSessionIdAtom = atom(
+  null,
+  (get, set, payload: { tabId: string; sessionId: string | null }) => {
+    const tabs = get(tabsAtom)
+    set(
+      tabsAtom,
+      tabs.map((tab) =>
+        tab.id === payload.tabId ? { ...tab, terminalSessionId: payload.sessionId } : tab
+      )
+    )
+  }
+)
+
 export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   if (node.type !== 'file') return
 
@@ -162,21 +204,42 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   }
 
   const activeTab = tabs.find((t) => t.id === activeId)
-  const targetId =
-    activeTab?.kind === 'kanban'
-      ? (tabs.find((t) => t.kind !== 'kanban')?.id ?? activeId)
-      : activeId
+  const activeIsSpecial = activeTab?.kind === 'kanban' || activeTab?.kind === 'terminal'
 
-  if (targetId !== activeId) {
-    set(activeTabIdAtom, targetId)
+  if (activeIsSpecial) {
+    const reusableTab = tabs.find((t) => t.kind === 'file' || t.kind === 'empty')
+    if (!reusableTab) {
+      const nextTab: EditorTab = {
+        id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        kind: 'file',
+        path: node.path,
+        name,
+      }
+      set(tabsAtom, [...tabs, nextTab])
+      set(activeTabIdAtom, nextTab.id)
+      set(selectedNodeAtom, node)
+      return
+    }
+
+    set(activeTabIdAtom, reusableTab.id)
+    set(
+      tabsAtom,
+      tabs.map((tab) => {
+        if (tab.id !== reusableTab.id) return tab
+        return { ...tab, kind: 'file' as const, path: node.path, name, terminalSessionId: null }
+      })
+    )
+    set(selectedNodeAtom, node)
+    return
   }
 
-  const nextTabs = tabs.map((tab) => {
-    if (tab.id !== targetId) return tab
-    return { ...tab, kind: 'file' as const, path: node.path, name }
-  })
-
-  set(tabsAtom, nextTabs)
+  set(
+    tabsAtom,
+    tabs.map((tab) => {
+      if (tab.id !== activeId) return tab
+      return { ...tab, kind: 'file' as const, path: node.path, name, terminalSessionId: null }
+    })
+  )
   set(selectedNodeAtom, node)
 })
 
@@ -242,7 +305,15 @@ export const closeTabAtom = atom(null, (get, set, tabId: string) => {
   if (!closingTab) return
 
   const history = get(closedTabsHistoryAtom)
-  set(closedTabsHistoryAtom, [...history, closingTab])
+  const historyEntry =
+    closingTab.kind === 'terminal'
+      ? { ...closingTab, terminalSessionId: null }
+      : closingTab
+  set(closedTabsHistoryAtom, [...history, historyEntry])
+
+  if (closingTab.kind === 'terminal' && closingTab.terminalSessionId) {
+    void window.context.closeTerminalSession(closingTab.terminalSessionId)
+  }
 
   const nextTabs = tabs.filter((t) => t.id !== tabId)
   if (nextTabs.length === 0) {

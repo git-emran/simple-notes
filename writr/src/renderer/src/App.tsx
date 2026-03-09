@@ -11,16 +11,18 @@ import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
 import { SettingsModal } from './components/SettingsModal'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
+import { TerminalTab } from './components/terminal/TerminalTab'
 import { useRef, useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { 
+  activeTabAtom,
   createDailyNoteAtom, 
   switchTabByIndexAtom, 
   closeActiveTabAtom, 
   restoreClosedTabAtom,
   createCanvasAtom,
+  createTerminalTabAtom,
   selectedNodeAtom,
-  activeTabKindAtom,
   createKanbanTabAtom,
   editorFontAtom,
   editorFontSizeAtom,
@@ -37,6 +39,7 @@ import {
   VscChevronRight,
   VscProject,
   VscSymbolRuler,
+  VscTerminal,
   VscSettingsGear
 } from 'react-icons/vsc'
 
@@ -56,8 +59,9 @@ const App = () => {
   const restoreClosedTab = useSetAtom(restoreClosedTabAtom)
   const createCanvas = useSetAtom(createCanvasAtom)
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
+  const createTerminalTab = useSetAtom(createTerminalTabAtom)
   const selectedNode = useAtomValue(selectedNodeAtom)
-  const activeTabKind = useAtomValue(activeTabKindAtom)
+  const activeTab = useAtomValue(activeTabAtom)
   const themeMode = useAtomValue(themeModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
@@ -272,7 +276,17 @@ const App = () => {
               <VscProject />
             </button>
             <button
-              className={`obsidian-ribbon-btn ${appMode === 'canvas' ? 'is-active' : ''}`}
+              className={`obsidian-ribbon-btn ${activeTab?.kind === 'terminal' ? 'is-active' : ''}`}
+              title="Terminal"
+              onClick={() => {
+                setCollapsed(false)
+                createTerminalTab()
+              }}
+            >
+              <VscTerminal />
+            </button>
+            <button
+              className={`obsidian-ribbon-btn ${activeTab?.kind === 'file' && appMode === 'canvas' ? 'is-active' : ''}`}
               title="Canvas"
               onClick={handleCanvasClick}
             >
@@ -303,7 +317,12 @@ const App = () => {
             className="relative h-full flex flex-col obsidian-workspace"
           >
             <div className="flex-1 overflow-hidden h-full">
-              {activeTabKind === 'kanban' ? (
+              {activeTab?.kind === 'terminal' ? (
+                <TerminalTab
+                  key={activeTab.id}
+                  tab={activeTab as typeof activeTab & { kind: 'terminal' }}
+                />
+              ) : activeTab?.kind === 'kanban' ? (
                 <KanbanBoard />
               ) : (
                 (appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />)

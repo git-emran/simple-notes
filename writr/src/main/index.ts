@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, protocol, Menu } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, protocol, Menu, type MenuItemConstructorOptions } from 'electron'
 import { join } from 'path'
 import path from 'path'
 import { promises as fs } from 'fs'
@@ -27,6 +27,14 @@ import {
   generateWithAi
 } from '@/lib'
 import {
+  closeTerminalSession,
+  createTerminalSession,
+  disposeTerminalSessionsForSender,
+  getTerminalSnapshot,
+  resizeTerminalSession,
+  writeTerminalInput,
+} from '@/lib/terminal'
+import {
   CreateNote,
   DeleteNote,
   GetNotes,
@@ -46,7 +54,10 @@ import {
   ImportImageToNoteFolder,
   ImportImageToRootImageFolder,
   ListFreeAiModels,
-  GenerateWithAi
+  GenerateWithAi,
+  CreateTerminalSession,
+  GetTerminalSnapshot,
+  CloseTerminalSession
 } from '@shared/types'
 
 protocol.registerSchemesAsPrivileged([
@@ -80,6 +91,10 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  mainWindow.webContents.once('destroyed', () => {
+    disposeTerminalSessionsForSender(mainWindow.webContents)
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     try {
       const url = new URL(details.url)
@@ -99,64 +114,26 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.electron')
+const configureApplicationMenu = () => {
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null)
+    return
+  }
 
-  /* Set a custom application menu to stabilize native menu model on macOS */
-  const menuTemplate: any[] = [
-    {
-      label: app.name,
-      submenu: [
-        { role: 'about' },
-        { type: 'separator' },
-        { role: 'services' },
-        { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideOthers' },
-        { role: 'unhide' },
-        { type: 'separator' },
-        { role: 'quit' }
-      ]
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' }
-      ]
-    },
-    {
-      label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'zoom' },
-        { type: 'separator' },
-        { role: 'front' }
-      ]
-    }
+  const template: MenuItemConstructorOptions[] = [
+    { role: 'appMenu' },
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' }
   ]
 
-  const menu = Menu.buildFromTemplate(menuTemplate)
-  Menu.setApplicationMenu(menu)
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
+app.whenReady().then(() => {
+  electronApp.setAppUserModelId('com.electron')
+  configureApplicationMenu()
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -197,6 +174,21 @@ app.whenReady().then(() => {
     listFreeAiModels(...args)
   )
   ipcMain.handle('generateWithAi', (_, ...args: Parameters<GenerateWithAi>) => generateWithAi(...args))
+  ipcMain.handle('terminal:create', (event, ...args: Parameters<CreateTerminalSession>) =>
+    createTerminalSession(event.sender, ...args)
+  )
+  ipcMain.handle('terminal:snapshot', (event, ...args: Parameters<GetTerminalSnapshot>) =>
+    getTerminalSnapshot(event.sender, ...args)
+  )
+  ipcMain.handle('terminal:close', (event, ...args: Parameters<CloseTerminalSession>) => {
+    closeTerminalSession(event.sender, ...args)
+  })
+  ipcMain.on('terminal:input', (event, payload: { sessionId: string; data: string }) => {
+    writeTerminalInput(event.sender, payload.sessionId, payload.data)
+  })
+  ipcMain.on('terminal:resize', (event, payload: { sessionId: string; cols: number; rows: number }) => {
+    resizeTerminalSession(event.sender, payload.sessionId, payload.cols, payload.rows)
+  })
   
   protocol.handle('local-file', async (request) => {
     try {
