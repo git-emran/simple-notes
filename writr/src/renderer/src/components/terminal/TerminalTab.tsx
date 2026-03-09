@@ -164,7 +164,8 @@ export const TerminalTab = ({ tab }: TerminalTabProps) => {
         session = await window.context.createTerminalSession({
           cwd: notesRootDir ?? undefined,
         })
-      } catch {
+      } catch (error) {
+        console.error('[terminal] createTerminalSession failed', error)
         if (!cancelled && initRunRef.current === runId) {
           setStatusText('Failed to start shell')
         }

@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import { chmodSync, existsSync, statSync } from 'fs'
+import { accessSync, chmodSync, constants, existsSync, statSync } from 'fs'
 import { homedir } from 'os'
 import path from 'path'
 import type { WebContents } from 'electron'
@@ -26,31 +26,61 @@ const MAX_BUFFER_LENGTH = 1_000_000
 const sessions = new Map<string, TerminalSessionRecord>()
 let hasEnsuredSpawnHelperPermissions = false
 
+const toUnpackedAsarPath = (targetPath: string) =>
+  targetPath.replace(/([\\/])app\.asar([\\/])/, '$1app.asar.unpacked$2')
+
+const resolveSpawnHelperPath = () => {
+  const nodePtyDir = path.dirname(require.resolve('node-pty/package.json'))
+  const helperPath = path.join(nodePtyDir, 'prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper')
+  if (existsSync(helperPath)) return helperPath
+
+  const unpackedHelperPath = toUnpackedAsarPath(helperPath)
+  if (unpackedHelperPath !== helperPath && existsSync(unpackedHelperPath)) {
+    return unpackedHelperPath
+  }
+
+  return null
+}
+
 const ensureNodePtySpawnHelperExecutable = () => {
   if (hasEnsuredSpawnHelperPermissions || process.platform === 'win32') return
 
-  const nodePtyDir = path.dirname(require.resolve('node-pty/package.json'))
-  const helperPath = path.join(nodePtyDir, 'prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper')
-
-  if (!existsSync(helperPath)) {
+  const helperPath = resolveSpawnHelperPath()
+  if (!helperPath) {
     hasEnsuredSpawnHelperPermissions = true
     return
   }
 
-  const mode = statSync(helperPath).mode & 0o777
-  if ((mode & 0o111) === 0) {
-    chmodSync(helperPath, mode | 0o755)
+  try {
+    const mode = statSync(helperPath).mode & 0o777
+    if ((mode & 0o111) === 0) {
+      chmodSync(helperPath, mode | 0o755)
+    }
+  } catch (error) {
+    console.warn('[terminal] Unable to ensure node-pty spawn-helper permissions', error)
   }
 
   hasEnsuredSpawnHelperPermissions = true
 }
 
-const getDefaultShell = () => {
+const getShellCandidates = () => {
   if (process.platform === 'win32') {
-    return process.env['COMSPEC'] || 'powershell.exe'
+    return [
+      process.env['COMSPEC'],
+      'pwsh.exe',
+      'powershell.exe',
+      'cmd.exe',
+    ].filter(Boolean) as string[]
   }
 
-  return process.env['SHELL'] || (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash')
+  const candidates = [
+    process.env['SHELL'],
+    process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash',
+    '/bin/bash',
+    '/bin/sh',
+  ].filter(Boolean) as string[]
+
+  return Array.from(new Set(candidates))
 }
 
 const getShellArgs = (shellPath: string) => {
@@ -73,6 +103,59 @@ const resolveCwd = (candidate?: string) => {
   return homedir()
 }
 
+const isShellUsable = (shellPath: string) => {
+  if (!shellPath) return false
+  if (process.platform === 'win32') return true
+
+  try {
+    accessSync(shellPath, constants.X_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const getTerminalEnv = () => {
+  const fallbackPath =
+    process.platform === 'darwin'
+      ? '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'
+      : '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
+  return {
+    ...process.env,
+    PATH: process.env['PATH'] || fallbackPath,
+    TERM: 'xterm-256color',
+    COLORTERM: 'truecolor',
+    TERM_PROGRAM: 'Writr',
+  }
+}
+
+const spawnTerminalProcess = (cwd: string, cols: number, rows: number) => {
+  const errors: string[] = []
+  for (const shell of getShellCandidates()) {
+    if (!isShellUsable(shell)) {
+      errors.push(`Shell not executable: ${shell}`)
+      continue
+    }
+
+    try {
+      const terminalProcess = pty.spawn(shell, getShellArgs(shell), {
+        name: 'xterm-256color',
+        cols,
+        rows,
+        cwd,
+        env: getTerminalEnv(),
+      })
+      return { shell, terminalProcess }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      errors.push(`Spawn failed for ${shell}: ${message}`)
+    }
+  }
+
+  throw new Error(errors.join(' | ') || 'No shell candidates available')
+}
+
 const appendToBuffer = (session: TerminalSessionRecord, chunk: string) => {
   session.buffer += chunk
   if (session.buffer.length > MAX_BUFFER_LENGTH) {
@@ -93,24 +176,11 @@ export const createTerminalSession = (
 ): TerminalSessionInfo => {
   ensureNodePtySpawnHelperExecutable()
 
-  const shell = getDefaultShell()
   const cwd = resolveCwd(params?.cwd)
   const id = randomUUID()
   const cols = Math.max(40, params?.cols ?? 120)
   const rows = Math.max(10, params?.rows ?? 32)
-
-  const terminalProcess = pty.spawn(shell, getShellArgs(shell), {
-    name: 'xterm-256color',
-    cols,
-    rows,
-    cwd,
-    env: {
-      ...process.env,
-      TERM: 'xterm-256color',
-      COLORTERM: 'truecolor',
-      TERM_PROGRAM: 'Writr',
-    },
-  })
+  const { shell, terminalProcess } = spawnTerminalProcess(cwd, cols, rows)
 
   const session: TerminalSessionRecord = {
     id,
