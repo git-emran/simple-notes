@@ -455,7 +455,7 @@ export const MarkdownEditor = () => {
       quoteLineStyling,
       tripleBacktickExtension,
       markdownMarkupColors,
-      EditorView.contentAttributes.of({ spellcheck: 'false' }),
+      EditorView.contentAttributes.of({ spellcheck: 'true' }),
     ],
     [
       highlightCompartment,
