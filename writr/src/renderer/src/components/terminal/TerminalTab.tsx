@@ -25,6 +25,7 @@ const MIN_FONT_SIZE = 12
 const MAX_FONT_SIZE = 22
 const WRITE_BATCH_SIZE = 32_768
 const MAX_PENDING_PRE_SNAPSHOT_EVENTS = 2_000
+const SNAPSHOT_FALLBACK_MS = 1_200
 
 const getTerminalTheme = (isDarkMode: boolean) => {
   if (isDarkMode) {
@@ -138,7 +139,13 @@ export const TerminalTab = ({ tab }: TerminalTabProps) => {
     const initializeSession = async () => {
       const existingSessionId = tab.terminalSessionId
       if (existingSessionId) {
-        const snapshot = await window.context.getTerminalSnapshot(existingSessionId)
+        let snapshot: Awaited<ReturnType<typeof window.context.getTerminalSnapshot>> = null
+        try {
+          snapshot = await window.context.getTerminalSnapshot(existingSessionId)
+        } catch {
+          snapshot = null
+        }
+
         if (!snapshot) {
           if (cancelled || initRunRef.current !== runId) return
           setTerminalSessionId({ tabId: tab.id, sessionId: null })
@@ -152,9 +159,17 @@ export const TerminalTab = ({ tab }: TerminalTabProps) => {
         }
       }
 
-      const session = await window.context.createTerminalSession({
-        cwd: notesRootDir ?? undefined,
-      })
+      let session: Awaited<ReturnType<typeof window.context.createTerminalSession>>
+      try {
+        session = await window.context.createTerminalSession({
+          cwd: notesRootDir ?? undefined,
+        })
+      } catch {
+        if (!cancelled && initRunRef.current === runId) {
+          setStatusText('Failed to start shell')
+        }
+        return
+      }
 
       if (cancelled || initRunRef.current !== runId) {
         await window.context.closeTerminalSession(session.sessionId)
@@ -361,6 +376,26 @@ export const TerminalTab = ({ tab }: TerminalTabProps) => {
       enqueueTerminalWrite(event.data)
     }
 
+    const flushPendingEvents = () => {
+      if (pendingEventsRef.current.length === 0) return
+      pendingEventsRef.current.sort((a, b) => a.sequence - b.sequence)
+      for (const event of pendingEventsRef.current) {
+        if (event.sequence <= lastSequenceRef.current) continue
+        lastSequenceRef.current = event.sequence
+        enqueueTerminalWrite(event.data)
+      }
+      pendingEventsRef.current = []
+    }
+
+    const unlockLiveStreamWithoutSnapshot = () => {
+      if (snapshotReadyRef.current) return
+      snapshotReadyRef.current = true
+      setStatusText('Connected')
+      flushPendingEvents()
+      lastAppliedSizeRef.current = null
+      scheduleFit()
+    }
+
     const unsubscribeData = window.context.onTerminalData((event) => {
       if (event.sessionId !== sessionId) return
       queueOrWriteDataEvent(event)
@@ -375,37 +410,56 @@ export const TerminalTab = ({ tab }: TerminalTabProps) => {
       }, 0)
     })
 
-    void window.context.getTerminalSnapshot(sessionId).then((snapshot) => {
-      if (disposed) return
-      snapshotReadyRef.current = true
-      if (!snapshot) {
-        setStatusText('Session unavailable')
-        return
-      }
+    let snapshotSettled = false
+    const snapshotFallbackTimer = window.setTimeout(() => {
+      if (disposed || snapshotSettled) return
+      unlockLiveStreamWithoutSnapshot()
+    }, SNAPSHOT_FALLBACK_MS)
 
-      setShellLabel(getShellLabel(snapshot.shell))
-      setCwdLabel(snapshot.cwd)
-      setStatusText('Connected')
-      lastSequenceRef.current = snapshot.sequence
-      if (snapshot.buffer) {
-        enqueueTerminalWrite(snapshot.buffer)
-      }
+    void window.context
+      .getTerminalSnapshot(sessionId)
+      .then((snapshot) => {
+        if (disposed) return
+        snapshotSettled = true
+        window.clearTimeout(snapshotFallbackTimer)
 
-      if (pendingEventsRef.current.length > 0) {
-        for (const event of pendingEventsRef.current) {
-          if (event.sequence <= lastSequenceRef.current) continue
-          lastSequenceRef.current = event.sequence
-          enqueueTerminalWrite(event.data)
+        const liveFallbackAlreadyUnlocked = snapshotReadyRef.current
+        if (!snapshot) {
+          if (!liveFallbackAlreadyUnlocked) {
+            setStatusText('Reconnecting...')
+            setTerminalSessionId({ tabId: tab.id, sessionId: null })
+            setSessionId(null)
+          }
+          return
         }
-        pendingEventsRef.current = []
-      }
 
-      lastAppliedSizeRef.current = null
-      scheduleFit()
-      focusTimerRef.current = window.setTimeout(() => {
-        if (!disposed) term.focus()
-      }, 20)
-    })
+        setShellLabel(getShellLabel(snapshot.shell))
+        setCwdLabel(snapshot.cwd)
+
+        if (liveFallbackAlreadyUnlocked) {
+          return
+        }
+
+        snapshotReadyRef.current = true
+        setStatusText('Connected')
+        lastSequenceRef.current = snapshot.sequence
+        if (snapshot.buffer) {
+          enqueueTerminalWrite(snapshot.buffer)
+        }
+
+        flushPendingEvents()
+        lastAppliedSizeRef.current = null
+        scheduleFit()
+        focusTimerRef.current = window.setTimeout(() => {
+          if (!disposed) term.focus()
+        }, 20)
+      })
+      .catch(() => {
+        if (disposed) return
+        snapshotSettled = true
+        window.clearTimeout(snapshotFallbackTimer)
+        unlockLiveStreamWithoutSnapshot()
+      })
     void document.fonts?.ready.then(() => {
       if (!disposed) scheduleFit()
     })
@@ -435,6 +489,7 @@ export const TerminalTab = ({ tab }: TerminalTabProps) => {
         window.clearTimeout(focusTimerRef.current)
         focusTimerRef.current = null
       }
+      window.clearTimeout(snapshotFallbackTimer)
       isResizeActiveRef.current = false
       setResizeVisualState(false)
       unsubscribeData()
