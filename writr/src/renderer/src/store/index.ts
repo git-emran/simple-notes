@@ -180,6 +180,23 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   set(selectedNodeAtom, node)
 })
 
+export const openInNewTabAtom = atom(null, (get, set, node: FileNode) => {
+  if (node.type !== 'file') return
+
+  const tabs = get(tabsAtom)
+  const name = getNameFromPath(node.path)
+  const nextTab: EditorTab = {
+    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    kind: 'file',
+    path: node.path,
+    name
+  }
+
+  set(tabsAtom, [...tabs, nextTab])
+  set(activeTabIdAtom, nextTab.id)
+  set(selectedNodeAtom, node)
+})
+
 const createFileNodeFromPath = (filePath: string): FileNode => {
   const normalized = filePath.replace(/\\/g, '/')
   const name = normalized.substring(normalized.lastIndexOf('/') + 1)

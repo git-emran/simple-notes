@@ -2,7 +2,7 @@ import { FileNode } from '@shared/models'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
 import { ComponentProps, memo, useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react'
-import { VscChevronDown, VscChevronRight, VscFile, VscFolder, VscFolderOpened, VscTrash } from 'react-icons/vsc'
+import { VscChevronDown, VscChevronRight, VscFile, VscFolder, VscFolderOpened } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 
 const INDENT_PX = 12
@@ -58,7 +58,6 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   expandedNodes?: Set<string>
   isExpanded?: boolean
   onToggleExpand: (nodeId: string) => void
-  onDelete?: (path: string) => void
   onDropNode?: (src: string, dest: string) => void
   onNodeContextMenu?: (node: FileNode, e: MouseEvent) => void
   onRenameComplete?: () => void
@@ -78,7 +77,6 @@ const FileTreeItemComponent = ({
   expandedNodes,
   isExpanded: isExpandedProp,
   onToggleExpand,
-  onDelete,
   onDropNode,
   onNodeContextMenu,
   onRenameComplete,
@@ -366,19 +364,6 @@ const FileTreeItemComponent = ({
         {nodeIcon && <span className="flex-shrink-0">{nodeIcon}</span>}
 
         {renderContent()}
-
-        {!isEditing && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete?.(node.path)
-            }}
-            className="invisible group-hover:visible self-center p-0.5 hover:bg-[var(--obsidian-hover)] rounded mr-2 text-[var(--obsidian-text-muted)] hover:text-red-400 transition-colors"
-            title="Delete"
-          >
-            <VscTrash className="w-3.5 h-3.5" />
-          </button>
-        )}
       </li>
 
       {renderChildren && node.type === 'folder' && isExpanded && node.children && expandedNodes && (
@@ -392,7 +377,6 @@ const FileTreeItemComponent = ({
               selectedPath={selectedPath}
               expandedNodes={expandedNodes}
               onToggleExpand={onToggleExpand}
-              onDelete={onDelete}
               onDropNode={onDropNode}
               onNodeContextMenu={onNodeContextMenu}
               showFolderIcons={showFolderIcons}
@@ -420,7 +404,6 @@ const propsAreEqual = (prev: FileTreeItemProps, next: FileTreeItemProps) => {
     prev.expandedNodes === next.expandedNodes &&
     prev.onNodeSelect === next.onNodeSelect &&
     prev.onToggleExpand === next.onToggleExpand &&
-    prev.onDelete === next.onDelete &&
     prev.onDropNode === next.onDropNode &&
     prev.onNodeContextMenu === next.onNodeContextMenu &&
     prev.className === next.className

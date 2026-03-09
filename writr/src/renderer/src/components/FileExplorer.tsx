@@ -11,6 +11,7 @@ import {
   notesRootDirAtom,
   noteStatusByPathAtom,
   noteTagByPathAtom,
+  openInNewTabAtom,
   openTabAtom,
   reindexTodoStatsAtom,
   showFolderIconsAtom,
@@ -20,7 +21,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { ComponentProps, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
-import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll } from 'react-icons/vsc'
+import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll, VscEdit, VscGoToFile, VscTrash } from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 
 /* Compact row height (Obsidian-like density). Must match FileTreeItem styling. */
@@ -45,6 +46,7 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const createDirectory = useSetAtom(createDirectoryAtom)
   const deleteNode = useSetAtom(deleteNodeAtom)
   const movePath = useSetAtom(movePathAtom)
+  const openInNewTab = useSetAtom(openInNewTabAtom)
   const openTab = useSetAtom(openTabAtom)
   const reindexTodoStats = useSetAtom(reindexTodoStatsAtom)
 
@@ -286,13 +288,6 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
   const handleExpandAll = useCallback(() => {
     setExpandedNodes(() => new Set(allFolderPaths))
   }, [allFolderPaths, setExpandedNodes])
-
-  const handleDelete = useCallback(
-    (path: string) => {
-      void deleteNode(path)
-    },
-    [deleteNode]
-  )
 
   const handleDropNode = useCallback(
     (src: string, dest: string) => {
@@ -539,7 +534,6 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
                 onNodeSelect={handleNodeSelect}
                 selectedPath={selectedNode?.path ?? null}
                 onToggleExpand={handleToggleExpand}
-                onDelete={handleDelete}
                 onDropNode={handleDropNode}
                 onNodeContextMenu={handleNodeContextMenu}
                 showFolderIcons={showFolderIcons}
@@ -569,19 +563,33 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
               setContextMenu(null)
             }}
           >
-            Rename
+            <VscEdit className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>Rename</span>
           </ContextMenuItem>
+          {contextMenu.node.type === 'file' && (
+            <ContextMenuItem
+              onClick={() => {
+                openInNewTab(contextMenu.node)
+                setContextMenu(null)
+              }}
+            >
+              <VscGoToFile className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+              <span>Open in New Tab</span>
+            </ContextMenuItem>
+          )}
           {contextMenu.node.type === 'folder' && (
             <>
               <ContextMenuItem
                 onClick={() => handleCreateFile(contextMenu.node.path)}
               >
-                New File
+                <VscNewFile className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+                <span>New File</span>
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => handleCreateFolder(contextMenu.node.path)}
               >
-                New Folder
+                <VscNewFolder className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+                <span>New Folder</span>
               </ContextMenuItem>
             </>
           )}
@@ -591,7 +599,8 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
               setContextMenu(null)
             }}
           >
-            Delete
+            <VscTrash className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>Delete</span>
           </ContextMenuItem>
         </ContextMenu>
       )}

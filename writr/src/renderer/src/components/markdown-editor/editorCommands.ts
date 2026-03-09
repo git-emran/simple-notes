@@ -1,10 +1,75 @@
 import { EditorView } from "@codemirror/view"
 
+const isRepeatedSingleCharacterDelimiter = (value: string) =>
+  value.length > 0 && value.split('').every((char) => char === value[0])
+
+const hasExactSelectedWrapper = (selected: string, before: string, after: string) => {
+  if (!selected.startsWith(before) || !selected.endsWith(after)) return false
+  if (selected.length < before.length + after.length) return false
+  if (before !== after || !isRepeatedSingleCharacterDelimiter(before)) return true
+
+  const delimiterChar = before[0]
+  return (
+    selected.charAt(before.length) !== delimiterChar &&
+    selected.charAt(selected.length - after.length - 1) !== delimiterChar
+  )
+}
+
+const hasExactSurroundingWrapper = (
+  view: EditorView,
+  from: number,
+  to: number,
+  before: string,
+  after: string
+) => {
+  if (from < before.length || to + after.length > view.state.doc.length) return false
+
+  const surroundingBefore = view.state.sliceDoc(from - before.length, from)
+  const surroundingAfter = view.state.sliceDoc(to, to + after.length)
+  if (surroundingBefore !== before || surroundingAfter !== after) return false
+  if (before !== after || !isRepeatedSingleCharacterDelimiter(before)) return true
+
+  const delimiterChar = before[0]
+  const charBeforeWrapper = from - before.length - 1 >= 0 ? view.state.sliceDoc(from - before.length - 1, from - before.length) : ''
+  const charAfterWrapper =
+    to + after.length < view.state.doc.length ? view.state.sliceDoc(to + after.length, to + after.length + 1) : ''
+
+  return charBeforeWrapper !== delimiterChar && charAfterWrapper !== delimiterChar
+}
+
 export const applyFormat = (view: EditorView | null, before: string, after: string = "") => {
   if (!view) return
 
   const { from, to, empty } = view.state.selection.main
   const selected = view.state.sliceDoc(from, to)
+
+  if (!empty && hasExactSelectedWrapper(selected, before, after)) {
+    const unwrapped = selected.slice(before.length, selected.length - after.length)
+    view.dispatch({
+      changes: { from, to, insert: unwrapped },
+      selection: {
+        anchor: from,
+        head: from + unwrapped.length
+      }
+    })
+    view.focus()
+    return
+  }
+
+  if (!empty && hasExactSurroundingWrapper(view, from, to, before, after)) {
+    view.dispatch({
+      changes: [
+        { from: to, to: to + after.length, insert: "" },
+        { from: from - before.length, to: from, insert: "" }
+      ],
+      selection: {
+        anchor: from - before.length,
+        head: to - before.length
+      }
+    })
+    view.focus()
+    return
+  }
 
   if (empty) {
     const insert = before + after
