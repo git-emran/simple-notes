@@ -258,7 +258,7 @@ export const MarkdownPreview = memo(({
 
           return isInline ? (
             <code
-              className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono before:content-none after:content-none"
+              className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono font-medium before:content-none after:content-none"
               {...rest}
             >
               {children}
