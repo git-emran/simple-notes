@@ -1,8 +1,12 @@
 import { atomWithStorage } from 'jotai/utils'
 
+export type KanbanCardPriority = 'low' | 'medium' | 'high' | null
+
 export type KanbanCard = {
   id: string
   text: string
+  description?: string
+  priority?: KanbanCardPriority
   completed?: boolean
 }
 
@@ -29,6 +33,9 @@ export type KanbanWorkspace = {
 }
 
 const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+const isKanbanCardPriority = (value: unknown): value is Exclude<KanbanCardPriority, null> =>
+  value === 'low' || value === 'medium' || value === 'high'
 
 const KANBAN_COLUMN_COLORS = [
   '#88C0D0', // muted cyan
@@ -82,9 +89,14 @@ export const createKanbanColumn = (title: string, color?: string): KanbanColumn 
   color: color ?? pickNewKanbanColumnColor(),
 })
 
-export const createKanbanCard = (text: string): KanbanCard => ({
+export const createKanbanCard = (
+  text: string,
+  options?: { description?: string; priority?: KanbanCardPriority }
+): KanbanCard => ({
   id: makeId('card'),
   text,
+  description: options?.description ?? '',
+  priority: options?.priority ?? 'low',
   completed: false,
 })
 
@@ -132,6 +144,19 @@ const DEFAULT_KANBAN_STATE: KanbanState = {
   workspaces: [defaultWorkspace],
 }
 
+const normalizeCard = (value: unknown): KanbanCard | null => {
+  const raw = value as Partial<KanbanCard> | null | undefined
+  if (!raw) return null
+
+  const id = typeof raw.id === 'string' && raw.id.trim() ? raw.id : makeId('card')
+  const text = typeof raw.text === 'string' ? raw.text : ''
+  const description = typeof raw.description === 'string' ? raw.description : ''
+  const priority: KanbanCardPriority =
+    raw.priority == null ? 'low' : isKanbanCardPriority(raw.priority) ? raw.priority : 'low'
+
+  return { id, text, description, priority, completed: Boolean(raw.completed) }
+}
+
 const normalizeColumn = (column: KanbanColumn): KanbanColumn => {
   const title =
     column.id === 'col-todo' && (column.title === 'To do' || column.title === 'Todo')
@@ -144,7 +169,7 @@ const normalizeColumn = (column: KanbanColumn): KanbanColumn => {
     ...column,
     title,
     color: column.color ?? stableKanbanColumnColor(column.id),
-    cards: Array.isArray(column.cards) ? column.cards : [],
+    cards: Array.isArray(column.cards) ? column.cards.map(normalizeCard).filter((c): c is KanbanCard => Boolean(c)) : [],
   }
 }
 

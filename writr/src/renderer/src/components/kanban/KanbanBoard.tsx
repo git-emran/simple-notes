@@ -12,8 +12,11 @@ import {
   normalizeKanbanState,
   pickNewKanbanColumnColor,
   type KanbanCard,
+  type KanbanCardPriority,
   type KanbanWorkspace,
 } from '@renderer/store/kanbanStore'
+import { TaskDetailsPanel } from './TaskDetailsPanel'
+import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint, priorityToPrefix } from './kanbanPriority'
 
 type DragPayload =
   | { kind: 'card'; columnId: string; cardId: string }
@@ -48,6 +51,7 @@ export const KanbanBoard = () => {
   } | null>(null)
   const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null)
   const [columnDropHint, setColumnDropHint] = useState<ColumnOverHint | null>(null)
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
 
   const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
@@ -73,6 +77,21 @@ export const KanbanBoard = () => {
 
   const columns = activeWorkspace?.columns ?? []
 
+  const selectedCardInfo = useMemo(() => {
+    if (!selectedCardId) return null
+    for (const column of columns) {
+      const card = (column.cards ?? []).find((c) => c.id === selectedCardId)
+      if (card) return { card, columnId: column.id }
+    }
+    return null
+  }, [columns, selectedCardId])
+
+  useEffect(() => {
+    if (!selectedCardId) return
+    if (selectedCardInfo) return
+    setSelectedCardId(null)
+  }, [selectedCardId, selectedCardInfo])
+
   const updateActiveWorkspace = (updater: (workspace: KanbanWorkspace) => KanbanWorkspace) => {
     setState((prevStored) => {
       const prev = normalizeKanbanState(prevStored)
@@ -83,6 +102,16 @@ export const KanbanBoard = () => {
         ),
       }
     })
+  }
+
+  const updateCardById = (cardId: string, updater: (card: KanbanCard) => KanbanCard) => {
+    updateActiveWorkspace((workspace) => ({
+      ...workspace,
+      columns: workspace.columns.map((col) => ({
+        ...col,
+        cards: (col.cards ?? []).map((card) => (card.id === cardId ? updater(card) : card)),
+      })),
+    }))
   }
 
   const moveColumnToEnd = (columnId: string) => {
@@ -218,13 +247,24 @@ export const KanbanBoard = () => {
     }))
   }
 
-  const addCard = (columnId: string, text: string) => {
-    const trimmed = text.trim()
+  const addCard = (
+    columnId: string,
+    payload: { title: string; description: string; priority: Exclude<KanbanCardPriority, null> }
+  ) => {
+    const trimmed = payload.title.trim()
     if (!trimmed) return
     updateActiveWorkspace((workspace) => ({
       ...workspace,
       columns: workspace.columns.map((col) =>
-        col.id === columnId ? { ...col, cards: [...col.cards, createKanbanCard(trimmed)] } : col
+        col.id === columnId
+          ? {
+              ...col,
+              cards: [
+                ...col.cards,
+                createKanbanCard(trimmed, { description: payload.description.trim(), priority: payload.priority }),
+              ],
+            }
+          : col
       ),
     }))
   }
@@ -378,6 +418,11 @@ export const KanbanBoard = () => {
   }
 
   const Card = ({ columnId, card }: { columnId: string; card: KanbanCard }) => {
+    const prefix = priorityToPrefix(card.priority)
+    const hasDescription = Boolean(card.description && card.description.trim().length > 0)
+    const prefixTint =
+      card.priority && card.priority !== null ? getPriorityChipTint(card.priority).borderActive : undefined
+
     return (
       <div
         data-kanban-card="true"
@@ -418,12 +463,16 @@ export const KanbanBoard = () => {
             'ring-2 ring-[var(--obsidian-accent)]',
           Boolean(card.completed) && 'opacity-90'
         )}
+        onClick={() => setSelectedCardId(card.id)}
       >
         <div className="flex items-start gap-2">
           <button
             type="button"
             title={card.completed ? 'Mark as not done' : 'Mark as done'}
-            onClick={() => toggleCardCompleted(columnId, card.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCardCompleted(columnId, card.id)
+            }}
             className={twMerge(
               'mt-0.5 h-5 w-5 shrink-0 rounded-full border flex items-center justify-center',
               card.completed
@@ -434,18 +483,38 @@ export const KanbanBoard = () => {
             {card.completed ? <VscCheck className="h-4 w-4 text-emerald-500" /> : null}
           </button>
 
-          <div
-            className={twMerge(
-              'flex-1 text-sm text-[var(--obsidian-text)] whitespace-pre-wrap break-words',
-              Boolean(card.completed) && 'line-through text-[var(--obsidian-text-muted)]'
-            )}
-          >
-            {card.text}
+          <div className="flex-1 min-w-0">
+            <div
+              className={twMerge(
+                'text-sm text-[var(--obsidian-text)] whitespace-pre-wrap break-words',
+                Boolean(card.completed) && 'line-through text-[var(--obsidian-text-muted)]'
+              )}
+            >
+              {prefix ? (
+                <span className="mr-px font-mono text-[12px] opacity-80" style={{ color: prefixTint }}>
+                  {prefix}
+                </span>
+              ) : null}
+              {card.text}
+            </div>
+            {hasDescription ? (
+              <div
+                className={twMerge(
+                  'mt-1 text-xs leading-5 text-[var(--obsidian-text-muted)] whitespace-pre-wrap break-words clamp-2',
+                  Boolean(card.completed) && 'line-through opacity-80'
+                )}
+              >
+                {card.description}
+              </div>
+            ) : null}
           </div>
           <button
             className="p-1 rounded hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)]"
             title="Remove task"
-            onClick={() => removeCard(columnId, card.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              removeCard(columnId, card.id)
+            }}
           >
             <VscClose className="w-4 h-4" />
           </button>
@@ -507,6 +576,9 @@ export const KanbanBoard = () => {
             value={newColumnTitle}
             onChange={(e) => setNewColumnTitle(e.target.value)}
             placeholder="Add column..."
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="off"
             className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
             onKeyDown={(e) => {
               if (e.key === 'Enter') addColumn()
@@ -637,6 +709,9 @@ export const KanbanBoard = () => {
                     ref={renameInputRef}
                     value={renameDraft}
                     onChange={(e) => setRenameDraft(e.target.value)}
+                    spellCheck={false}
+                    autoCorrect="off"
+                    autoCapitalize="off"
                     className="flex-1 bg-transparent outline-none text-sm font-semibold text-[var(--obsidian-text)]"
                     onBlur={commitRename}
                     onKeyDown={(e) => {
@@ -677,7 +752,7 @@ export const KanbanBoard = () => {
               </div>
 
               <div className="px-3 py-3 border-t border-[var(--obsidian-border-soft)]">
-                <AddCardForm onAdd={(text) => addCard(column.id, text)} />
+                <AddCardForm onAdd={(payload) => addCard(column.id, payload)} />
               </div>
             </div>
           ))}
@@ -696,6 +771,9 @@ export const KanbanBoard = () => {
               value={newWorkspaceName}
               onChange={(e) => setNewWorkspaceName(e.target.value)}
               placeholder="Workspace name"
+              spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
               className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') addWorkspace()
@@ -744,41 +822,153 @@ export const KanbanBoard = () => {
           </ContextMenuItem>
         </ContextMenu>
       ) : null}
+
+      <TaskDetailsPanel
+        isOpen={Boolean(selectedCardInfo)}
+        card={selectedCardInfo?.card ?? null}
+        onClose={() => setSelectedCardId(null)}
+        onUpdate={(next) => {
+          const cardId = selectedCardInfo?.card.id
+          if (!cardId) return
+          updateCardById(cardId, (card) => ({ ...card, ...next }))
+        }}
+      />
     </div>
   )
 }
 
-const AddCardForm = ({ onAdd }: { onAdd: (text: string) => void }) => {
-  const [value, setValue] = useState('')
+const AddCardForm = ({
+  onAdd,
+}: {
+  onAdd: (payload: { title: string; description: string; priority: Exclude<KanbanCardPriority, null> }) => void
+}) => {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState<Exclude<KanbanCardPriority, null>>('low')
+  const [isExpanded, setIsExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
+
+  const submit = () => {
+    const trimmed = title.trim()
+    if (!trimmed) return
+    onAdd({ title: trimmed, description, priority })
+    setTitle('')
+    setDescription('')
+    setPriority('low')
+    setIsExpanded(false)
+    requestAnimationFrame(() => inputRef.current?.focus())
+  }
 
   return (
-    <div className="flex items-center gap-2">
-      <input
-        ref={inputRef}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Add task..."
-        className="flex-1 min-w-0 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            onAdd(value)
-            setValue('')
-            requestAnimationFrame(() => inputRef.current?.focus())
-          }
-        }}
-      />
-      <button
-        onClick={() => {
-          onAdd(value)
-          setValue('')
-          requestAnimationFrame(() => inputRef.current?.focus())
-        }}
-        className="inline-flex items-center gap-1 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2.5 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
-        title="Add task"
-      >
-        <VscAdd className="w-4 h-4" />
-      </button>
+    <div
+      className="space-y-2"
+      onFocusCapture={() => setIsExpanded(true)}
+      onBlurCapture={(e) => {
+        const next = e.relatedTarget as Node | null
+        if (next && e.currentTarget.contains(next)) return
+        setIsExpanded(false)
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 min-w-0">
+          {isExpanded ? (
+            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[12px] opacity-70">
+              {priorityToPrefix(priority)}
+            </div>
+          ) : null}
+          <input
+            ref={inputRef}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Add task..."
+            spellCheck={false}
+            autoCorrect="off"
+            autoCapitalize="off"
+            className={twMerge(
+              'w-full rounded bg-[var(--obsidian-workspace)] py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]',
+              isExpanded ? 'pl-10 pr-3' : 'px-3'
+            )}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                submit()
+              }
+              if (e.key === 'Escape') {
+                setIsExpanded(false)
+                inputRef.current?.blur()
+              }
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={submit}
+          className="inline-flex items-center gap-1 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2.5 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+          title="Add task"
+        >
+          <VscAdd className="w-4 h-4" />
+        </button>
+      </div>
+
+      {isExpanded ? (
+        <div className="space-y-2 rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] p-3">
+          <div>
+            <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Description</div>
+            <textarea
+              ref={descriptionRef}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description..."
+              rows={3}
+              spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
+              className="mt-1 w-full resize-none rounded bg-[var(--obsidian-pane)] px-3 py-2 text-sm leading-6 text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                if (e.shiftKey) return
+                e.preventDefault()
+                submit()
+              }}
+            />
+            <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
+              Enter to add, Shift+Enter for a new line
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              {KANBAN_PRIORITY_OPTIONS.map((opt) => {
+                const tint = getPriorityChipTint(opt.value)
+                const isActive = priority === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setPriority(opt.value)}
+                    className={twMerge(
+                      'inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[11px] leading-4 transition-colors',
+                      isActive
+                        ? 'text-[var(--obsidian-text)]'
+                        : 'text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]'
+                    )}
+                    style={{
+                      backgroundColor: isActive ? tint.bgActive : tint.bg,
+                      borderColor: isActive ? tint.borderActive : tint.border,
+                    }}
+                    title={`Priority: ${opt.label}`}
+                  >
+                    <span className="font-mono text-[11px] opacity-70">{opt.prefix}</span>
+                    <span>{opt.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

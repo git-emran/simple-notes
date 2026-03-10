@@ -64,6 +64,11 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'local-file', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
+if (process.platform === 'darwin') {
+  // Extra hard-disable to avoid native menu churn warnings on keypress.
+  app.commandLine.appendSwitch('disable-spell-checking')
+}
+
 function createWindow(): void {
   /* Create the browser window. */
   const mainWindow = new BrowserWindow({
@@ -83,9 +88,12 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
       contextIsolation: true,
-      spellcheck: true
+      spellcheck: false
     }
   })
+
+  // Work around macOS log spam (triggered by native spellchecker menu churn on keypress).
+  mainWindow.webContents.session.setSpellCheckerEnabled(false)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -115,17 +123,22 @@ function createWindow(): void {
 }
 
 const configureApplicationMenu = () => {
+  // Work around macOS log spam:
+  // "representedObject is not a WeakPtrToElectronMenuModelAsNSObject"
+  //
+  // The spam is triggered by native text services validating/churning menu items on keypress
+  // (notably in Edit/Spelling-related menus). This app doesn't rely on a native application
+  // menu for core functionality, so we install a minimal menu on macOS and remove it elsewhere.
   if (process.platform !== 'darwin') {
     Menu.setApplicationMenu(null)
     return
   }
 
   const template: MenuItemConstructorOptions[] = [
-    { role: 'appMenu' },
-    { role: 'fileMenu' },
-    { role: 'editMenu' },
-    { role: 'viewMenu' },
-    { role: 'windowMenu' }
+    {
+      label: app.name,
+      submenu: [{ role: 'quit' }],
+    },
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
