@@ -8,6 +8,16 @@ export type KanbanCard = {
   description?: string
   priority?: KanbanCardPriority
   completed?: boolean
+  /**
+   * ISO timestamp (UTC) for when to remind inside the app.
+   * Null/undefined means no reminder set.
+   */
+  remindAt?: string | null
+  /**
+   * ISO timestamp (UTC) of when the reminder was last surfaced to the user.
+   * Used to avoid repeatedly firing reminders on every render/tick.
+   */
+  reminderFiredAt?: string | null
 }
 
 export type KanbanColumn = {
@@ -91,13 +101,15 @@ export const createKanbanColumn = (title: string, color?: string): KanbanColumn 
 
 export const createKanbanCard = (
   text: string,
-  options?: { description?: string; priority?: KanbanCardPriority }
+  options?: { description?: string; priority?: KanbanCardPriority; remindAt?: string | null }
 ): KanbanCard => ({
   id: makeId('card'),
   text,
   description: options?.description ?? '',
   priority: options?.priority ?? 'low',
   completed: false,
+  remindAt: options?.remindAt ?? null,
+  reminderFiredAt: null,
 })
 
 export const createDefaultKanbanColumns = (options?: { randomizeColors?: boolean }): KanbanColumn[] => {
@@ -153,8 +165,11 @@ const normalizeCard = (value: unknown): KanbanCard | null => {
   const description = typeof raw.description === 'string' ? raw.description : ''
   const priority: KanbanCardPriority =
     raw.priority == null ? 'low' : isKanbanCardPriority(raw.priority) ? raw.priority : 'low'
+  const remindAt = typeof raw.remindAt === 'string' && raw.remindAt.trim() ? raw.remindAt : null
+  const reminderFiredAt =
+    typeof raw.reminderFiredAt === 'string' && raw.reminderFiredAt.trim() ? raw.reminderFiredAt : null
 
-  return { id, text, description, priority, completed: Boolean(raw.completed) }
+  return { id, text, description, priority, completed: Boolean(raw.completed), remindAt, reminderFiredAt }
 }
 
 const normalizeColumn = (column: KanbanColumn): KanbanColumn => {

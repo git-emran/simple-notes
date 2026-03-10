@@ -1,14 +1,34 @@
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { VscClose, VscEdit, VscSave, VscDiscard } from 'react-icons/vsc'
+import { VscClose, VscEdit, VscSave, VscDiscard, VscBell } from 'react-icons/vsc'
 import type { KanbanCard, KanbanCardPriority } from '@renderer/store/kanbanStore'
 import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint, priorityToPrefix } from './kanbanPriority'
+import { ReminderDateTimePicker } from './ReminderDateTimePicker'
 
 type TaskDetailsPanelProps = {
   isOpen: boolean
   card: KanbanCard | null
   onClose: () => void
-  onUpdate: (next: { text: string; description: string; priority: KanbanCardPriority }) => void
+  onUpdate: (next: {
+    text: string
+    description: string
+    priority: KanbanCardPriority
+    remindAt: string | null
+    reminderFiredAt: string | null
+  }) => void
+}
+
+const formatIsoForHumans = (iso: string) => {
+  const date = new Date(iso)
+  if (!Number.isFinite(date.getTime())) return iso
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
 }
 
 export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetailsPanelProps) => {
@@ -17,6 +37,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
   const [titleDraft, setTitleDraft] = useState('')
   const [descriptionDraft, setDescriptionDraft] = useState('')
   const [priorityDraft, setPriorityDraft] = useState<Exclude<KanbanCardPriority, null>>('low')
+  const [remindAtDraft, setRemindAtDraft] = useState<string | null>(null)
 
   const cardId = card?.id ?? null
 
@@ -49,6 +70,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
     setTitleDraft(card.text ?? '')
     setDescriptionDraft(card.description ?? '')
     setPriorityDraft(initialPriority)
+    setRemindAtDraft(card.remindAt ?? null)
   }, [cardId])
 
   const canSave = useMemo(() => Boolean(titleDraft.trim()), [titleDraft])
@@ -61,10 +83,15 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
 
   const save = () => {
     if (!canSave) return
+    const previousRemindAt = card.remindAt ?? null
+    const nextReminderFiredAt =
+      remindAtDraft && remindAtDraft === previousRemindAt ? (card.reminderFiredAt ?? null) : null
     onUpdate({
       text: titleDraft.trim(),
       description: descriptionDraft.trim(),
       priority: priorityDraft,
+      remindAt: remindAtDraft,
+      reminderFiredAt: nextReminderFiredAt,
     })
     setIsEditing(false)
   }
@@ -75,6 +102,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
     setTitleDraft(card.text ?? '')
     setDescriptionDraft(card.description ?? '')
     setPriorityDraft(initialPriority)
+    setRemindAtDraft(card.remindAt ?? null)
   }
 
   return (
@@ -94,7 +122,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
         )}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--obsidian-border-soft)] px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--obsidian-border-soft)] px-4 py-4">
           <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wide text-[var(--obsidian-text-muted)]">Task</div>
             <div className="truncate text-base font-semibold text-[var(--obsidian-text)]">
@@ -149,7 +177,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
           </div>
         </div>
 
-        <div className="h-[calc(100%-65px)] overflow-auto preview-scrollbar px-5 py-5">
+        <div className="h-[calc(100%-65px)] overflow-auto preview-scrollbar px-4 py-5">
           {isEditing ? (
             <div className="space-y-5">
               <div>
@@ -177,6 +205,18 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                   autoCapitalize="off"
                   placeholder="Add a description"
                 />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
+                </div>
+                <div className="mt-2">
+                  <ReminderDateTimePicker valueIso={remindAtDraft} onChange={setRemindAtDraft} />
+                </div>
+                <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
+                  Shows an in-app reminder at the selected date/time (while the app is running).
+                </div>
               </div>
 
               <div>
@@ -221,6 +261,14 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                     </span>
                   ) : null}
                   <span>{card.text}</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
+                <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] px-4 py-3 text-sm text-[var(--obsidian-text)]">
+                  <VscBell className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+                  <span>{card.remindAt ? formatIsoForHumans(card.remindAt) : 'None'}</span>
                 </div>
               </div>
 

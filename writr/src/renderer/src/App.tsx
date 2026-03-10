@@ -11,6 +11,7 @@ import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
 import { SettingsModal } from './components/SettingsModal'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
+import { KanbanReminderHost } from './components/kanban/KanbanReminderHost'
 import { TerminalTab } from './components/terminal/TerminalTab'
 import { useRef, useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
@@ -329,6 +330,7 @@ const App = () => {
               )}
             </div>
             {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
+            <KanbanReminderHost />
           </Content>
         </div>
       </RootLayout>

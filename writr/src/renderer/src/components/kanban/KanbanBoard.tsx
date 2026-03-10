@@ -1,7 +1,7 @@
 import { useAtom } from 'jotai'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { VscAdd, VscCheck, VscClose } from 'react-icons/vsc'
+import { VscAdd, VscBell, VscCheck, VscClose } from 'react-icons/vsc'
 import { MdDragIndicator } from 'react-icons/md'
 import { ContextMenu, ContextMenuItem } from '@renderer/components/ContextMenu'
 import {
@@ -17,6 +17,7 @@ import {
 } from '@renderer/store/kanbanStore'
 import { TaskDetailsPanel } from './TaskDetailsPanel'
 import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint, priorityToPrefix } from './kanbanPriority'
+import { ReminderDateTimePicker } from './ReminderDateTimePicker'
 
 type DragPayload =
   | { kind: 'card'; columnId: string; cardId: string }
@@ -249,7 +250,12 @@ export const KanbanBoard = () => {
 
   const addCard = (
     columnId: string,
-    payload: { title: string; description: string; priority: Exclude<KanbanCardPriority, null> }
+    payload: {
+      title: string
+      description: string
+      priority: Exclude<KanbanCardPriority, null>
+      remindAt: string | null
+    }
   ) => {
     const trimmed = payload.title.trim()
     if (!trimmed) return
@@ -261,7 +267,11 @@ export const KanbanBoard = () => {
               ...col,
               cards: [
                 ...col.cards,
-                createKanbanCard(trimmed, { description: payload.description.trim(), priority: payload.priority }),
+                createKanbanCard(trimmed, {
+                  description: payload.description.trim(),
+                  priority: payload.priority,
+                  remindAt: payload.remindAt,
+                }),
               ],
             }
           : col
@@ -422,6 +432,18 @@ export const KanbanBoard = () => {
     const hasDescription = Boolean(card.description && card.description.trim().length > 0)
     const prefixTint =
       card.priority && card.priority !== null ? getPriorityChipTint(card.priority).borderActive : undefined
+    const remindAtLabel = (() => {
+      if (!card.remindAt) return null
+      const date = new Date(card.remindAt)
+      if (!Number.isFinite(date.getTime())) return null
+      return date.toLocaleString(undefined, {
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+    })()
 
     return (
       <div
@@ -505,6 +527,12 @@ export const KanbanBoard = () => {
                 )}
               >
                 {card.description}
+              </div>
+            ) : null}
+            {remindAtLabel ? (
+              <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--obsidian-text-muted)]">
+                <VscBell className="h-3.5 w-3.5" />
+                <span>{remindAtLabel}</span>
               </div>
             ) : null}
           </div>
@@ -840,11 +868,17 @@ export const KanbanBoard = () => {
 const AddCardForm = ({
   onAdd,
 }: {
-  onAdd: (payload: { title: string; description: string; priority: Exclude<KanbanCardPriority, null> }) => void
+  onAdd: (payload: {
+    title: string
+    description: string
+    priority: Exclude<KanbanCardPriority, null>
+    remindAt: string | null
+  }) => void
 }) => {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Exclude<KanbanCardPriority, null>>('low')
+  const [remindAt, setRemindAt] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const descriptionRef = useRef<HTMLTextAreaElement>(null)
@@ -852,10 +886,11 @@ const AddCardForm = ({
   const submit = () => {
     const trimmed = title.trim()
     if (!trimmed) return
-    onAdd({ title: trimmed, description, priority })
+    onAdd({ title: trimmed, description, priority, remindAt })
     setTitle('')
     setDescription('')
     setPriority('low')
+    setRemindAt(null)
     setIsExpanded(false)
     requestAnimationFrame(() => inputRef.current?.focus())
   }
@@ -934,6 +969,20 @@ const AddCardForm = ({
             />
             <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
               Enter to add, Shift+Enter for a new line
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
+            </div>
+            <div className="mt-1">
+              <ReminderDateTimePicker
+                valueIso={remindAt}
+                onChange={setRemindAt}
+                className="w-full"
+                placeholder="Set reminder (today)"
+              />
             </div>
           </div>
 
