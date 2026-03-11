@@ -129,6 +129,10 @@ const configureApplicationMenu = () => {
   // The spam is triggered by native text services validating/churning menu items on keypress
   // (notably in Edit/Spelling-related menus). This app doesn't rely on a native application
   // menu for core functionality, so we install a minimal menu on macOS and remove it elsewhere.
+  //
+  // Note: On macOS, standard clipboard shortcuts (Cmd+C/V/X) are wired up via menu roles.
+  // If the app menu does not include the relevant Edit roles, copy/paste can appear "broken"
+  // across text inputs (including CodeMirror).
   if (process.platform !== 'darwin') {
     Menu.setApplicationMenu(null)
     return
@@ -138,6 +142,18 @@ const configureApplicationMenu = () => {
     {
       label: app.name,
       submenu: [{ role: 'quit' }],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
     },
   ]
 
