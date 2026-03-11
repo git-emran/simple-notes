@@ -1,5 +1,6 @@
 import { useAtom } from 'jotai'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 import { VscAdd, VscBell, VscCheck, VscClose } from 'react-icons/vsc'
 import { MdDragIndicator } from 'react-icons/md'
@@ -31,6 +32,8 @@ const parseDragPayload = (value: string | null): DragPayload | null => {
     return null
   }
 }
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
 type ColumnOverHint = { overColumnId: string | null }
 
@@ -624,7 +627,7 @@ export const KanbanBoard = () => {
 
       <div className="h-[calc(100%-72px)] kanban-scroll overflow-x-scroll overflow-y-hidden px-6 py-5">
         <div
-          className={twMerge('grid gap-4 min-h-full', gridClass)}
+          className={twMerge('grid gap-4 h-full min-h-full items-start', gridClass)}
           style={gridStyle}
           onDragOver={(e) => {
             const payload = draggingRef.current
@@ -675,7 +678,7 @@ export const KanbanBoard = () => {
                 clearDragUi()
               }}
               className={twMerge(
-                'min-w-[280px] rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] relative',
+                'min-w-[280px] self-start min-h-[50%] max-h-[calc(100%-8px)] flex flex-col overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] relative',
                 draggingColumnId === column.id && 'opacity-60',
                 columnDropHint?.overColumnId === column.id && 'ring-2 ring-[var(--obsidian-accent)]'
               )}
@@ -773,7 +776,7 @@ export const KanbanBoard = () => {
                 </button>
               </div>
 
-              <div className="px-3 py-3 space-y-2 max-h-[calc(100vh-220px)] overflow-auto preview-scrollbar">
+              <div className="flex-auto min-h-0 px-3 py-3 space-y-2 overflow-y-auto overflow-x-hidden no-scrollbar">
                 {(column.cards ?? []).map((card) => (
                   <Card key={card.id} columnId={column.id} card={card} />
                 ))}
@@ -875,13 +878,28 @@ const AddCardForm = ({
     remindAt: string | null
   }) => void
 }) => {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Exclude<KanbanCardPriority, null>>('low')
   const [remindAt, setRemindAt] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [popover, setPopover] = useState<{
+    left: number
+    top: number
+    width: number
+    maxHeight: number
+    placement: 'above' | 'below'
+    ready: boolean
+  } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const descriptionRef = useRef<HTMLTextAreaElement>(null)
+
+  const closeExpanded = () => {
+    setIsExpanded(false)
+    setPopover(null)
+  }
 
   const submit = () => {
     const trimmed = title.trim()
@@ -891,19 +909,120 @@ const AddCardForm = ({
     setDescription('')
     setPriority('low')
     setRemindAt(null)
-    setIsExpanded(false)
+    closeExpanded()
     requestAnimationFrame(() => inputRef.current?.focus())
   }
 
+  useEffect(() => {
+    if (!isExpanded) return
+    const shouldCloseForTarget = (target: Node | null) => {
+      if (!target) return true
+      if (rootRef.current?.contains(target)) return false
+      if (popoverRef.current?.contains(target)) return false
+      return true
+    }
+
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node | null
+      if (shouldCloseForTarget(target)) closeExpanded()
+    }
+    const onFocusIn = (e: FocusEvent) => {
+      const target = e.target as Node | null
+      if (shouldCloseForTarget(target)) closeExpanded()
+    }
+    window.addEventListener('mousedown', onMouseDown, true)
+    window.addEventListener('focusin', onFocusIn, true)
+    return () => {
+      window.removeEventListener('mousedown', onMouseDown, true)
+      window.removeEventListener('focusin', onFocusIn, true)
+    }
+  }, [isExpanded])
+
+  useLayoutEffect(() => {
+    if (!isExpanded) return
+
+    let raf = 0
+    const margin = 12
+    const gap = 10
+    const minDesiredHeight = 220
+
+    const schedule = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const anchorRect = inputRef.current?.getBoundingClientRect()
+        if (!anchorRect) return
+
+        const availableWidth = Math.max(0, window.innerWidth - margin * 2)
+        const width = Math.min(420, anchorRect.width, availableWidth)
+        const left = clamp(
+          anchorRect.left,
+          margin,
+          Math.max(margin, window.innerWidth - width - margin)
+        )
+
+        const spaceBelow = window.innerHeight - anchorRect.bottom - margin
+        const spaceAbove = anchorRect.top - margin
+        const placement: 'above' | 'below' =
+          spaceBelow >= minDesiredHeight || spaceBelow >= spaceAbove ? 'below' : 'above'
+        const maxHeight = Math.max(160, (placement === 'below' ? spaceBelow : spaceAbove) - gap)
+
+        setPopover((prev) => {
+          const next = {
+            left,
+            top: prev?.top ?? 0,
+            width,
+            maxHeight,
+            placement,
+            ready: false,
+          }
+          if (
+            prev &&
+            prev.left === next.left &&
+            prev.width === next.width &&
+            prev.maxHeight === next.maxHeight &&
+            prev.placement === next.placement &&
+            prev.ready === next.ready
+          ) {
+            return prev
+          }
+          return next
+        })
+
+        requestAnimationFrame(() => {
+          const popRect = popoverRef.current?.getBoundingClientRect()
+          if (!popRect) return
+
+          const top =
+            placement === 'below'
+              ? anchorRect.bottom + gap
+              : anchorRect.top - gap - popRect.height
+
+          setPopover((prev) => {
+            if (!prev) return prev
+            if (prev.top === top && prev.ready) return prev
+            return { ...prev, top, ready: true }
+          })
+        })
+      })
+    }
+
+    const onResizeOrScroll = () => schedule()
+    window.addEventListener('resize', onResizeOrScroll)
+    window.addEventListener('scroll', onResizeOrScroll, true)
+    schedule()
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', onResizeOrScroll)
+      window.removeEventListener('scroll', onResizeOrScroll, true)
+    }
+  }, [description, isExpanded, priority, remindAt])
+
   return (
     <div
+      ref={rootRef}
       className="space-y-2"
       onFocusCapture={() => setIsExpanded(true)}
-      onBlurCapture={(e) => {
-        const next = e.relatedTarget as Node | null
-        if (next && e.currentTarget.contains(next)) return
-        setIsExpanded(false)
-      }}
     >
       <div className="flex items-center gap-2">
         <div className="relative flex-1 min-w-0">
@@ -930,7 +1049,7 @@ const AddCardForm = ({
                 submit()
               }
               if (e.key === 'Escape') {
-                setIsExpanded(false)
+                closeExpanded()
                 inputRef.current?.blur()
               }
             }}
@@ -946,78 +1065,103 @@ const AddCardForm = ({
         </button>
       </div>
 
-      {isExpanded ? (
-        <div className="space-y-2 rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] p-3">
-          <div>
-            <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Description</div>
-            <textarea
-              ref={descriptionRef}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description..."
-              rows={3}
-              spellCheck={false}
-              autoCorrect="off"
-              autoCapitalize="off"
-              className="mt-1 w-full resize-none rounded bg-[var(--obsidian-pane)] px-3 py-2 text-sm leading-6 text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
-              onKeyDown={(e) => {
-                if (e.key !== 'Enter') return
-                if (e.shiftKey) return
-                e.preventDefault()
-                submit()
+      {isExpanded
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              className={twMerge(
+                'fixed z-[1600] overflow-auto no-scrollbar',
+                'rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] p-3 shadow-2xl'
+              )}
+              style={{
+                left: popover?.left ?? -10_000,
+                top: popover?.top ?? -10_000,
+                width: popover?.width ?? 320,
+                maxHeight: popover?.maxHeight ?? 320,
+                visibility: popover?.ready ? 'visible' : 'hidden',
               }}
-            />
-            <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
-              Enter to add, Shift+Enter for a new line
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
-            </div>
-            <div className="mt-1">
-              <ReminderDateTimePicker
-                valueIso={remindAt}
-                onChange={setRemindAt}
-                className="w-full"
-                placeholder="Set reminder (today)"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
-            <div className="mt-1 flex flex-wrap items-center gap-1">
-              {KANBAN_PRIORITY_OPTIONS.map((opt) => {
-                const tint = getPriorityChipTint(opt.value)
-                const isActive = priority === opt.value
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setPriority(opt.value)}
-                    className={twMerge(
-                      'inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[11px] leading-4 transition-colors',
-                      isActive
-                        ? 'text-[var(--obsidian-text)]'
-                        : 'text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]'
-                    )}
-                    style={{
-                      backgroundColor: isActive ? tint.bgActive : tint.bg,
-                      borderColor: isActive ? tint.borderActive : tint.border,
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.stopPropagation()
+                  closeExpanded()
+                  requestAnimationFrame(() => inputRef.current?.focus())
+                }
+              }}
+            >
+              <div className="space-y-2">
+                <div>
+                  <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Description</div>
+                  <textarea
+                    ref={descriptionRef}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Description..."
+                    rows={3}
+                    spellCheck={false}
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    className="mt-1 w-full resize-none rounded bg-[var(--obsidian-pane)] px-3 py-2 text-sm leading-6 text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return
+                      if (e.shiftKey) return
+                      e.preventDefault()
+                      submit()
                     }}
-                    title={`Priority: ${opt.label}`}
-                  >
-                    <span className="font-mono text-[11px] opacity-70">{opt.prefix}</span>
-                    <span>{opt.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      ) : null}
+                  />
+                  <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
+                    Enter to add, Shift+Enter for a new line
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
+                  </div>
+                  <div className="mt-1">
+                    <ReminderDateTimePicker
+                      valueIso={remindAt}
+                      onChange={setRemindAt}
+                      className="w-full"
+                      placeholder="Set reminder (today)"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    {KANBAN_PRIORITY_OPTIONS.map((opt) => {
+                      const tint = getPriorityChipTint(opt.value)
+                      const isActive = priority === opt.value
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setPriority(opt.value)}
+                          className={twMerge(
+                            'inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[11px] leading-4 transition-colors',
+                            isActive
+                              ? 'text-[var(--obsidian-text)]'
+                              : 'text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]'
+                          )}
+                          style={{
+                            backgroundColor: isActive ? tint.bgActive : tint.bg,
+                            borderColor: isActive ? tint.borderActive : tint.border,
+                          }}
+                          title={`Priority: ${opt.label}`}
+                        >
+                          <span className="font-mono text-[11px] opacity-70">{opt.prefix}</span>
+                          <span>{opt.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   )
 }
