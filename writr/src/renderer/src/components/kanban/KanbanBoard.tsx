@@ -175,7 +175,7 @@ export const KanbanBoard = () => {
   const addColumn = () => {
     const title = newColumnTitle.trim()
     if (!title) {
-      alert('You need to add a name to the column')
+      alert('You need to add a name to the Board')
       return
     }
     updateActiveWorkspace((workspace) => ({
@@ -606,7 +606,7 @@ export const KanbanBoard = () => {
           <input
             value={newColumnTitle}
             onChange={(e) => setNewColumnTitle(e.target.value)}
-            placeholder="Add column..."
+            placeholder="Add board name"
             spellCheck={false}
             autoCorrect="off"
             autoCapitalize="off"
@@ -678,7 +678,7 @@ export const KanbanBoard = () => {
                 clearDragUi()
               }}
               className={twMerge(
-                'min-w-[280px] self-start min-h-[50%] max-h-[calc(100%-8px)] flex flex-col overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] relative',
+                'min-w-[280px] self-start mb-[10px] min-h-[70%] max-h-[calc(100%-10px)] flex flex-col overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] relative',
                 draggingColumnId === column.id && 'opacity-60',
                 columnDropHint?.overColumnId === column.id && 'ring-2 ring-[var(--obsidian-accent)]'
               )}
@@ -887,10 +887,9 @@ const AddCardForm = ({
   const [isExpanded, setIsExpanded] = useState(false)
   const [popover, setPopover] = useState<{
     left: number
-    top: number
+    bottom: number
     width: number
     maxHeight: number
-    placement: 'above' | 'below'
     ready: boolean
   } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -944,7 +943,6 @@ const AddCardForm = ({
     let raf = 0
     const margin = 12
     const gap = 10
-    const minDesiredHeight = 220
 
     const schedule = () => {
       cancelAnimationFrame(raf)
@@ -953,55 +951,35 @@ const AddCardForm = ({
         if (!anchorRect) return
 
         const availableWidth = Math.max(0, window.innerWidth - margin * 2)
-        const width = Math.min(420, anchorRect.width, availableWidth)
+        const width = Math.min(420, Math.max(260, anchorRect.width), availableWidth)
         const left = clamp(
           anchorRect.left,
           margin,
           Math.max(margin, window.innerWidth - width - margin)
         )
 
-        const spaceBelow = window.innerHeight - anchorRect.bottom - margin
-        const spaceAbove = anchorRect.top - margin
-        const placement: 'above' | 'below' =
-          spaceBelow >= minDesiredHeight || spaceBelow >= spaceAbove ? 'below' : 'above'
-        const maxHeight = Math.max(160, (placement === 'below' ? spaceBelow : spaceAbove) - gap)
+        const spaceAbove = Math.max(0, anchorRect.top - margin)
+        const maxHeight = Math.max(0, spaceAbove - gap)
+        const bottom = window.innerHeight - anchorRect.top + gap
 
         setPopover((prev) => {
           const next = {
             left,
-            top: prev?.top ?? 0,
+            bottom,
             width,
             maxHeight,
-            placement,
-            ready: false,
+            ready: true,
           }
           if (
             prev &&
             prev.left === next.left &&
+            prev.bottom === next.bottom &&
             prev.width === next.width &&
-            prev.maxHeight === next.maxHeight &&
-            prev.placement === next.placement &&
-            prev.ready === next.ready
+            prev.maxHeight === next.maxHeight
           ) {
             return prev
           }
           return next
-        })
-
-        requestAnimationFrame(() => {
-          const popRect = popoverRef.current?.getBoundingClientRect()
-          if (!popRect) return
-
-          const top =
-            placement === 'below'
-              ? anchorRect.bottom + gap
-              : anchorRect.top - gap - popRect.height
-
-          setPopover((prev) => {
-            if (!prev) return prev
-            if (prev.top === top && prev.ready) return prev
-            return { ...prev, top, ready: true }
-          })
         })
       })
     }
@@ -1016,7 +994,7 @@ const AddCardForm = ({
       window.removeEventListener('resize', onResizeOrScroll)
       window.removeEventListener('scroll', onResizeOrScroll, true)
     }
-  }, [description, isExpanded, priority, remindAt])
+  }, [isExpanded])
 
   return (
     <div
@@ -1024,7 +1002,7 @@ const AddCardForm = ({
       className="space-y-2"
       onFocusCapture={() => setIsExpanded(true)}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 pb-2">
         <div className="relative flex-1 min-w-0">
           {isExpanded ? (
             <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[12px] opacity-70">
@@ -1075,7 +1053,7 @@ const AddCardForm = ({
               )}
               style={{
                 left: popover?.left ?? -10_000,
-                top: popover?.top ?? -10_000,
+                bottom: popover?.bottom ?? -10_000,
                 width: popover?.width ?? 320,
                 maxHeight: popover?.maxHeight ?? 320,
                 visibility: popover?.ready ? 'visible' : 'hidden',
