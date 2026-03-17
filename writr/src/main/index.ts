@@ -281,11 +281,10 @@ app.whenReady().then(() => {
       const stream = createReadStream(resolvedFilePath)
       
       return new Response(Readable.toWeb(stream) as any)
-    } catch (e) {
-      console.error('Failed to serve local file:', e)
-      return new Response('Not Found', { status: 404 })
-    }
-  })
+	    } catch (e) {
+	      return new Response('Not Found', { status: 404 })
+	    }
+	  })
 
   createWindow()
 

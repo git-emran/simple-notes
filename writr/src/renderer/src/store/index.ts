@@ -8,7 +8,6 @@ export * from './kanbanStore'
 /* File Tree Atoms */
 const loadFileTree = async () => {
   if (!window.context) {
-    console.warn('window.context is not defined. Are you running in Electron?')
     return []
   }
   return await window.context.getFileTree()
@@ -543,7 +542,6 @@ export const selectedNoteAtomAsync = atom(async (get) => {
   if (!activeTabPath) return null
 
   if (!window.context) {
-    console.warn('window.context is not defined.')
     return {
       title: activeTabPath.split('/').pop()?.replace(/\.md$/, '') || 'Untitled',
       lastEditTime: Date.now(),
@@ -631,13 +629,13 @@ export const duplicateNoteAtom = atom(null, async (_get, set, path: string) => {
     await window.context.writeFileNew(newPath, content)
     set(fileTreeAtom, await loadFileTree())
     
-    /* Open the new note */
-    const newNode = createFileNodeFromPath(newPath)
-    set(openTabAtom, newNode)
-  } catch (error) {
-    console.error('Failed to duplicate note:', error)
-  }
-})
+	    /* Open the new note */
+	    const newNode = createFileNodeFromPath(newPath)
+	    set(openTabAtom, newNode)
+	  } catch {
+	    return
+	  }
+	})
 
 export const createNoteAtom = atom(null, async (get, set, parentDir: string) => {
   const filePath = await window.context.createNoteNew(parentDir)

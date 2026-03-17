@@ -8,6 +8,8 @@ import { throttle, debounce } from 'lodash'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
   createNoteAtom,
+  fileTreeAtom,
+  fileTreeIndexAtom,
   lineWrappingEnabledAtom,
   movePathAtom,
   noteStatusByPathAtom,
@@ -20,6 +22,7 @@ import {
   vimModeEnabledAtom,
 } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
+import type { FileNode } from '@shared/models'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
 import { markdown } from '@codemirror/lang-markdown'
 import { syntaxHighlighting, syntaxTree, ensureSyntaxTree, LanguageDescription, LanguageSupport } from '@codemirror/language'
@@ -268,7 +271,7 @@ export const MarkdownEditor = () => {
       .then((dir) => {
         if (!cancelled) setRootDir(dir)
       })
-      .catch((error) => console.error('Failed to get root dir:', error))
+      .catch(() => {})
 
     return () => {
       cancelled = true
@@ -477,9 +480,7 @@ export const MarkdownEditor = () => {
       isSavingRef.current = true
       try {
         await saveNote({ newContent: content, path: notePath })
-      } catch (error) {
-        console.error('Save failed:', error)
-      } finally {
+      } catch {} finally {
         isSavingRef.current = false
       }
     },
@@ -592,7 +593,6 @@ export const MarkdownEditor = () => {
       setAiModels(models)
       setSelectedAiModel((prev) => prev || models[0]?.id || '')
     } catch (error) {
-      console.error('Failed to load AI models:', error)
       setAiError('Failed to load models.')
     } finally {
       setIsLoadingAiModels(false)
@@ -633,7 +633,10 @@ export const MarkdownEditor = () => {
     view.focus()
   }, [])
 
-  const handleGenerateWithAi = useCallback(async () => {
+  const fileTree = useAtomValue(fileTreeAtom)
+  const fileTreeIndex = useAtomValue(fileTreeIndexAtom)
+
+  const handleGenerateWithAi = useCallback(async (contextPaths: string[] = []) => {
     if (!viewRef.current) return
 
     const prompt = aiPrompt.trim()
@@ -652,10 +655,116 @@ export const MarkdownEditor = () => {
 
     try {
       const currentContent = viewRef.current.state.doc.toString()
+
+      const normalizePath = (p: string) => p.replace(/\\/g, '/')
+      const rootDirNormalized = normalizePath(rootDir || '').replace(/\/+$/, '')
+      const displayPath = (absPath: string) => {
+        const n = normalizePath(absPath)
+        if (rootDirNormalized && n.startsWith(`${rootDirNormalized}/`)) {
+          return n.slice(rootDirNormalized.length + 1)
+        }
+        return n
+      }
+
+      const truncateMiddle = (text: string, maxChars: number) => {
+        if (text.length <= maxChars) return text
+        const head = Math.floor(maxChars * 0.6)
+        const tail = maxChars - head
+        return `${text.slice(0, head)}\n\n…(truncated ${text.length - maxChars} chars)…\n\n${text.slice(
+          text.length - tail
+        )}`
+      }
+
+      const MAX_NOTE_CHARS = 40_000
+      const contentForAi = truncateMiddle(currentContent, MAX_NOTE_CHARS)
+      const currentNotePath = selectedNote?.path || ''
+      const effectiveContextPaths = currentNotePath
+        ? Array.from(new Set([currentNotePath, ...contextPaths]))
+        : contextPaths
+
+      // Gather context content
+      let fullContext = ''
+      if (effectiveContextPaths.length > 0) {
+        const MAX_CONTEXT_FILES = 20
+        const MAX_CONTEXT_TOTAL_CHARS = 60_000
+        const MAX_CONTEXT_CHARS_PER_FILE = 12_000
+
+        const collectedFiles: FileNode[] = []
+        const visited = new Set<string>()
+        const stack: string[] = [...effectiveContextPaths]
+        while (stack.length) {
+          const p = stack.pop()!
+          if (visited.has(p)) continue
+          visited.add(p)
+
+          const node = fileTreeIndex.get(p)
+          if (!node) continue
+
+          if (node.type === 'file') {
+            if (currentNotePath && node.path === currentNotePath) continue
+            collectedFiles.push(node)
+          } else if (node.children?.length) {
+            for (const child of node.children) stack.push(child.path)
+          }
+        }
+
+        const uniqueFiles = Array.from(
+          new Map(collectedFiles.map((n) => [n.path, n])).values()
+        ).sort((a, b) => displayPath(a.path).localeCompare(displayPath(b.path)))
+
+        const contextLines: string[] = []
+        let used = 0
+        let addedFiles = 0
+        let hitLimit = false
+
+        for (const node of uniqueFiles) {
+          if (addedFiles >= MAX_CONTEXT_FILES) {
+            hitLimit = true
+            break
+          }
+
+          try {
+            const raw = await window.context.readFileNew(node.path)
+            if (raw == null) continue
+
+            const truncated = raw.length > MAX_CONTEXT_CHARS_PER_FILE
+            const snippet = truncated
+              ? `${raw.slice(0, MAX_CONTEXT_CHARS_PER_FILE)}\n…(truncated ${
+                  raw.length - MAX_CONTEXT_CHARS_PER_FILE
+                } chars)…\n`
+              : raw
+
+            const block = `--- FILE: ${displayPath(node.path)} ---\n${snippet}\n`
+            if (used + block.length > MAX_CONTEXT_TOTAL_CHARS) {
+              hitLimit = true
+              break
+            }
+
+            contextLines.push(block)
+            used += block.length
+            addedFiles++
+          } catch (e) {
+          }
+        }
+
+        if (hitLimit) {
+          contextLines.push(
+            `---\n(Some context was omitted to stay within size limits. Try selecting fewer files/folders.)\n---\n`
+          )
+        }
+
+        fullContext = contextLines.join('\n')
+      }
+
+      const noteLine = currentNotePath ? `Current note: ${displayPath(currentNotePath)}\n\n` : ''
+      const finalPrompt = fullContext
+        ? `${noteLine}I am providing some file context below to help with your task.\n\nContext:\n${fullContext}\n\nTask:\n${prompt}`
+        : `${noteLine}${prompt}`
+
       const result = await window.context.generateWithAi({
         model: selectedAiModel,
-        prompt,
-        content: currentContent,
+        prompt: finalPrompt,
+        content: contentForAi,
         apiKey: aiApiKey.trim() || undefined
       })
 
@@ -668,12 +777,11 @@ export const MarkdownEditor = () => {
       setIsAiModalOpen(false)
       setAiPrompt('')
     } catch (error) {
-      console.error('AI generation failed:', error)
       setAiError('Failed to generate text.')
     } finally {
       setIsGeneratingWithAi(false)
     }
-  }, [aiApiKey, aiPrompt, insertAiText, selectedAiModel])
+  }, [aiApiKey, aiPrompt, insertAiText, selectedAiModel, fileTreeIndex, rootDir, selectedNote?.path])
 
   useEffect(() => {
     if (!isGeneratingWithAi) {
@@ -750,17 +858,16 @@ export const MarkdownEditor = () => {
                                  LanguageDescription.matchFilename(codeLanguages, `f.${langName}`);
                     
                     if (desc) {
-                      desc.load().then(support => {
-                        if (lastLanguageRef.current === langName) {
-                          reconfigureLanguage(update.view, support);
-                        }
-                      }).catch(err => {
-                        console.error(`[Editor] Language support load failed for ${langName}:`, err);
-                        reconfigureLanguage(update.view, []);
-                      });
-                    } else {
-                      reconfigureLanguage(update.view, []);
-                    }
+		                      desc.load().then(support => {
+		                        if (lastLanguageRef.current === langName) {
+		                          reconfigureLanguage(update.view, support);
+		                        }
+		                      }).catch(() => {
+		                        reconfigureLanguage(update.view, []);
+		                      });
+		                    } else {
+		                      reconfigureLanguage(update.view, []);
+		                    }
                  } else {
                    reconfigureLanguage(update.view, []);
                  }
@@ -1300,7 +1407,9 @@ export const MarkdownEditor = () => {
         isGeneratingWithAi={isGeneratingWithAi}
         aiProgress={aiProgress}
         aiError={aiError}
-        onGenerate={() => void handleGenerateWithAi()}
+        onGenerate={(paths) => void handleGenerateWithAi(paths)}
+        fileTree={fileTree ?? []}
+        currentNotePath={selectedNote?.path ?? null}
       />
       {contextMenu && (
         <ContextMenu

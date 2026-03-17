@@ -93,7 +93,6 @@ export const CanvasEditor = () => {
         if (parsed.edges) setEdges(parsed.edges);
         setIsLoaded(true);
       } catch (e) {
-        console.error('Failed to parse canvas file:', e);
         setIsLoaded(true);
       }
     } else if (!canvasContent && !isLoaded) {

@@ -299,7 +299,7 @@ export const KanbanBoard = () => {
         return {
           ...col,
           cards: col.cards.map((c) =>
-            c.id === cardId ? { ...c, completed: !Boolean(c.completed) } : c
+            c.id === cardId ? { ...c, completed: !c.completed } : c
           ),
         }
       }),

@@ -121,7 +121,6 @@ export const createNote: CreateNote = async () => {
     return false
   }
 
-  console.info(`Creating Note: ${filePath}`)
   await writeFile(filePath, '')
 
   return filename
@@ -145,7 +144,6 @@ export const deleteNote: DeleteNote = async (filename) => {
     return false
   }
 
-  console.info(`Deleting note: ${filename}`)
   await shell.trashItem(safePath)
 
   return true
@@ -211,8 +209,8 @@ export const getFileTree: GetFileTree = async () => {
             node.lastEditTime = fileStats.mtimeMs
             node.todoTotal = 0
             node.todoCompleted = 0
-          } catch (e) {
-            console.error(`Failed to read stats for ${node.path}:`, e)
+          } catch {
+            return
           }
         })
       )
@@ -347,7 +345,6 @@ export const deletePath: DeletePath = async (filePath) => {
     await shell.trashItem(safePath)
     return true
   } catch (error) {
-    console.error(error)
     return false
   }
 }
@@ -361,14 +358,12 @@ export const movePath: MovePath = async (src, dest) => {
       /* Should we support overwrite? For now, no. */
       /* Or strictly speaking, if it's DnD, we might be moving into a folder, */
       /* but the caller sends the full destination path. */
-      console.warn(`Destination ${safeDest} already exists`)
       return false
     }
 
     await move(safeSrc, safeDest)
     return true
   } catch (e) {
-    console.error(e)
     return false
   }
 }
@@ -455,7 +450,6 @@ export const exportNoteToPdf = async (
 
     return true
   } catch (error) {
-    console.error('Failed to export PDF:', error)
     return false
   } finally {
     if (printWindow && !printWindow.isDestroyed()) {
@@ -558,7 +552,6 @@ export const exportCanvasToPdf = async (
 
     return true
   } catch (error) {
-    console.error('Failed to export canvas PDF:', error)
     return false
   } finally {
     if (printWindow && !printWindow.isDestroyed()) {
@@ -599,7 +592,6 @@ export const importImageToNoteFolder: ImportImageToNoteFolder = async (
       absolutePath: targetPath
     }
   } catch (error) {
-    console.error('Failed to import image:', error)
     return null
   }
 }
@@ -646,12 +638,14 @@ export const importImageToRootImageFolder: ImportImageToRootImageFolder = async 
       absolutePath: targetPath
     }
   } catch (error) {
-    console.error('Failed to import image to root image folder:', error)
     return null
   }
 }
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
+const OPENROUTER_TIMEOUT_MS = 90_000
+const OPENROUTER_MAX_RETRIES = 2
+const OPENROUTER_MAX_OUTPUT_TOKENS = 1024
 
 const fallbackFreeModels = [
   { id: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B Instruct (Free)' },
@@ -662,13 +656,22 @@ const fallbackFreeModels = [
 export const listFreeAiModels: ListFreeAiModels = async (apiKey) => {
   try {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://github.com/writr-app/writr',
+      'X-Title': 'Writer App'
     }
     if (apiKey?.trim()) {
-      headers.Authorization = `Bearer ${apiKey.trim()}`
+      headers['Authorization'] = `Bearer ${apiKey.trim()}`
     }
 
-    const response = await fetch(`${OPENROUTER_BASE_URL}/models`, { headers })
+    const response = await fetch(`${OPENROUTER_BASE_URL}/models`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': apiKey?.trim() ? `Bearer ${apiKey.trim()}` : '',
+        'HTTP-Referer': 'https://github.com/writr-app/writr',
+        'X-Title': 'Writer App'
+      }
+    })
     if (!response.ok) {
       return fallbackFreeModels
     }
@@ -691,14 +694,14 @@ export const listFreeAiModels: ListFreeAiModels = async (apiKey) => {
 
     return freeModels.length > 0 ? freeModels : fallbackFreeModels
   } catch (error) {
-    console.error('Failed to list free AI models:', error)
     return fallbackFreeModels
   }
 }
 
 export const generateWithAi: GenerateWithAi = async ({ model, prompt, content, apiKey }) => {
   try {
-    if (!apiKey?.trim()) {
+    const trimmedKey = apiKey?.trim() || ''
+    if (!trimmedKey) {
       return { error: 'OpenRouter API key is required to generate text.' }
     }
 
@@ -707,35 +710,121 @@ export const generateWithAi: GenerateWithAi = async ({ model, prompt, content, a
       return { error: 'Prompt cannot be empty.' }
     }
 
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey.trim()}`
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.7,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a writing assistant. Return only polished markdown text based on the instruction.'
-          },
-          {
-            role: 'user',
-            content: `Instruction:\n${finalPrompt}\n\nCurrent content:\n${content || '(empty)'}`
-          }
-        ]
-      })
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      return { error: `AI request failed: ${response.status} ${errorText}` }
+    const safeModel = model?.trim()
+    if (!safeModel) {
+      return { error: 'Model is required.' }
     }
 
-    const payload = (await response.json()) as {
+    const requestBody = {
+      model: safeModel,
+      temperature: 0.7,
+      max_tokens: OPENROUTER_MAX_OUTPUT_TOKENS,
+      messages: [
+        {
+          role: 'system' as const,
+          content:
+            'You are a writing assistant. Return only polished markdown text based on the instruction. If provided context is truncated, do your best with what you have.'
+        },
+        {
+          role: 'user' as const,
+          content: `Instruction:\n${finalPrompt}\n\nCurrent content:\n${content || '(empty)'}`
+        }
+      ]
+    }
+
+    const withTimeout = async (ms: number, fn: (signal: AbortSignal) => Promise<Response>) => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), ms)
+      try {
+        return await fn(controller.signal)
+      } finally {
+        clearTimeout(timer)
+      }
+    }
+
+    const truncateForUi = (text: string, maxChars: number) => {
+      const t = (text || '').trim()
+      if (t.length <= maxChars) return t
+      return `${t.slice(0, maxChars)}…`
+    }
+
+    const parseErrorText = async (response: Response) => {
+      const text = await response.text().catch(() => '')
+      try {
+        const parsed = JSON.parse(text) as { error?: { message?: string; code?: number | string } }
+        const msg = parsed?.error?.message
+        return msg ? `${msg}` : text
+      } catch {
+        return text
+      }
+    }
+
+    let lastError: { status: number; message: string } | null = null
+    let okResponse: Response | null = null
+
+    for (let attempt = 0; attempt <= OPENROUTER_MAX_RETRIES; attempt++) {
+      const response = await withTimeout(OPENROUTER_TIMEOUT_MS, (signal) =>
+        fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+          method: 'POST',
+          signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${trimmedKey}`,
+            'HTTP-Referer': 'https://github.com/writr-app/writr',
+            'X-Title': 'Writer App'
+          },
+          body: JSON.stringify(requestBody)
+        })
+      ).catch((e: any) => {
+        const message = e?.name === 'AbortError' ? 'Request timed out.' : e?.message || String(e)
+        lastError = { status: 0, message }
+        return null
+      })
+
+      if (!response) {
+        if (attempt < OPENROUTER_MAX_RETRIES) {
+          await new Promise((r) => setTimeout(r, 400 * Math.pow(2, attempt)))
+          continue
+        }
+        return { error: `AI request failed: ${lastError?.message || 'Unknown error'}` }
+      }
+
+      if (!response.ok) {
+        const rawMsg = await parseErrorText(response)
+        const msg = truncateForUi(rawMsg, 500)
+        lastError = { status: response.status, message: msg }
+
+        const retryable = response.status >= 500 || response.status === 429
+        if (retryable && attempt < OPENROUTER_MAX_RETRIES) {
+          await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt)))
+          continue
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          return { error: 'AI request failed: Invalid or unauthorized OpenRouter API key.' }
+        }
+        if (response.status === 429) {
+          return { error: 'AI request failed: Rate limited. Please wait a bit and try again.' }
+        }
+        if (response.status === 413) {
+          return { error: 'AI request failed: Prompt/context is too large. Try fewer files or shorter notes.' }
+        }
+        if (response.status >= 500) {
+          return { error: `AI request failed: Provider error (${response.status}). Please retry or switch models.` }
+        }
+
+        return { error: `AI request failed: ${response.status} ${msg}` }
+      }
+
+      okResponse = response
+      break
+    }
+
+    if (!okResponse) {
+      return { error: `AI request failed: ${lastError?.message || 'Unknown error'}` }
+    }
+
+    const payload = (await okResponse.json()) as {
       choices?: Array<{ message?: { content?: string } }>
     }
 
@@ -746,7 +835,6 @@ export const generateWithAi: GenerateWithAi = async ({ model, prompt, content, a
 
     return { text }
   } catch (error) {
-    console.error('Failed to generate AI text:', error)
     return { error: 'AI generation failed. Please try again.' }
   }
 }

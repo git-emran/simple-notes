@@ -56,8 +56,8 @@ const ensureNodePtySpawnHelperExecutable = () => {
     if ((mode & 0o111) === 0) {
       chmodSync(helperPath, mode | 0o755)
     }
-  } catch (error) {
-    console.warn('[terminal] Unable to ensure node-pty spawn-helper permissions', error)
+  } catch {
+    void 0
   }
 
   hasEnsuredSpawnHelperPermissions = true

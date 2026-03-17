@@ -93,7 +93,6 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
         }
       } catch (err: any) {
         if (isMounted) {
-          console.error('Mermaid rendering error:', err)
           setError(err.message || 'Failed to render diagram')
           setSvg('')
         }
