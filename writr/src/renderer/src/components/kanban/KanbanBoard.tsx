@@ -2,7 +2,7 @@ import { useAtom } from 'jotai'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
-import { VscAdd, VscBell, VscCheck, VscClose } from 'react-icons/vsc'
+import { VscAdd, VscBell, VscCheck, VscEllipsis, VscTrash } from 'react-icons/vsc'
 import { MdDragIndicator } from 'react-icons/md'
 import { ContextMenu, ContextMenuItem } from '@renderer/components/ContextMenu'
 import {
@@ -56,6 +56,17 @@ export const KanbanBoard = () => {
   const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null)
   const [columnDropHint, setColumnDropHint] = useState<ColumnOverHint | null>(null)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+  const [cardActionsMenu, setCardActionsMenu] = useState<{
+    x: number
+    y: number
+    columnId: string
+    cardId: string
+  } | null>(null)
+  const [columnActionsMenu, setColumnActionsMenu] = useState<{
+    x: number
+    y: number
+    columnId: string
+  } | null>(null)
 
   const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
@@ -540,14 +551,28 @@ export const KanbanBoard = () => {
             ) : null}
           </div>
           <button
+            type="button"
             className="p-1 rounded hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)]"
-            title="Remove task"
+            title="More actions"
+            onMouseDown={(e) => {
+              e.stopPropagation()
+            }}
             onClick={(e) => {
               e.stopPropagation()
-              removeCard(columnId, card.id)
+              setColumnActionsMenu(null)
+              const rect = e.currentTarget.getBoundingClientRect()
+              setCardActionsMenu((prev) => {
+                if (prev?.columnId === columnId && prev.cardId === card.id) return null
+                return {
+                  x: rect.left,
+                  y: rect.bottom + 6,
+                  columnId,
+                  cardId: card.id,
+                }
+              })
             }}
           >
-            <VscClose className="w-4 h-4" />
+            <VscEllipsis className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -768,11 +793,27 @@ export const KanbanBoard = () => {
                   </div>
                 )}
                 <button
+                  type="button"
                   className="p-1 rounded hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)]"
-                  title="Remove column"
-                  onClick={() => removeColumn(column.id)}
+                  title="More actions"
+                  onMouseDown={(e) => {
+                    e.stopPropagation()
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    setCardActionsMenu(null)
+                    setColumnActionsMenu((prev) => {
+                      if (prev?.columnId === column.id) return null
+                      return {
+                        x: rect.left,
+                        y: rect.bottom + 6,
+                        columnId: column.id,
+                      }
+                    })
+                  }}
                 >
-                  <VscClose className="w-4 h-4" />
+                  <VscEllipsis className="w-4 h-4" />
                 </button>
               </div>
 
@@ -842,6 +883,7 @@ export const KanbanBoard = () => {
           x={workspaceContextMenu.x}
           y={workspaceContextMenu.y}
           onClose={() => setWorkspaceContextMenu(null)}
+          className="min-w-[120px]"
         >
           <ContextMenuItem
             onClick={() => {
@@ -849,7 +891,46 @@ export const KanbanBoard = () => {
               setWorkspaceContextMenu(null)
             }}
           >
-            Delete
+            <VscTrash className="h-4 w-4 text-red-400" />
+            <span className="text-red-400">Delete</span>
+          </ContextMenuItem>
+        </ContextMenu>
+      ) : null}
+
+      {cardActionsMenu ? (
+        <ContextMenu
+          x={cardActionsMenu.x}
+          y={cardActionsMenu.y}
+          onClose={() => setCardActionsMenu(null)}
+          className="min-w-[120px]"
+        >
+          <ContextMenuItem
+            onClick={() => {
+              removeCard(cardActionsMenu.columnId, cardActionsMenu.cardId)
+              setCardActionsMenu(null)
+            }}
+          >
+            <VscTrash className="h-4 w-4 text-red-400" />
+            <span className="text-red-400">Delete</span>
+          </ContextMenuItem>
+        </ContextMenu>
+      ) : null}
+
+      {columnActionsMenu ? (
+        <ContextMenu
+          x={columnActionsMenu.x}
+          y={columnActionsMenu.y}
+          onClose={() => setColumnActionsMenu(null)}
+          className="min-w-[120px]"
+        >
+          <ContextMenuItem
+            onClick={() => {
+              removeColumn(columnActionsMenu.columnId)
+              setColumnActionsMenu(null)
+            }}
+          >
+            <VscTrash className="h-4 w-4 text-red-400" />
+            <span className="text-red-400">Delete</span>
           </ContextMenuItem>
         </ContextMenu>
       ) : null}

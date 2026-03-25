@@ -1,4 +1,5 @@
 import { ComponentProps, useLayoutEffect, useEffect, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export type ContextMenuProps = ComponentProps<'div'> & {
   x: number
@@ -6,7 +7,7 @@ export type ContextMenuProps = ComponentProps<'div'> & {
   onClose: () => void
 }
 
-export const ContextMenu = ({ x, y, onClose, children, ...props }: ContextMenuProps) => {
+export const ContextMenu = ({ x, y, onClose, children, className, style, ...props }: ContextMenuProps) => {
   const ref = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState<{ top: number; left: number; visible: boolean }>({
     top: y,
@@ -48,8 +49,12 @@ export const ContextMenu = ({ x, y, onClose, children, ...props }: ContextMenuPr
   return (
     <div
       ref={ref}
-      className="fixed z-50 rounded-md py-1 min-w-[150px] max-h-[400px] overflow-y-auto preview-scrollbar bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-lg"
+      className={twMerge(
+        'fixed z-50 rounded-md py-1 min-w-[150px] max-h-[400px] overflow-y-auto preview-scrollbar bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-lg',
+        className
+      )}
       style={{
+        ...style,
         top: position.top,
         left: position.left,
         visibility: position.visible ? 'visible' : 'hidden'
