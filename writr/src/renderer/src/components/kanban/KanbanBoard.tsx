@@ -24,6 +24,9 @@ type DragPayload =
   | { kind: 'card'; columnId: string; cardId: string }
   | { kind: 'column'; columnId: string }
 
+const SNACKBAR_HIDE_MS = 2200
+const SNACKBAR_ANIMATION_MS = 160
+
 const parseDragPayload = (value: string | null): DragPayload | null => {
   if (!value) return null
   try {
@@ -68,6 +71,11 @@ export const KanbanBoard = () => {
     columnId: string
   } | null>(null)
 
+  const snackbarHideRef = useRef<number | null>(null)
+  const snackbarCleanupRef = useRef<number | null>(null)
+  const [snackbar, setSnackbar] = useState<{ message: string; kind: 'info' | 'danger' } | null>(null)
+  const [isSnackbarShown, setIsSnackbarShown] = useState(false)
+
   const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
@@ -76,6 +84,13 @@ export const KanbanBoard = () => {
   const columnDropHintRef = useRef<ColumnOverHint | null>(null)
   const columnElByIdRef = useRef<Record<string, HTMLDivElement | null>>({})
   const newWorkspaceInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (snackbarHideRef.current !== null) window.clearTimeout(snackbarHideRef.current)
+      if (snackbarCleanupRef.current !== null) window.clearTimeout(snackbarCleanupRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const normalized = normalizeKanbanState(storedState)
@@ -91,6 +106,22 @@ export const KanbanBoard = () => {
   )
 
   const columns = activeWorkspace?.columns ?? []
+
+  const showSnackbar = (message: string, kind: 'info' | 'danger' = 'info') => {
+    if (snackbarHideRef.current !== null) window.clearTimeout(snackbarHideRef.current)
+    if (snackbarCleanupRef.current !== null) window.clearTimeout(snackbarCleanupRef.current)
+
+    setSnackbar({ message, kind })
+    setIsSnackbarShown(false)
+    requestAnimationFrame(() => setIsSnackbarShown(true))
+
+    snackbarHideRef.current = window.setTimeout(() => {
+      setIsSnackbarShown(false)
+      snackbarCleanupRef.current = window.setTimeout(() => {
+        setSnackbar(null)
+      }, SNACKBAR_ANIMATION_MS)
+    }, SNACKBAR_HIDE_MS)
+  }
 
   const selectedCardInfo = useMemo(() => {
     if (!selectedCardId) return null
@@ -223,19 +254,19 @@ export const KanbanBoard = () => {
   }
 
   const removeWorkspace = (workspaceId: string) => {
+    if (state.workspaces.length <= 1) {
+      alert('At least one workspace is required.')
+      return
+    }
+
+    const workspace = state.workspaces.find((item) => item.id === workspaceId)
+    if (!workspace) return
+
+    const confirmed = window.confirm(`Delete workspace "${workspace.name}"? This cannot be undone.`)
+    if (!confirmed) return
+
     setState((prevStored) => {
       const prev = normalizeKanbanState(prevStored)
-      if (prev.workspaces.length <= 1) {
-        alert('At least one workspace is required.')
-        return prev
-      }
-
-      const workspace = prev.workspaces.find((item) => item.id === workspaceId)
-      if (!workspace) return prev
-
-      const confirmed = window.confirm(`Delete workspace "${workspace.name}"? This cannot be undone.`)
-      if (!confirmed) return prev
-
       const nextWorkspaces = prev.workspaces.filter((item) => item.id !== workspaceId)
       const nextActiveWorkspaceId =
         prev.activeWorkspaceId === workspaceId
@@ -248,6 +279,8 @@ export const KanbanBoard = () => {
         workspaces: nextWorkspaces,
       }
     })
+
+    showSnackbar('Workspace deleted.', 'danger')
   }
 
   useEffect(() => {
@@ -260,6 +293,7 @@ export const KanbanBoard = () => {
       ...workspace,
       columns: workspace.columns.filter((c) => c.id !== columnId),
     }))
+    showSnackbar('Board deleted.', 'danger')
   }
 
   const addCard = (
@@ -291,6 +325,7 @@ export const KanbanBoard = () => {
           : col
       ),
     }))
+    showSnackbar('Task created.')
   }
 
   const removeCard = (columnId: string, cardId: string) => {
@@ -300,6 +335,7 @@ export const KanbanBoard = () => {
         col.id === columnId ? { ...col, cards: col.cards.filter((c) => c.id !== cardId) } : col
       ),
     }))
+    showSnackbar('Task deleted.', 'danger')
   }
 
   const toggleCardCompleted = (columnId: string, cardId: string) => {
@@ -945,6 +981,24 @@ export const KanbanBoard = () => {
           updateCardById(cardId, (card) => ({ ...card, ...next }))
         }}
       />
+
+      {snackbar ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className={twMerge(
+            'pointer-events-none fixed bottom-5 left-1/2 z-[2000] flex -translate-x-1/2 items-center gap-2 rounded-full border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
+            isSnackbarShown ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'
+          )}
+        >
+          {snackbar.kind === 'danger' ? (
+            <VscTrash className="h-4 w-4 text-red-400" />
+          ) : (
+            <VscCheck className="h-4 w-4 text-emerald-500" />
+          )}
+          <span>{snackbar.message}</span>
+        </div>
+      ) : null}
     </div>
   )
 }
