@@ -4,29 +4,33 @@
 
 @layer base {
   :root {
-    --obsidian-base: #f4f5f8;
-    --obsidian-titlebar: #eceef3;
-    --obsidian-ribbon: #e8ebf2;
-    --obsidian-sidebar: #f7f8fb;
-    --obsidian-workspace: #fbfbf8;
-    --obsidian-pane: #f6f7fb;
-    --obsidian-border: #d9dde8;
-    --obsidian-border-soft: #e4e7ef;
-    --obsidian-text: #1c2433;
-    --obsidian-text-muted: #6f7786;
-    --obsidian-accent: #4f6adf;
-    --obsidian-accent-dim: rgba(79, 106, 223, 0.14);
-    --obsidian-hover: rgba(28, 36, 51, 0.08);
-    --obsidian-hover-soft: rgba(28, 36, 51, 0.05);
-    --obsidian-table-head: rgba(28, 36, 51, 0.08);
-    --obsidian-table-row: rgba(28, 36, 51, 0.04);
-    --obsidian-inline-code-bg: #f1f3f7;
-    --obsidian-inline-code-text: #344155;
-    --obsidian-quote-text: #a21caf;
-    --obsidian-quote-border: #d946ef;
-    --obsidian-ribbon-active-fg: #1c2433;
+    --obsidian-base: #f6f6f6;
+    --obsidian-titlebar: #f2f2f2;
+    --obsidian-ribbon: #f4f4f4;
+    --obsidian-sidebar: #f6f6f6;
+    --obsidian-workspace: #ffffff;
+    --obsidian-pane: #ffffff;
+    --obsidian-border: #e6e6e6;
+    --obsidian-border-soft: #efefef;
+    --obsidian-text: #111827;
+    --obsidian-text-muted: #6b7280;
+    --obsidian-accent: #3b82f6;
+    --obsidian-accent-dim: rgba(59, 130, 246, 0.14);
+    --obsidian-hover: rgba(17, 24, 39, 0.06);
+    --obsidian-hover-soft: rgba(17, 24, 39, 0.04);
+    --obsidian-table-head: rgba(17, 24, 39, 0.06);
+    --obsidian-table-row: rgba(17, 24, 39, 0.03);
+    --obsidian-inline-code-bg: #f3f4f6;
+    --obsidian-inline-code-text: #374151;
+    --obsidian-quote-text: #7c3aed;
+    --obsidian-quote-border: #c4b5fd;
+    --obsidian-ribbon-active-fg: #111827;
     --writr-preview-font-family: -apple-system, BlinkMacSystemFont, system-ui, "SF Pro Text",
       "SF Pro Display", "Segoe UI", Inter, sans-serif;
+    --writr-nav-active-bg: rgba(17, 24, 39, 0.06);
+    --writr-sidebar-selection-bg: rgba(17, 24, 39, 0.06);
+    --writr-scrollbar-thumb: rgba(17, 24, 39, 0.22);
+    --writr-scrollbar-thumb-hover: rgba(17, 24, 39, 0.32);
   }
 
   .dark {
@@ -51,6 +55,10 @@
     --obsidian-quote-text: #f0abfc;
     --obsidian-quote-border: #e879f9;
     --obsidian-ribbon-active-fg: #ffffff;
+    --writr-nav-active-bg: rgba(255, 255, 255, 0.08);
+    --writr-sidebar-selection-bg: rgba(255, 255, 255, 0.08);
+    --writr-scrollbar-thumb: rgba(255, 255, 255, 0.18);
+    --writr-scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
   }
 
   #root {
@@ -116,7 +124,7 @@ header {
 
 .obsidian-ribbon-btn.is-active {
   color: var(--obsidian-ribbon-active-fg);
-  background: var(--obsidian-accent-dim);
+  background: var(--writr-nav-active-bg);
 }
 
 .obsidian-workspace {
@@ -144,12 +152,12 @@ header {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 99px;
-  background-color: #3e4354;
+  background-color: var(--writr-scrollbar-thumb);
   transition: background-color 120ms ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #4a5065;
+  background-color: var(--writr-scrollbar-thumb-hover);
 }
 
 ::-webkit-scrollbar-track {
@@ -163,7 +171,7 @@ header {
 
 .kanban-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #3e4354 transparent;
+  scrollbar-color: var(--writr-scrollbar-thumb) transparent;
   scrollbar-gutter: stable;
 }
 
@@ -173,11 +181,11 @@ header {
 
 .kanban-scroll::-webkit-scrollbar-thumb {
   border-radius: 99px;
-  background-color: #3e4354;
+  background-color: var(--writr-scrollbar-thumb);
 }
 
 .kanban-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #4a5065;
+  background-color: var(--writr-scrollbar-thumb-hover);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -193,7 +201,7 @@ header {
 
 .filetree-scroll {
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #3e4354 transparent; /* Firefox */
+  scrollbar-color: var(--writr-scrollbar-thumb) transparent; /* Firefox */
 }
 
 .filetree-scroll.scrollbar-fade-out {

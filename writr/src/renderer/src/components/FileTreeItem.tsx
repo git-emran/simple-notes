@@ -215,7 +215,7 @@ const FileTreeItemComponent = ({
     'group cursor-pointer gap-1 transition-colors text-[12px] select-none relative rounded-sm mx-1 overflow-hidden'
 
   const interactiveClasses = isSelected
-    ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)]'
+    ? 'bg-[var(--writr-sidebar-selection-bg)] text-[var(--obsidian-text)]'
     : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
 
   const contentLeftMargin = node.type === 'folder' || isMarkdownOrCanvas || !showFolderIcons ? 'ml-0' : 'ml-1'
