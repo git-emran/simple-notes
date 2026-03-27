@@ -52,7 +52,7 @@ export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) 
   return (
     <aside
       className={twMerge(
-        'flex flex-col h-full border-r border-[var(--obsidian-border)] bg-[var(--obsidian-sidebar)]',
+        'flex flex-col h-full',
         className
       )}
       {...props}

@@ -31,7 +31,7 @@ export const Sidebar = ({
       <div className="flex-1 overflow-auto">{children}</div>
 
       <div
-        className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[var(--obsidian-accent-dim)]"
+        className="absolute top-0 right-0 w-0.5 h-full cursor-col-resize hover:bg-[var(--obsidian-accent-dim)]"
         id="resize-handle"
       />
     </aside>
