@@ -16,6 +16,7 @@ export const tabIndentUnitAtom = atomWithStorage<number>('writr-tab-indent-unit'
 export const editorFontSizeAtom = atomWithStorage<number>('writr-editor-font-size', 13)
 
 export type EditorFontOption =
+  | 'SF Pro'
   | 'SFMono-Regular'
   | 'Menlo'
   | 'Courier'

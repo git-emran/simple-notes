@@ -12,6 +12,7 @@ import {
   setTerminalSessionIdAtom,
   themeModeAtom,
   type EditorTab,
+  type EditorFontOption,
 } from '@renderer/store'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect, useRef, useState } from 'react'
@@ -81,8 +82,10 @@ const getTerminalTheme = (isDarkMode: boolean) => {
   }
 }
 
-const getTerminalFontFamily = (font: string) =>
-  `"${font}", "JetBrainsMono Nerd Font", "MesloLGS NF", "SauceCodePro Nerd Font", "CaskaydiaMono Nerd Font", "Symbols Nerd Font", monospace`
+const getTerminalBaseFont = (font: EditorFontOption) => (font === 'SF Pro' ? 'SFMono-Regular' : font)
+
+const getTerminalFontFamily = (font: EditorFontOption) =>
+  `"${getTerminalBaseFont(font)}", "JetBrainsMono Nerd Font", "MesloLGS NF", "SauceCodePro Nerd Font", "CaskaydiaMono Nerd Font", "Symbols Nerd Font", monospace`
 
 const getShellLabel = (shellPath: string) => {
   const normalized = shellPath.replace(/\\/g, '/')

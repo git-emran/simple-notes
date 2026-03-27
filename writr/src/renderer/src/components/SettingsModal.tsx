@@ -18,7 +18,7 @@ const labelClass = 'text-sm text-[var(--obsidian-text)]'
 const helpClass = 'text-xs text-[var(--obsidian-text-muted)]'
 const cardClass = 'rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] p-4'
 
-const fontOptions: EditorFontOption[] = ['SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier']
+const fontOptions: EditorFontOption[] = ['SF Pro', 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier']
 
 export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const [themeMode, setThemeMode] = useAtom(themeModeAtom)
@@ -180,7 +180,7 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <div className={labelClass}>Editor font</div>
-                    <div className={helpClass}>Desktop-safe monospace choices.</div>
+                    <div className={helpClass}>Choose a font for the editor.</div>
                   </div>
                   <select
                     value={editorFont}

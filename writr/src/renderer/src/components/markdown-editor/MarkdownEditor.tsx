@@ -7,7 +7,10 @@ import { vim } from '@replit/codemirror-vim'
 import { throttle, debounce } from 'lodash'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
+  createCanvasAtom,
+  createKanbanTabAtom,
   createNoteAtom,
+  createTerminalTabAtom,
   fileTreeAtom,
   fileTreeIndexAtom,
   lineWrappingEnabledAtom,
@@ -52,7 +55,7 @@ import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import * as commands from './editorCommands'
 import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
 import { markdownMarkupColors } from './markdownMarkupColors'
-import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
+import { VscError, VscInfo, VscLightbulb, VscProject, VscSymbolRuler, VscTerminal, VscWarning } from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
 import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
@@ -69,6 +72,9 @@ export const MarkdownEditor = () => {
   const [noteTags, setNoteTags] = useAtom(noteTagByPathAtom)
   const saveNote = useSetAtom(saveNoteAtom)
   const createNote = useSetAtom(createNoteAtom)
+  const createKanbanTab = useSetAtom(createKanbanTabAtom)
+  const createTerminalTab = useSetAtom(createTerminalTabAtom)
+  const createCanvas = useSetAtom(createCanvasAtom)
   const showToolbar = useAtomValue(showToolbarAtom)
   const relativeLineNumbersEnabled = useAtomValue(relativeLineNumbersEnabledAtom)
   const lineWrappingEnabled = useAtomValue(lineWrappingEnabledAtom)
@@ -606,7 +612,42 @@ export const MarkdownEditor = () => {
     [openAiModal]
   )
 
-  const commandPaletteItems: CommandPaletteItem[] = useMemo(
+  const panelCommandItems: CommandPaletteItem[] = useMemo(() => {
+    const getSelectedNoteDir = () => {
+      const path = selectedNote?.path ?? ''
+      if (!path) return ''
+      const lastSlash = path.lastIndexOf('/')
+      const lastBackslash = path.lastIndexOf('\\')
+      const maxIndex = Math.max(lastSlash, lastBackslash)
+      return maxIndex === -1 ? '' : path.substring(0, maxIndex)
+    }
+
+    return [
+      {
+        id: 'panel-kanban',
+        label: 'Kanban',
+        icon: <VscProject />,
+        keywords: ['panel', 'left', 'board', 'project'],
+        run: () => createKanbanTab(),
+      },
+      {
+        id: 'panel-terminal',
+        label: 'Terminal',
+        icon: <VscTerminal />,
+        keywords: ['panel', 'left', 'shell', 'cli'],
+        run: () => createTerminalTab(),
+      },
+      {
+        id: 'panel-canvas',
+        label: 'Canvas',
+        icon: <VscSymbolRuler />,
+        keywords: ['panel', 'left', 'diagram', 'whiteboard'],
+        run: () => void createCanvas(getSelectedNoteDir()),
+      },
+    ]
+  }, [createCanvas, createKanbanTab, createTerminalTab, selectedNote?.path])
+
+  const editorCommandItems: CommandPaletteItem[] = useMemo(
     () =>
       editorMenuEntries
         .filter((e): e is Extract<EditorMenuEntry, { type: 'item' }> => e.type === 'item')
@@ -619,6 +660,11 @@ export const MarkdownEditor = () => {
           run: () => run(viewRef.current),
         })),
     [editorMenuEntries]
+  )
+
+  const commandPaletteItems: CommandPaletteItem[] = useMemo(
+    () => [...panelCommandItems, ...editorCommandItems],
+    [editorCommandItems, panelCommandItems]
   )
 
   const insertAiText = useCallback((text: string) => {
@@ -1372,7 +1418,7 @@ export const MarkdownEditor = () => {
         {/* Toggleable Preview Container */}
         <div
           ref={previewContainerRef}
-          className="h-full preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
+          className="h-full writr-markdown-preview preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
           style={{ 
             width: isFullPreview ? '100%' : '50%',
             display: isPreview ? 'block' : 'none'

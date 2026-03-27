@@ -30,7 +30,8 @@ import {
   themeModeAtom,
   fileTreeAtom,
   openTabAtom,
-  tabsAtom
+  tabsAtom,
+  type EditorFontOption
 } from '@renderer/store'
 import {
   VscFiles,
@@ -43,6 +44,37 @@ import {
   VscTerminal,
   VscSettingsGear
 } from 'react-icons/vsc'
+
+const toCssFontFamily = (family: string) => {
+  if (
+    family === 'monospace' ||
+    family === 'sans-serif' ||
+    family === 'serif' ||
+    family === 'system-ui' ||
+    family === '-apple-system' ||
+    family === 'BlinkMacSystemFont'
+  ) {
+    return family
+  }
+  return family.includes(' ') ? `"${family}"` : `"${family}"`
+}
+
+const getEditorFontStack = (font: EditorFontOption) => {
+  if (font === 'SF Pro') {
+    return [
+      '-apple-system',
+      'BlinkMacSystemFont',
+      'system-ui',
+      'SF Pro Text',
+      'SF Pro Display',
+      'Segoe UI',
+      'Inter',
+      'sans-serif',
+    ]
+  }
+
+  return [font, 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier', 'monospace']
+}
 
 const App = () => {
   const minSidebarWidth = 170
@@ -132,11 +164,8 @@ const App = () => {
 
   useEffect(() => {
     const root = document.documentElement
-    const normalizedFont = editorFont === 'JetBrains Mono' ? 'JetBrains Mono' : editorFont
-    root.style.setProperty(
-      '--writr-editor-font-family',
-      `"${normalizedFont}", "SFMono-Regular", Menlo, "JetBrains Mono", Courier, monospace`
-    )
+    const stack = getEditorFontStack(editorFont).map(toCssFontFamily).join(', ')
+    root.style.setProperty('--writr-editor-font-family', stack)
     root.style.setProperty('--writr-editor-font-size', `${Math.max(11, Math.min(20, editorFontSize))}px`)
   }, [editorFont, editorFontSize])
 

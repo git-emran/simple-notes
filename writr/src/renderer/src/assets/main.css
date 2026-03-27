@@ -25,6 +25,8 @@
     --obsidian-quote-text: #a21caf;
     --obsidian-quote-border: #d946ef;
     --obsidian-ribbon-active-fg: #1c2433;
+    --writr-preview-font-family: -apple-system, BlinkMacSystemFont, system-ui, "SF Pro Text",
+      "SF Pro Display", "Segoe UI", Inter, sans-serif;
   }
 
   .dark {
@@ -62,6 +64,14 @@
     background: var(--obsidian-base);
     color: var(--obsidian-text);
   }
+}
+
+.writr-markdown-preview {
+  font-family: var(--writr-preview-font-family);
+}
+
+.writr-markdown-preview .font-sans {
+  font-family: var(--writr-preview-font-family) !important;
 }
 
 header {
