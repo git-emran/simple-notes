@@ -13,6 +13,7 @@ import { SettingsModal } from './components/SettingsModal'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { KanbanReminderHost } from './components/kanban/KanbanReminderHost'
 import { TerminalTab } from './components/terminal/TerminalTab'
+import { Tooltip } from './components/Tooltip'
 import { useRef, useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { 
@@ -255,81 +256,89 @@ const App = () => {
         </div>
         <div className="flex flex-1 overflow-hidden">
           <aside className="obsidian-ribbon">
-            <button
-              className="obsidian-ribbon-btn"
-              onClick={() => setCollapsed((prev) => !prev)}
-              title={collapsed ? 'Show files' : 'Hide files'}
-            >
-              {collapsed ? <VscChevronRight /> : <VscChevronLeft />}
-            </button>
-            <button
-              className={`obsidian-ribbon-btn ${sidebarView === 'files' ? 'is-active' : ''}`}
-              title="Files"
-              onClick={() => {
-                setSidebarView('files')
-                setCollapsed(false)
-                setAppMode('editor')
-              }}
-            >
-              <VscFiles />
-            </button>
-            <button
-              className={`obsidian-ribbon-btn ${sidebarView === 'search' ? 'is-active' : ''}`}
-              title="Search"
-              onClick={() => {
-                setSidebarView('search')
-                setCollapsed(false)
-                setAppMode('editor')
-              }}
-            >
-              <VscSearch />
-            </button>
-            <button
-              className="obsidian-ribbon-btn"
-              title="Daily note"
-              onClick={() => {
-                setCollapsed(false)
-                setAppMode('editor')
-                void createDailyNote()
-              }}
-            >
-              <VscCalendar />
-            </button>
-            <button
-              className="obsidian-ribbon-btn"
-              title="Kanban"
-              onClick={() => {
-                setCollapsed(false)
-                createKanbanTab()
-              }}
-            >
-              <VscProject />
-            </button>
-            <button
-              className={`obsidian-ribbon-btn ${activeTab?.kind === 'terminal' ? 'is-active' : ''}`}
-              title="Terminal"
-              onClick={() => {
-                setCollapsed(false)
-                createTerminalTab()
-              }}
-            >
-              <VscTerminal />
-            </button>
-            <button
-              className={`obsidian-ribbon-btn ${activeTab?.kind === 'file' && appMode === 'canvas' ? 'is-active' : ''}`}
-              title="Canvas"
-              onClick={handleCanvasClick}
-            >
-              <VscSymbolRuler />
-            </button>
+            <Tooltip content={collapsed ? 'Show files' : 'Hide files'} position="right" icon={collapsed ? undefined : <VscChevronLeft className="w-3.5 h-3.5" />}>
+              <button
+                className="obsidian-ribbon-btn"
+                onClick={() => setCollapsed((prev) => !prev)}
+              >
+                {collapsed ? <VscChevronRight /> : <VscChevronLeft />}
+              </button>
+            </Tooltip>
+            <Tooltip content="Files" position="right" icon={<VscFiles className="w-3.5 h-3.5" />}>
+              <button
+                className={`obsidian-ribbon-btn ${sidebarView === 'files' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setSidebarView('files')
+                  setCollapsed(false)
+                  setAppMode('editor')
+                }}
+              >
+                <VscFiles />
+              </button>
+            </Tooltip>
+            <Tooltip content="Search" position="right" icon={<VscSearch className="w-3.5 h-3.5" />}>
+              <button
+                className={`obsidian-ribbon-btn ${sidebarView === 'search' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setSidebarView('search')
+                  setCollapsed(false)
+                  setAppMode('editor')
+                }}
+              >
+                <VscSearch />
+              </button>
+            </Tooltip>
+            <Tooltip content="Daily note" position="right" icon={<VscCalendar className="w-3.5 h-3.5" />}>
+              <button
+                className="obsidian-ribbon-btn"
+                onClick={() => {
+                  setCollapsed(false)
+                  setAppMode('editor')
+                  void createDailyNote()
+                }}
+              >
+                <VscCalendar />
+              </button>
+            </Tooltip>
+            <Tooltip content="Kanban" position="right" icon={<VscProject className="w-3.5 h-3.5" />}>
+              <button
+                className="obsidian-ribbon-btn"
+                onClick={() => {
+                  setCollapsed(false)
+                  createKanbanTab()
+                }}
+              >
+                <VscProject />
+              </button>
+            </Tooltip>
+            <Tooltip content="Terminal" position="right" icon={<VscTerminal className="w-3.5 h-3.5" />}>
+              <button
+                className={`obsidian-ribbon-btn ${activeTab?.kind === 'terminal' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setCollapsed(false)
+                  createTerminalTab()
+                }}
+              >
+                <VscTerminal />
+              </button>
+            </Tooltip>
+            <Tooltip content="Canvas" position="right" icon={<VscSymbolRuler className="w-3.5 h-3.5" />}>
+              <button
+                className={`obsidian-ribbon-btn ${activeTab?.kind === 'file' && appMode === 'canvas' ? 'is-active' : ''}`}
+                onClick={handleCanvasClick}
+              >
+                <VscSymbolRuler />
+              </button>
+            </Tooltip>
             <div className="flex-1" />
-            <button
-              className="obsidian-ribbon-btn"
-              title="Settings"
-              onClick={() => setIsSettingsOpen(true)}
-            >
-              <VscSettingsGear />
-            </button>
+            <Tooltip content="Settings" position="right" icon={<VscSettingsGear className="w-3.5 h-3.5" />}>
+              <button
+                className="obsidian-ribbon-btn"
+                onClick={() => setIsSettingsOpen(true)}
+              >
+                <VscSettingsGear />
+              </button>
+            </Tooltip>
           </aside>
 
           {!collapsed && (
