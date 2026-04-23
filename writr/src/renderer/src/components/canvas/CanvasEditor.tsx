@@ -45,6 +45,7 @@ export const CanvasEditor = () => {
 
   const canvasTitle = selectedNote?.title || 'Canvas'
   const isCanvasFile = !!selectedNote?.path && selectedNote.path.endsWith('.canvas')
+  const isCanvasEmpty = isLoaded && nodes.length === 0 && edges.length === 0
 
   const onChangeLabel = useCallback((nodeId: string, label: string) => {
     setNodes((prev) =>
@@ -310,6 +311,14 @@ export const CanvasEditor = () => {
           </div>
         </Panel>
       </ReactFlow>
+
+      {isCanvasEmpty && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="px-4 py-2 rounded-lg text-sm text-[var(--obsidian-text-muted)] bg-[var(--obsidian-pane)]/70 backdrop-blur border border-[var(--obsidian-border)] shadow-sm transition-opacity duration-200 opacity-100">
+            Drag and drop items to start
+          </div>
+        </div>
+      )}
 
       {/* Floating Header */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
