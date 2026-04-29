@@ -1,8 +1,8 @@
 import { useAtomValue, useSetAtom } from 'jotai'
-import { activeTabIdAtom, closeTabAtom, createNewTabAtom, setActiveTabAtom, tabsAtom } from '@renderer/store'
+import { activeTabIdAtom, closeTabAtom, createNewTabAtom, reorderTabsAtom, setActiveTabAtom, tabsAtom } from '@renderer/store'
 import { VscAdd, VscClose, VscProject, VscTerminal } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
-import { type CSSProperties } from 'react'
+import { type CSSProperties, useRef, useState } from 'react'
 
 export const EditorTabs = () => {
   const tabs = useAtomValue(tabsAtom)
@@ -10,6 +10,9 @@ export const EditorTabs = () => {
   const setActiveTab = useSetAtom(setActiveTabAtom)
   const closeTab = useSetAtom(closeTabAtom)
   const createNewTab = useSetAtom(createNewTabAtom)
+  const reorderTabs = useSetAtom(reorderTabsAtom)
+  const draggedTabIdRef = useRef<string | null>(null)
+  const [dropIndicator, setDropIndicator] = useState<{ tabId: string; position: 'before' | 'after' } | null>(null)
 
   return (
     <div 
@@ -24,6 +27,39 @@ export const EditorTabs = () => {
           <div
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
+            draggable
+            onDragStart={(e) => {
+              draggedTabIdRef.current = tab.id
+              e.dataTransfer.setData('application/x-writr-tab-id', tab.id)
+              e.dataTransfer.effectAllowed = 'move'
+            }}
+            onDragEnd={() => {
+              draggedTabIdRef.current = null
+              setDropIndicator(null)
+            }}
+            onDragOver={(e) => {
+              const dragged = draggedTabIdRef.current
+              if (!dragged || dragged === tab.id) return
+              e.preventDefault()
+
+              const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
+              const position: 'before' | 'after' = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+              setDropIndicator({ tabId: tab.id, position })
+            }}
+            onDragLeave={(e) => {
+              if (!dropIndicator) return
+              const related = e.relatedTarget
+              if (related && e.currentTarget.contains(related as Node)) return
+              setDropIndicator(null)
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              const source =
+                draggedTabIdRef.current ?? e.dataTransfer.getData('application/x-writr-tab-id') ?? e.dataTransfer.getData('text/plain')
+              if (!source || source === tab.id || !dropIndicator) return
+              reorderTabs({ sourceTabId: source, targetTabId: tab.id, position: dropIndicator.position })
+              setDropIndicator(null)
+            }}
             style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
             className={twMerge(
               'group relative flex items-center min-w-[130px] max-w-[230px] h-9 px-3 cursor-pointer select-none transition-all',
@@ -32,6 +68,13 @@ export const EditorTabs = () => {
                 : 'bg-[var(--obsidian-pane)] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]'
             )}
           >
+            {dropIndicator?.tabId === tab.id && dropIndicator.position === 'before' && (
+              <div className="absolute left-0 top-1 bottom-1 w-[2px] bg-[var(--obsidian-accent)] rounded" />
+            )}
+            {dropIndicator?.tabId === tab.id && dropIndicator.position === 'after' && (
+              <div className="absolute right-0 top-1 bottom-1 w-[2px] bg-[var(--obsidian-accent)] rounded" />
+            )}
+
             {isActive && (
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--obsidian-accent)]" />
             )}

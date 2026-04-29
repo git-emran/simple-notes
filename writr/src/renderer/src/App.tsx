@@ -36,7 +36,6 @@ import {
 } from '@renderer/store'
 import {
   VscFiles,
-  VscSearch,
   VscCalendar,
   VscChevronLeft,
   VscChevronRight,
@@ -276,18 +275,6 @@ const App = () => {
                 <VscFiles />
               </button>
             </Tooltip>
-            <Tooltip content="Search" position="right" icon={<VscSearch className="w-3.5 h-3.5" />}>
-              <button
-                className={`obsidian-ribbon-btn ${sidebarView === 'search' ? 'is-active' : ''}`}
-                onClick={() => {
-                  setSidebarView('search')
-                  setCollapsed(false)
-                  setAppMode('editor')
-                }}
-              >
-                <VscSearch />
-              </button>
-            </Tooltip>
             <Tooltip content="Daily note" position="right" icon={<VscCalendar className="w-3.5 h-3.5" />}>
               <button
                 className="obsidian-ribbon-btn"
@@ -347,7 +334,21 @@ const App = () => {
               minWidth={minSidebarWidth}
               onClose={() => setCollapsed(true)}
             >
-              {sidebarView === 'files' ? <FileExplorer /> : <SidebarSearch />}
+              {sidebarView === 'files' ? (
+                <FileExplorer
+                  onSearchRequested={() => {
+                    setSidebarView('search')
+                    setAppMode('editor')
+                  }}
+                />
+              ) : (
+                <SidebarSearch
+                  onCloseRequested={() => {
+                    setSidebarView('files')
+                    setAppMode('editor')
+                  }}
+                />
+              )}
             </Sidebar>
           )}
 

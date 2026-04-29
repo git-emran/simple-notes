@@ -21,7 +21,7 @@ import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { ComponentProps, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
-import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll, VscEdit, VscGoToFile, VscTrash } from 'react-icons/vsc'
+import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll, VscEdit, VscGoToFile, VscSearch, VscTrash } from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 
 /* Compact row height (Obsidian-like density). Must match FileTreeItem styling. */
@@ -32,7 +32,11 @@ const FILE_TREE_FILE_ROW_HEIGHT = 44
 const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 54
 const WINDOWED_THRESHOLD = 200
 
-export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) => {
+type FileExplorerProps = ComponentProps<'aside'> & {
+  onSearchRequested?: () => void
+}
+
+export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExplorerProps) => {
   const fileTree = useAtomValue(fileTreeAtom)
   const fileTreeIndex = useAtomValue(fileTreeIndexAtom)
   const notesRootDir = useAtomValue(notesRootDirAtom)
@@ -427,9 +431,18 @@ export const FileExplorer = ({ className, ...props }: ComponentProps<'aside'>) =
       {...props}
     >
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
-        <span className="min-w-0 truncate text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
-          FILES
-        </span>
+        <button
+          type="button"
+          onClick={onSearchRequested}
+          disabled={!onSearchRequested}
+          className={twMerge(
+            'min-w-0 truncate text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-colors',
+            'disabled:opacity-60 disabled:hover:text-[var(--obsidian-text-muted)]'
+          )}
+          title="Search files"
+        >
+          <VscSearch className="w-4 h-4" />
+        </button>
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => handleCreateFile()}

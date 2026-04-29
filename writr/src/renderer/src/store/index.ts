@@ -133,6 +133,28 @@ export const createNewTabAtom = atom(null, (get, set) => {
   set(selectedNodeAtom, null)
 })
 
+export const reorderTabsAtom = atom(
+  null,
+  (get, set, payload: { sourceTabId: string; targetTabId: string; position: 'before' | 'after' }) => {
+    const { sourceTabId, targetTabId, position } = payload
+    if (sourceTabId === targetTabId) return
+
+    const tabs = get(tabsAtom)
+    const sourceIndex = tabs.findIndex((t) => t.id === sourceTabId)
+    const targetIndex = tabs.findIndex((t) => t.id === targetTabId)
+    if (sourceIndex === -1 || targetIndex === -1) return
+
+    const nextTabs = [...tabs]
+    const [moved] = nextTabs.splice(sourceIndex, 1)
+    const nextTargetIndex = nextTabs.findIndex((t) => t.id === targetTabId)
+    if (nextTargetIndex === -1) return
+
+    const insertIndex = position === 'before' ? nextTargetIndex : nextTargetIndex + 1
+    nextTabs.splice(insertIndex, 0, moved)
+    set(tabsAtom, nextTabs)
+  }
+)
+
 export const createKanbanTabAtom = atom(null, (get, set) => {
   const tabs = get(tabsAtom)
   const existing = tabs.find((t) => t.kind === 'kanban')

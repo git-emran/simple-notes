@@ -2,7 +2,7 @@ import { useMemo, useState, type ComponentProps } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { fileTreeAtom, noteStatusByPathAtom, noteTagByPathAtom, openTabAtom } from '@renderer/store'
 import { FileNode } from '@shared/models'
-import { VscFile, VscSearch } from 'react-icons/vsc'
+import { VscClose, VscFile, VscSearch } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
@@ -21,7 +21,11 @@ const flattenFiles = (nodes: FileNode[]): FileNode[] => {
   return output
 }
 
-export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) => {
+type SidebarSearchProps = ComponentProps<'aside'> & {
+  onCloseRequested?: () => void
+}
+
+export const SidebarSearch = ({ className, onCloseRequested, ...props }: SidebarSearchProps) => {
   const fileTree = useAtomValue(fileTreeAtom)
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteTags = useAtomValue(noteTagByPathAtom)
@@ -58,8 +62,22 @@ export const SidebarSearch = ({ className, ...props }: ComponentProps<'aside'>) 
       {...props}
     >
       <div className="px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
-        <div className="text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)] mb-2">
-          SEARCH
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
+            SEARCH
+          </div>
+          <button
+            type="button"
+            onClick={onCloseRequested}
+            disabled={!onCloseRequested}
+            className={twMerge(
+              'p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors',
+              'disabled:opacity-60 disabled:hover:text-[var(--obsidian-text-muted)] disabled:hover:bg-transparent'
+            )}
+            title="Close search"
+          >
+            <VscClose className="w-4 h-4" />
+          </button>
         </div>
         <div className="relative">
           <VscSearch className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-[var(--obsidian-text-muted)]" />
