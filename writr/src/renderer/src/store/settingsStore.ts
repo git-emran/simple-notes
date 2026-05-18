@@ -21,6 +21,7 @@ export type EditorFontOption =
   | 'Menlo'
   | 'Courier'
   | 'JetBrains Mono'
+  | 'Martian Mono'
 
 export const editorFontAtom = atomWithStorage<EditorFontOption>(
   'writr-editor-font',
