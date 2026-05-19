@@ -5,7 +5,7 @@
 
 [Writer macOS](https://drive.google.com/drive/u/0/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1)
 
-**Writer** is an engineered-to-order, distraction-free Markdown text editor designed specifically for macOS. Architected for developers, students, and power users, it fuses the efficiency of Vim motions with modern development tools. Whether you are documenting complex system architectures, practicing DSA implementations, or capturing rapid brain dumps, Writer brings IDE-grade utility directly to your writing workflow.
+**Writer** is an engineered-to-order, distraction-free Markdown text editor designed for Cross platform use (Currently only macOS and Linux have not tested on windows). Architected for developers, students, and power users, it fuses the efficiency of Vim motions with modern development tools. Whether you are documenting complex system architectures, practicing DSA implementations, or capturing rapid brain dumps, Writer brings IDE-grade utility directly to your writing workflow.
 
 <img width="1364" height="1169" alt="writer_new" src="https://github.com/user-attachments/assets/51a20b38-9e14-49ca-be9b-af28410571b3" />
 
