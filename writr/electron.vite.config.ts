@@ -5,8 +5,15 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from 'tailwindcss' // For Tailwind CSS v3
 import autoprefixer from 'autoprefixer' // Autoprefixer is typically used with Tailwind
 
-export default defineConfig({
-  main: {
+const processEnv = process.env.PROCESS || 'all'
+const buildMain = processEnv === 'all' || processEnv.includes('main')
+const buildPreload = processEnv === 'all' || processEnv.includes('preload')
+const buildRenderer = processEnv === 'all' || processEnv.includes('renderer')
+
+const config: any = {}
+
+if (buildMain) {
+  config.main = {
     plugins: [externalizeDepsPlugin()],
     resolve: {
       alias: {
@@ -14,11 +21,17 @@ export default defineConfig({
         '@shared': resolve('src/shared')
       }
     }
-  },
-  preload: {
+  }
+}
+
+if (buildPreload) {
+  config.preload = {
     plugins: [externalizeDepsPlugin()]
-  },
-  renderer: {
+  }
+}
+
+if (buildRenderer) {
+  config.renderer = {
     assetsInclude: ['**/*.wasm', 'src/renderer/assets/**'],
     resolve: {
       alias: {
@@ -39,4 +52,6 @@ export default defineConfig({
       }
     }
   }
-})
+}
+
+export default defineConfig(config)
