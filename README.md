@@ -189,7 +189,7 @@ Links are written as `[name](u.r.l)`
 
 ## 🛠️ Development & Build Instructions
 
-We have configured a cross-platform, single-command bootstrap and packaging pipeline. The pipeline operates flawlessly across **Windows, macOS, and Linux**.
+I have configured a cross-platform, single-command bootstrap and packaging pipeline. The pipeline operates flawlessly across **Windows, macOS, and Linux**.
 
 ### 1. Bootstrapping Dependencies
 Restore all strict dependencies from the package lockfile:
@@ -223,7 +223,7 @@ You can also run specific segments of the pipeline:
   - Linux: `npm run package:linux`
 
 ### 🐧 Linux Package Prerequisite Validation
-If packaging to Linux distribution formats (like `.deb`, `.rpm`, `.pacman`, `.snap`), run our host prerequisite validator to verify packages like `fakeroot` or `rpmbuild` are present:
+If packaging to Linux distribution formats (like `.deb`, `.rpm`, `.pacman`, `.snap`), run my host prerequisite validator to verify packages like `fakeroot` or `rpmbuild` are present:
 ```bash
 cd writr
 ./scripts/check-prerequisites.sh
