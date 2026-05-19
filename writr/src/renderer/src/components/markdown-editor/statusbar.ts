@@ -25,6 +25,8 @@ export const statusBarExtension = ViewPlugin.fromClass(
         z-index: 10;
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
+        text-align: right;
+        box-sizing: border-box;
       `
 
       const parent = view.dom.parentElement

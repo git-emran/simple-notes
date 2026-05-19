@@ -275,9 +275,10 @@ const FileTreeItemComponent = ({
   const renderNodeIcon = () => {
     if (node.type === 'folder' && showFolderIcons) {
       const FolderIcon = isExpanded ? VscFolderOpened : VscFolder
+      const iconSizeClass = depth > 0 ? 'w-[10.4px] h-[10.4px]' : 'w-4 h-4'
       return (
         <FolderIcon
-          className={twMerge('w-4 h-4', isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-accent)]')}
+          className={twMerge(iconSizeClass, isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-accent)]')}
         />
       )
     }
