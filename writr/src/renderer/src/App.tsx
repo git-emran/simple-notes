@@ -39,6 +39,8 @@ import {
   VscCalendar,
   VscChevronLeft,
   VscChevronRight,
+  VscLayoutSidebarLeft,
+  VscLayoutSidebarLeftOff,
   VscProject,
   VscSymbolRuler,
   VscTerminal,
@@ -243,11 +245,28 @@ const App = () => {
           className="h-9 flex shrink-0 bg-[var(--obsidian-pane)] border-b border-[var(--obsidian-border)] z-50"
           style={{ WebkitAppRegion: 'drag' } as any}
         >
+          {/* macOS traffic lights safe area */}
+          <div className="shrink-0 w-[82px]" />
           {/* Spacer for Ribbon + Sidebar */}
           <div 
-            className="flex shrink-0 border-r border-[var(--obsidian-border)] items-center pl-[72px]" 
-            style={{ width: 46 + (collapsed ? 0 : sidebarWidth) }}
-          />
+            className="flex shrink-0 border-r border-[var(--obsidian-border)] items-center justify-end pr-2" 
+            style={{ width: 30 + (collapsed ? 0 : sidebarWidth) }}
+          >
+            <Tooltip content={collapsed ? 'Show sidebar' : 'Hide sidebar'} position="bottom">
+              <button
+                className="writr-titlebar-sidebar-toggle"
+                style={{ WebkitAppRegion: 'no-drag' } as any}
+                onClick={() => setCollapsed((prev) => !prev)}
+                aria-label={collapsed ? 'Show sidebar' : 'Hide sidebar'}
+              >
+                {collapsed ? (
+                  <VscLayoutSidebarLeftOff className="w-4 h-4" />
+                ) : (
+                  <VscLayoutSidebarLeft className="w-4 h-4" />
+                )}
+              </button>
+            </Tooltip>
+          </div>
           {/* Tabs Area */}
           <div className="flex-1 overflow-hidden">
             <EditorTabs />
@@ -255,14 +274,6 @@ const App = () => {
         </div>
         <div className="flex flex-1 overflow-hidden">
           <aside className="obsidian-ribbon">
-            <Tooltip content={collapsed ? 'Show files' : 'Hide files'} position="right" icon={collapsed ? undefined : <VscChevronLeft className="w-3.5 h-3.5" />}>
-              <button
-                className="obsidian-ribbon-btn"
-                onClick={() => setCollapsed((prev) => !prev)}
-              >
-                {collapsed ? <VscChevronRight /> : <VscChevronLeft />}
-              </button>
-            </Tooltip>
             <Tooltip content="Files" position="right" icon={<VscFiles className="w-3.5 h-3.5" />}>
               <button
                 className={`obsidian-ribbon-btn ${sidebarView === 'files' ? 'is-active' : ''}`}

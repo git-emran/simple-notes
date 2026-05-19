@@ -189,9 +189,12 @@ export const insertTable = (view: EditorView | null) => {
 
 `
 
+  const firstCellText = 'Header 1'
+
   view.dispatch({
     changes: { from, to, insert: tableTemplate },
-    selection: { anchor: from + 2, head: from + 10 }
+    /* Select the first cell so typing replaces it immediately */
+    selection: { anchor: from + 2, head: from + 2 + firstCellText.length }
   })
 
   view.focus()

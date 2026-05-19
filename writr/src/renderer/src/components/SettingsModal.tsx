@@ -165,15 +165,18 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                   </div>
                   <div className="flex items-center gap-3">
                     <input
-                      type="range"
-                      min={11}
-                      max={20}
+                      type="number"
+                      min={9}
+                      max={32}
                       value={fontSize}
-                      onChange={(e) => setFontSize(Number(e.target.value))}
+                      onChange={(e) => {
+                        const next = Number(e.target.value)
+                        if (!Number.isFinite(next)) return
+                        setFontSize(Math.min(32, Math.max(9, Math.floor(next))))
+                      }}
+                      className="w-20 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                     />
-                    <div className="w-10 text-right text-xs text-[var(--obsidian-text-muted)]">
-                      {fontSize}px
-                    </div>
+                    <div className="text-xs text-[var(--obsidian-text-muted)]">px</div>
                   </div>
                 </div>
 

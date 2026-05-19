@@ -134,7 +134,7 @@ header {
 }
 
 .obsidian-ribbon {
-  width: 46px;
+  width: 58px;
   flex-shrink: 0;
   background: var(--obsidian-ribbon);
   border-right: 1px solid var(--obsidian-border);
@@ -142,7 +142,7 @@ header {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 10px 0;
+  padding: 10px;
 }
 
 .obsidian-ribbon-btn {
