@@ -75,5 +75,15 @@ contextBridge.exposeInMainWorld('context', {
     const listener = (_event: IpcRendererEvent, payload: TerminalExitEvent) => callback(payload)
     ipcRenderer.on('terminal:exit', listener)
     return () => ipcRenderer.removeListener('terminal:exit', listener)
+  },
+  checkForUpdates: (force?: boolean) => ipcRenderer.invoke('updater:check', { force }),
+  restartAndInstall: () => ipcRenderer.invoke('updater:restart-and-install'),
+  getUpdateConfig: () => ipcRenderer.invoke('updater:get-config'),
+  getAppVersion: () => ipcRenderer.invoke('updater:get-version'),
+  dismissWelcome: (version: string) => ipcRenderer.invoke('updater:dismiss-welcome', version),
+  onUpdaterStatus: (callback: (data: { event: string; payload?: any }) => void) => {
+    const listener = (_event: IpcRendererEvent, data: { event: string; payload?: any }) => callback(data)
+    ipcRenderer.on('updater:status', listener)
+    return () => ipcRenderer.removeListener('updater:status', listener)
   }
 })

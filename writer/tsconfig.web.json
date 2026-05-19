@@ -12,6 +12,8 @@
   ],
   "compilerOptions": {
     "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "ignoreDeprecations": "5.0",
     "jsx": "react-jsx",
     "noUnusedLocals": false,
@@ -25,6 +27,12 @@
       ],
       "@/*": [
         "src/renderer/src/*"
+      ],
+      "@xyflow/react": [
+        "node_modules/@xyflow/react/dist/esm/index.d.ts"
+      ],
+      "@xyflow/react/dist/src/*": [
+        "node_modules/@xyflow/react/dist/esm/*"
       ]
     }
   }

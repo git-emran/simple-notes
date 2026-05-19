@@ -34,6 +34,7 @@ import {
   resizeTerminalSession,
   writeTerminalInput,
 } from '@/lib/terminal'
+import { initializeUpdater } from './lib/updater'
 import {
   CreateNote,
   DeleteNote,
@@ -120,6 +121,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  initializeUpdater(mainWindow)
 }
 
 const configureApplicationMenu = () => {

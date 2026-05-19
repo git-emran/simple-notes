@@ -57,6 +57,12 @@ declare global {
       resizeTerminalSession: (sessionId: string, cols: number, rows: number) => void
       onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void
       onTerminalExit: (callback: (event: TerminalExitEvent) => void) => () => void
+      checkForUpdates: (force?: boolean) => Promise<{ status: string; error?: string }>
+      restartAndInstall: () => Promise<void>
+      getUpdateConfig: () => Promise<{ uuid: string; bucket: number; lastPromptedVersion?: string }>
+      getAppVersion: () => Promise<string>
+      dismissWelcome: (version: string) => Promise<boolean>
+      onUpdaterStatus: (callback: (data: { event: string; payload?: any }) => void) => () => void
     }
   }
 }

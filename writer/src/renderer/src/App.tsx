@@ -14,6 +14,7 @@ import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { KanbanReminderHost } from './components/kanban/KanbanReminderHost'
 import { TerminalTab } from './components/terminal/TerminalTab'
 import { Tooltip } from './components/Tooltip'
+import { UpdateManager } from './components/updater/UpdateManager'
 import { useRef, useState, useEffect } from 'react'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { 
@@ -381,6 +382,7 @@ const App = () => {
             </div>
             {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
             <KanbanReminderHost />
+            <UpdateManager />
           </Content>
         </div>
       </RootLayout>

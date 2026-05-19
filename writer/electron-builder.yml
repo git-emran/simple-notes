@@ -40,5 +40,7 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://writr.app/auto-updates
+  provider: github
+  owner: git-emran
+  repo: simple-notes
+  releaseType: draft
