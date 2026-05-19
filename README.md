@@ -1,71 +1,72 @@
 # Writer
-
-> Built with love by A passionate Vim enthusiast, Emran Hossain.
+> Built with love by a passionate Vim enthusiast, Emran Hossain.
 
 #### Download macOS application:
 
 [Writer macOS](https://drive.google.com/drive/u/0/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1)
 
-Welcome to **Writer**. This is a _markdown_ Text editor, a Desktop app for macOS. With the power of the built in LSP (language server protocol), Syntax highlighting and completions you can build your coding documentation, as a student or a learner practice your DSA, or document your workflow in general using the markdown syntax and Vim motions.
+**Writer** is an engineered-to-order, distraction-free Markdown text editor designed specifically for macOS. Architected for developers, students, and power users, it fuses the efficiency of Vim motions with modern development tools. Whether you are documenting complex system architectures, practicing DSA implementations, or capturing rapid brain dumps, Writer brings IDE-grade utility directly to your writing workflow.
 
 <img width="1364" height="1169" alt="writer_new" src="https://github.com/user-attachments/assets/51a20b38-9e14-49ca-be9b-af28410571b3" />
 
-# New Release: Whats new in 2.02
+# Key Features and Latest Updates
 
-Another Big update for the Writer. Fresh new features and big leap toward improving product development workflow.
+## 🚀 What's New in Version 2.02
 
-### **Canvas:**
+A major iteration focused on empowering product development workflows and enhancing productivity interfaces.
 
-- Create flowchart and diagrams in an interactive environment.
-- Also you can export the canvas as a pdf.
+### **Interactive Canvas**
+
+- **Visual Logic Flows:** Model architectural patterns, flowcharts, and system designs directly in an interactive sandbox.
+- **Vector Export:** Easily export your canvas layouts to high-fidelity PDF format for documentation or distribution.
 
   ![canvas](https://github.com/user-attachments/assets/0fa0e1c1-89e4-4da1-8f6e-9150e95c5f55)
 
 
-### **Kanban Board**:
+### **Agile Kanban Boards**
 
-- New Kanban board to manage your backlog of tasks more efficiently.
+- **Task Management:** Maintain project velocity with an integrated Kanban board to organize backlog tasks, in-progress items, and milestones.
 
 <img width="1256" height="997" alt="kanban" src="https://github.com/user-attachments/assets/1cda9e05-141e-4eff-8240-ee6508605c7c" />
 
 
-### **Daily Note:**
+### **Automated Daily Notes**
 
-- Creates a daily note with the current Date as a filename.
+- **Zero Setup Journaling:** Instantly bootstrap a new markdown file named with the current date to log daily standups, progress, or sudden ideas.
 
-### **Header redesign:**
+### **Streamlined Header Design**
 
-- Redesigned top header of the app
+- **Modern Workspace Navigation:** A simplified and clean layout for the application header, reducing visual clutter to maximize focus.
 
 <img width="897" height="127" alt="header" src="https://github.com/user-attachments/assets/cb3a9a89-8f67-45c7-bb9a-81334a21b829" />
 
 
-### **Note status:**
+### **Structured Note Metadata and Status**
 
-- With Note status, it is easy to keep track of the progress of your notes. For example, Status - Active to mark the active progress of the note along side with hold, completed and dropped.
+- **Lifecycle Management:** Tracks the state of your notes. You can categorize files into statuses like Active, On-Hold, Completed, and Dropped.
 
 <img width="320" height="156" alt="note_tags" src="https://github.com/user-attachments/assets/c40cee42-8066-4058-83ab-55bffab58146" />
 
 
-### **Add Custom Tags:**
+### **Extensible Custom Tags**
 
-- Along with the default note tags: Active, On-Hold, Dropped, Completed. Add custom tags to keep track of your specialized note.
+- **Flexible Organization:** Go beyond standard statuses. Create and apply specialized custom tags tailored to your unique documentation hierarchy.
 ![addtags](https://github.com/user-attachments/assets/2086b85f-95c6-44a6-bb23-13e63230b7cd)
 
 
-### **Progress Bar**:
+### **Dynamic File Tree Progress Indicators**
 
-- Whenever you create a checkbox list, a Progress Bar appears underneath your filename in the file tree.
+- **Visual Checklists:** Adding checkboxes to a file automatically generates a real-time progress bar underneath the filename in the file tree.
 <img width="235" height="93" alt="progressbar" src="https://github.com/user-attachments/assets/37a23770-0bbc-44fd-a164-35bcd0647f76" />
 
 
-### **Split view and Preview mode as a FAB**:
+### **Floating Action Toolbar (FAB)**
 
-- Split view and Preview mode are now presented as a floating action button for a better user experience.
+- **Instant View Toggle:** Quickly switch between Markdown input, side-by-side split view, and rendered preview modes using a responsive floating button.
 
-### **Custom Alerts**:
+### **GitHub-Flavored Custom Alerts**
 
-- Custom alerts now available, you can write them like this.
+- **High-Visibility Callouts:** Embed stylized callouts natively using standard alert syntax to highlight crucial constraints or quick tips:
 
 ```
 > [!NOTE]
@@ -84,43 +85,54 @@ Another Big update for the Writer. Fresh new features and big leap toward improv
 > Negative potential consequences of an action.
 ```
 
-### **Settings menu**:
+### **System Preference Controls**
 
-- Typical settings menu to control the Appearance and Interface controls
+- **Polished Settings Panel:** Fine-tune theme aesthetics (light and dark modes) alongside editor-specific configuration controls, including support for the newly integrated premium monospaced font **Martian Mono**.
 
-### **Security Updates**
+### **Core Performance and Reliability Updates**
 
-- Improved filetree read for every collapse all and expand all, Added memoization and filetree state persistance, Progress bar UX improvements.
+- **State Persistence and Efficiency:** Optimized workspace state by adding file-tree memoization. This vastly reduces UI rendering overhead when handling massive workspaces or triggering recursive state operations.
+- **Dynamic File Tree Icon Scaling:** Implemented recursive folder icon size scaling. Folders nested within subdirectories now automatically scale down by 35% to maintain a highly proportional, neat visual hierarchy across deep directory branches, combined with optimized statusbar layout scaling.
 
-# Use Features like
+# Advanced Development Utilities
 
-### Write with AI
+### **Premium Table Editing Experience**
 
-Although right now the AI will only write new content, soon it will have context of your written note to add or substract based on the direction.
+Upgraded CodeMirror-based Markdown table editing utility matching the flow of premium editors like Obsidian. It features:
+- **Dynamic Table Formatting:** Automatically aligns cells and column widths on the fly to eliminate manual formatting.
+- **Advanced Navigation Keymaps:** Smooth navigation using `Tab` to move to the next cell, `Shift-Tab` to move backward, and `Enter` to create a new row while maintaining the column structure.
+- **Obsidian-Style Live Preview:** Intelligently skips separator lines and hides pipes/syntax when the cursor leaves the table block, presenting a clean, rendered grid in live editing mode.
+- **Explicit Formatting Commands:** Manual layout formatting triggerable via `Mod-Shift-F`.
+
+### **AI-Assisted Writing Sandbox**
+
+Unlock context-aware content generation. The integrated assistant helps draft content quickly. Future updates will leverage local and remote model context to refine, summarize, and adapt existing text directly from your cursor position.
 
 ![write_with_ai_writer](https://github.com/user-attachments/assets/8973d139-258e-4b05-a81e-07903bf99f31)
 
-### "Flowchart creation" using Mermaidjs
+### **Declarative Diagrams via Mermaid.js**
+
+Render complex diagrams, flowcharts, and sequence structures directly in your notes using clean, readable Markdown syntax.
 
 ![mermaidjs](https://github.com/user-attachments/assets/bc8f467a-52fd-433e-ade6-31614fe8c235)
 
-### Code Completions
+### **IDE-Grade Code Completion**
+
+Designed to act as a lightweight dev utility, Writer provides rich code completion and syntactic checking natively inside Markdown code blocks.
 
 <img width="887" height="660" alt="lsp" src="https://github.com/user-attachments/assets/8d151180-8be6-44fb-9c91-04c879025f54" />
 
-##### New Release:
+## ⚡ Version 2.0 Milestones
 
-## Version 2.0:
+- **Redesigned Design System:** Complete user interface overhaul optimized for ocular comfort, featuring curated light and dark themes.
+- **Agnostic AI Mode:** Bring your own API keys. Connect to OpenRouter or other major provider endpoints to power your generative writing tasks at cost.
+- **Indexed File Search:** Instantly locate key files, notes, and fragments across your workspace.
 
-- 🔥 **Redesigned UI**. Redesigned color scheme and UI components that looks good and soothing for the eye for both light and dark mode.
-- 🔥 **Write with AI mode**. Writing with AI is here. With the power of the Open-router models and all the other available open-source LLM's, writing with AI remains free as long as you have the API key from the respective model, Which wouldn't cost any money because they are free to use.
-- 🔥 **File Search**. Better late than never, file search is now available on Writer.
+# Why Writer?
 
-# What is Writer
+Most note-taking systems are bloated with cloud synchronizations or rigid database structures. Writer is custom-built for developers who prefer the speed of local files, the precision of Vim keys, and the utility of LSP assistance. 
 
-Writer is a Desktop markdown application made for Vim enthusiasts. I use Vim constantly so I made an app that supports vim so that I can write in peace. Currently available only on macOS. It has the basic markdown feature.
-
-**How does it fit into my workflow?** Most of my notes are not high level documentation, they are brain dumps, disposable thoughts, or just to remember something, I write it. Most note taking apps does not fit into what I do as a developer. So I made a very minimal markdown writer that is very suitable for disposable work. It has LSP so writing code or practicing leetcode is easier and fast.
+It is a lightweight desktop client that complements the modern terminal workflow, turning rapid, disposable brain dumps into highly-organized markdown documentation without the overhead of heavy IDEs.
 
 ---
 
