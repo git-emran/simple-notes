@@ -29,3 +29,6 @@ export const editorFontAtom = atomWithStorage<EditorFontOption>(
 )
 
 export const vimModeEnabledAtom = atomWithStorage<boolean>('writr-vim-mode-enabled', true)
+
+export const rememberLastStateAtom = atomWithStorage<boolean>('writr-remember-last-state', true)
+

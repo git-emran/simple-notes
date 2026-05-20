@@ -84,6 +84,7 @@ export const KanbanBoard = () => {
   const columnDropHintRef = useRef<ColumnOverHint | null>(null)
   const columnElByIdRef = useRef<Record<string, HTMLDivElement | null>>({})
   const newWorkspaceInputRef = useRef<HTMLInputElement>(null)
+  const [animatingCardIds, setAnimatingCardIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     return () => {
@@ -294,6 +295,31 @@ export const KanbanBoard = () => {
       columns: workspace.columns.filter((c) => c.id !== columnId),
     }))
     showSnackbar('Board deleted.', 'danger')
+  }
+
+  const clearColumnCards = (columnId: string) => {
+    const col = columns.find((c) => c.id === columnId)
+    if (!col || !col.cards || col.cards.length === 0) return
+
+    const cardIds = col.cards.map((c) => c.id)
+    setAnimatingCardIds((prev) => {
+      const next = new Set(prev)
+      cardIds.forEach((id) => next.add(id))
+      return next
+    })
+
+    setTimeout(() => {
+      updateActiveWorkspace((workspace) => ({
+        ...workspace,
+        columns: workspace.columns.map((c) => (c.id === columnId ? { ...c, cards: [] } : c)),
+      }))
+      setAnimatingCardIds((prev) => {
+        const next = new Set(prev)
+        cardIds.forEach((id) => next.delete(id))
+        return next
+      })
+      showSnackbar('Board cleared.', 'info')
+    }, 200)
   }
 
   const addCard = (
@@ -533,7 +559,8 @@ export const KanbanBoard = () => {
           cardDragOver?.columnId === columnId &&
             cardDragOver.targetCardId === card.id &&
             'ring-2 ring-[var(--obsidian-accent)]',
-          Boolean(card.completed) && 'opacity-90'
+          Boolean(card.completed) && 'opacity-90',
+          animatingCardIds.has(card.id) && 'animate-card-clear'
         )}
         onClick={() => setSelectedCardId(card.id)}
       >
@@ -686,7 +713,7 @@ export const KanbanBoard = () => {
         </div>
       </div>
 
-      <div className="h-[calc(100%-72px)] kanban-scroll overflow-x-scroll overflow-y-hidden px-6 py-5">
+      <div className="h-[calc(100%-72px)] kanban-scroll overflow-x-scroll overflow-y-hidden px-6 py-5 kanban-scrollbar">
         <div
           className={twMerge('grid gap-4 h-full min-h-full items-start', gridClass)}
           style={gridStyle}
@@ -853,7 +880,7 @@ export const KanbanBoard = () => {
                 </button>
               </div>
 
-              <div className="flex-auto min-h-0 px-3 py-3 space-y-2 overflow-y-auto overflow-x-hidden no-scrollbar">
+              <div className="flex-auto min-h-0 px-3 py-3 space-y-2 overflow-y-auto overflow-x-hidden kanban-scrollbar">
                 {(column.cards ?? []).map((card) => (
                   <Card key={card.id} columnId={column.id} card={card} />
                 ))}
@@ -959,6 +986,15 @@ export const KanbanBoard = () => {
           onClose={() => setColumnActionsMenu(null)}
           className="min-w-[120px]"
         >
+          <ContextMenuItem
+            onClick={() => {
+              clearColumnCards(columnActionsMenu.columnId)
+              setColumnActionsMenu(null)
+            }}
+          >
+            <VscTrash className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>Clear Board</span>
+          </ContextMenuItem>
           <ContextMenuItem
             onClick={() => {
               removeColumn(columnActionsMenu.columnId)

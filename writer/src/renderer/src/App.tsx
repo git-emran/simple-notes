@@ -16,7 +16,7 @@ import { TerminalTab } from './components/terminal/TerminalTab'
 import { Tooltip } from './components/Tooltip'
 import { UpdateManager } from './components/updater/UpdateManager'
 import { useRef, useState, useEffect } from 'react'
-import { useAtomValue, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { 
   activeTabAtom,
   createDailyNoteAtom, 
@@ -33,6 +33,9 @@ import {
   fileTreeAtom,
   openTabAtom,
   tabsAtom,
+  activeTabIdAtom,
+  rememberLastStateAtom,
+  isDarkModeAtom,
   type EditorFontOption
 } from '@renderer/store'
 import {
@@ -97,13 +100,37 @@ const App = () => {
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
   const createTerminalTab = useSetAtom(createTerminalTabAtom)
   const selectedNode = useAtomValue(selectedNodeAtom)
+  const setSelectedNode = useSetAtom(selectedNodeAtom)
   const activeTab = useAtomValue(activeTabAtom)
   const themeMode = useAtomValue(themeModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
   const fileTree = useAtomValue(fileTreeAtom)
   const openTab = useSetAtom(openTabAtom)
-  const tabs = useAtomValue(tabsAtom)
+  const [tabs, setTabs] = useAtom(tabsAtom)
+  const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
+  const [rememberLastState] = useAtom(rememberLastStateAtom)
+  const setIsDarkMode = useSetAtom(isDarkModeAtom)
+
+  /* Startup session state loading / resetting */
+  useEffect(() => {
+    if (!rememberLastState) {
+      setTabs([{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
+      setActiveTabId('tab-1')
+      setSelectedNode(null)
+    } else {
+      const active = tabs.find((t) => t.id === activeTabId) ?? tabs[0]
+      if (active && active.kind === 'file' && active.path) {
+        setSelectedNode({
+          id: active.path,
+          name: active.name,
+          path: active.path,
+          type: 'file',
+          isExpanded: false
+        })
+      }
+    }
+  }, [])
 
   /* Auto-open welcome note if it's a first run/empty root */
   useEffect(() => {
@@ -153,6 +180,7 @@ const App = () => {
       const resolvedMode =
         themeMode === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : themeMode
       applyTheme(resolvedMode)
+      setIsDarkMode(resolvedMode === 'dark')
     }
 
     applyCurrentTheme()
@@ -163,7 +191,7 @@ const App = () => {
     return () => {
       mediaQuery.removeEventListener('change', applyCurrentTheme)
     }
-  }, [themeMode])
+  }, [themeMode, setIsDarkMode])
 
   useEffect(() => {
     const root = document.documentElement

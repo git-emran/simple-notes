@@ -275,11 +275,15 @@ export const MarkdownPreview = memo(({
                 fontSize: '15px',
                 lineHeight: '1.5',
                 overflowWrap: 'break-word',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
                 ...(isDarkMode ? {} : { background: 'rgba(0, 0, 0, 0.0175)' }),
               }}
               codeTagProps={{
                 style: {
                   fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all',
                 },
               }}
             />

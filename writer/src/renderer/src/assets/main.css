@@ -373,3 +373,40 @@ header {
 .animate-scale-up {
   animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
+@keyframes cardSlideOut {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(24px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+.animate-card-clear {
+  animation: cardSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+/* Custom 3px scrollbar for Kanban */
+.kanban-scrollbar::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+.kanban-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kanban-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--writr-scrollbar-thumb);
+  border-radius: 9999px;
+}
+
+.kanban-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--writr-scrollbar-thumb-hover);
+}
+
+

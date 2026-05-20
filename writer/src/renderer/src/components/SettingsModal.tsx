@@ -9,6 +9,7 @@ import {
   tabIndentUnitAtom,
   themeModeAtom,
   vimModeEnabledAtom,
+  rememberLastStateAtom,
   type EditorFontOption,
   type ThemeMode,
 } from '@renderer/store'
@@ -25,6 +26,7 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
   const [showFolderIcons, setShowFolderIcons] = useAtom(showFolderIconsAtom)
   const [vimModeEnabled, setVimModeEnabled] = useAtom(vimModeEnabledAtom)
+  const [rememberLastState, setRememberLastState] = useAtom(rememberLastStateAtom)
 
   const [relativeLineNumbers, setRelativeLineNumbers] = useAtom(relativeLineNumbersEnabledAtom)
   const [lineWrapping, setLineWrapping] = useAtom(lineWrappingEnabledAtom)
@@ -97,6 +99,18 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                   ))}
                 </select>
               </div>
+
+              <label className="mt-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className={labelClass}>Remember session</div>
+                  <div className={helpClass}>Remember open tabs and active file on reopen.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={rememberLastState}
+                  onChange={(e) => setRememberLastState(e.target.checked)}
+                />
+              </label>
             </div>
           </div>
 

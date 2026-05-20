@@ -5,8 +5,8 @@ import { ComponentProps, memo, useEffect, useRef, useState, type DragEvent, type
 import { VscChevronDown, VscChevronRight, VscFile, VscFolder, VscFolderOpened } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 
-const INDENT_PX = 12
-const BASE_PADDING_LEFT_PX = 8
+const INDENT_PX = 10
+const BASE_PADDING_LEFT_PX = 4
 
 const getBasenameFromPath = (fullPath: string) => {
   const lastSlash = fullPath.lastIndexOf('/')
@@ -249,7 +249,12 @@ const FileTreeItemComponent = ({
 
   const renderTitleRow = () => (
     <div className="flex min-w-0 items-center gap-2">
-      <span className={twMerge('truncate', node.type === 'folder' && 'font-medium text-[var(--obsidian-text)]')}>
+      <span
+        className={twMerge(
+          'truncate',
+          node.type === 'folder' ? 'font-medium text-[var(--obsidian-text)]' : 'text-[10px]'
+        )}
+      >
         {node.name}
       </span>
     </div>
@@ -275,7 +280,7 @@ const FileTreeItemComponent = ({
   const renderNodeIcon = () => {
     if (node.type === 'folder' && showFolderIcons) {
       const FolderIcon = isExpanded ? VscFolderOpened : VscFolder
-      const iconSizeClass = depth > 0 ? 'w-[10.4px] h-[10.4px]' : 'w-4 h-4'
+      const iconSizeClass = depth > 0 ? 'w-[10px] h-[10px]' : 'w-4 h-4'
       return (
         <FolderIcon
           className={twMerge(iconSizeClass, isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-accent)]')}
@@ -310,9 +315,19 @@ const FileTreeItemComponent = ({
               onRenameComplete?.()
             }}
             onKeyDown={handleKeyDown}
-            className="bg-[var(--obsidian-workspace)] border border-[var(--obsidian-accent)] outline-none text-[11px] px-1 rounded-sm min-w-0 flex-shrink text-[var(--obsidian-text)]"
+            className={twMerge(
+              'bg-[var(--obsidian-workspace)] border border-[var(--obsidian-accent)] outline-none px-1 rounded-sm min-w-0 flex-shrink text-[var(--obsidian-text)]',
+              node.type === 'file' ? 'text-[10px]' : 'text-[11px]'
+            )}
           />
-          <span className="text-[var(--obsidian-text-muted)] whitespace-pre">{editParts.ext}</span>
+          <span
+            className={twMerge(
+              'text-[var(--obsidian-text-muted)] whitespace-pre',
+              node.type === 'file' && 'text-[10px]'
+            )}
+          >
+            {editParts.ext}
+          </span>
         </div>
       )
     }
@@ -357,12 +372,22 @@ const FileTreeItemComponent = ({
         onDrop={handleDrop}
         {...props}
       >
-        <span className="flex-shrink-0 w-4 flex justify-center">
+        {depth > 0 && Array.from({ length: depth }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute top-0 bottom-0 pointer-events-none border-l border-[var(--obsidian-border)]/40 dark:border-[var(--obsidian-border)]/20"
+            style={{
+              left: `${i * INDENT_PX + BASE_PADDING_LEFT_PX + 8}px`,
+            }}
+          />
+        ))}
+
+        <span className="flex-shrink-0 w-4 flex justify-center z-10">
           {node.type === 'folder' &&
             (isExpanded ? <VscChevronDown className="w-3.5 h-3.5" /> : <VscChevronRight className="w-3.5 h-3.5" />)}
         </span>
 
-        {nodeIcon && <span className="flex-shrink-0">{nodeIcon}</span>}
+        {nodeIcon && <span className="flex-shrink-0 z-10">{nodeIcon}</span>}
 
         {renderContent()}
       </li>

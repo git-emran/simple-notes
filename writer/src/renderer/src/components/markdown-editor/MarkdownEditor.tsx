@@ -23,6 +23,7 @@ import {
   showToolbarAtom,
   tabIndentUnitAtom,
   vimModeEnabledAtom,
+  isDarkModeAtom,
 } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
 import type { FileNode } from '@shared/models'
@@ -97,7 +98,7 @@ export const MarkdownEditor = () => {
   const [isFullPreview, setIsFullPreview] = useState(false) // New state for full preview
   const [currentContent, setCurrentContent] = useState('')
   const [debouncedContent, setDebouncedContent] = useState('')
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const isDarkMode = useAtomValue(isDarkModeAtom)
   const [rootDir, setRootDir] = useState<string>('')
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [exportNotice, setExportNotice] = useState<string | null>(null)
@@ -296,31 +297,7 @@ export const MarkdownEditor = () => {
     setTagInput('')
   }, [selectedNote?.path])
 
-  useEffect(() => {
-    const getIsDarkMode = () => {
-      if (document.documentElement.classList.contains('dark')) return true
-      if (document.documentElement.classList.contains('light')) return false
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
 
-    const checkDarkMode = () => {
-      setIsDarkMode(getIsDarkMode())
-    }
-
-    checkDarkMode()
-    const observer = new MutationObserver(checkDarkMode)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    mediaQuery.addEventListener('change', checkDarkMode)
-
-    return () => {
-      observer.disconnect()
-      mediaQuery.removeEventListener('change', checkDarkMode)
-    }
-  }, [])
 
   const debouncedSetContent = useMemo(
     () => debounce((content: string) => setDebouncedContent(content), 300),

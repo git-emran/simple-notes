@@ -83,9 +83,9 @@ const createEmptyTab = (): EditorTab => ({
   name: 'New Tab',
 })
 
-export const tabsAtom = atom<EditorTab[]>([{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
+export const tabsAtom = atomWithStorage<EditorTab[]>('writr-open-tabs', [{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
 export const closedTabsHistoryAtom = atom<EditorTab[]>([])
-export const activeTabIdAtom = atom<string>('tab-1')
+export const activeTabIdAtom = atomWithStorage<string>('writr-active-tab-id', 'tab-1')
 
 export const activeTabPathAtom = atom<string | null>((get) => {
   const tabs = get(tabsAtom)

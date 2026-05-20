@@ -99,6 +99,16 @@ async function checkRolloutEligibility(targetVersion: string, forceCheck = false
  * Configure and register the auto-update lifecycle
  */
 export async function initializeUpdater(mainWindow: BrowserWindow) {
+  // Prevent duplicate event listeners during hot reloads or window recreation
+  autoUpdater.removeAllListeners()
+
+  // Prevent "Attempted to register a second handler" errors by removing existing handlers
+  ipcMain.removeHandler('updater:check')
+  ipcMain.removeHandler('updater:restart-and-install')
+  ipcMain.removeHandler('updater:get-config')
+  ipcMain.removeHandler('updater:get-version')
+  ipcMain.removeHandler('updater:dismiss-welcome')
+
   // Disable automatic downloading so we can run eligibility gating checks first
   autoUpdater.autoDownload = false
   autoUpdater.logger = console
