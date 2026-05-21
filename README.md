@@ -136,7 +136,7 @@ It is a lightweight desktop client that complements the modern terminal workflow
 
 ---
 
-Writr is a simple **note-taking app** that uses **Markdown** syntax to format your notes.
+writer is a simple **note-taking app** that uses **Markdown** syntax to format your notes.
 
 You can create your first note by clicking on the top-left icon on the sidebar, or delete one by clicking on top right icon.
 
@@ -206,21 +206,21 @@ I have configured a cross-platform, single-command bootstrap and packaging pipel
 ### 1. Bootstrapping Dependencies
 Restore all strict dependencies from the package lockfile:
 ```bash
-cd writr
+cd writer
 npm run bootstrap
 ```
 
 ### 2. Live Development Server
 Start the interactive developer hot-reloading environment:
 ```bash
-cd writr
+cd writer
 npm run dev
 ```
 
 ### 3. Unified Cross-Platform Build & Package
 Run the full clean, typecheck, compile, and packaging pipeline:
 ```bash
-cd writr
+cd writer
 npm run build && npm run package
 ```
 
@@ -237,7 +237,7 @@ You can also run specific segments of the pipeline:
 ### 🐧 Linux Package Prerequisite Validation
 If packaging to Linux distribution formats (like `.deb`, `.rpm`, `.pacman`, `.snap`), run my host prerequisite validator to verify packages like `fakeroot` or `rpmbuild` are present:
 ```bash
-cd writr
+cd writer
 ./scripts/check-prerequisites.sh
 ```
 
