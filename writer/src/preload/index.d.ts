@@ -8,6 +8,7 @@ import {
   CreateNoteNew,
   CreateCanvasNew,
   CreateDirectory,
+  EnsureDirectory,
   DeletePath,
   ReadFile,
   WriteFile,
@@ -42,6 +43,7 @@ declare global {
       createCanvasNew: CreateCanvasNew
       deletePath: DeletePath
       createDirectory: CreateDirectory
+      ensureDirectory: EnsureDirectory
       movePath: MovePath
       exportNoteToPdf: ExportNoteToPdf
       exportCanvasToPdf: ExportCanvasToPdf

@@ -753,6 +753,8 @@ export const createDirectoryAtom = atom(null, async (_, set, parentDir: string) 
 
   /* Refresh tree */
   set(fileTreeAtom, await loadFileTree())
+
+  return dirPath
 })
 
 export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
@@ -901,19 +903,48 @@ export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: st
 const toLocalDateFileName = () => {
   const now = new Date()
   const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}.md`
+  const monthIndex = now.getMonth()
+  const day = now.getDate()
+
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ] as const
+
+  const toOrdinalSuffix = (n: number) => {
+    const mod100 = n % 100
+    if (mod100 >= 11 && mod100 <= 13) return 'th'
+    const mod10 = n % 10
+    if (mod10 === 1) return 'st'
+    if (mod10 === 2) return 'nd'
+    if (mod10 === 3) return 'rd'
+    return 'th'
+  }
+
+  const monthName = monthNames[monthIndex] ?? String(monthIndex + 1)
+  return `${day}${toOrdinalSuffix(day)} ${monthName}-${year}.md`
 }
 
 export const createDailyNoteAtom = atom(null, async (get, set) => {
   const fileName = toLocalDateFileName()
   const tree = get(fileTreeAtom) ?? (await loadFileTree())
-  const rootDir = inferRootDirFromTree(tree)
+  const rootDir = inferRootDirFromTree(tree) ?? (await window.context.getRootDir())
 
   if (rootDir) {
     const separator = rootDir.includes('\\') ? '\\' : '/'
-    const filePath = `${rootDir}${separator}${fileName}`
+    const dailyDir = `${rootDir}${separator}Daily-Note`
+    await window.context.ensureDirectory(dailyDir)
+    const filePath = `${dailyDir}${separator}${fileName}`
 
     try {
       if (await window.context.readFileNew(filePath) === undefined) {

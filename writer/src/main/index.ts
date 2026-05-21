@@ -14,6 +14,7 @@ import {
   createNoteNew,
   createCanvasNew,
   createDirectory,
+  ensureDirectory,
   deletePath,
   readFileNew,
   writeFileNew,
@@ -45,6 +46,7 @@ import {
   CreateNoteNew,
   CreateCanvasNew,
   CreateDirectory,
+  EnsureDirectory,
   DeletePath,
   ReadFile,
   WriteFile,
@@ -181,6 +183,7 @@ app.whenReady().then(() => {
   ipcMain.handle('createNoteNew', (_, ...args: Parameters<CreateNoteNew>) => createNoteNew(...args))
   ipcMain.handle('createCanvasNew', (_, ...args: Parameters<CreateCanvasNew>) => createCanvasNew(...args))
   ipcMain.handle('createDirectory', (_, ...args: Parameters<CreateDirectory>) => createDirectory(...args))
+  ipcMain.handle('ensureDirectory', (_, ...args: Parameters<EnsureDirectory>) => ensureDirectory(...args))
   ipcMain.handle('deletePath', (_, ...args: Parameters<DeletePath>) => deletePath(...args))
   ipcMain.handle('readFileNew', (_, ...args: Parameters<ReadFile>) => readFileNew(...args))
   ipcMain.handle('writeFileNew', (_, ...args: Parameters<WriteFile>) => writeFileNew(...args))

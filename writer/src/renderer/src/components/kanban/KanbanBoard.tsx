@@ -18,7 +18,6 @@ import {
 } from '@renderer/store/kanbanStore'
 import { TaskDetailsPanel } from './TaskDetailsPanel'
 import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint, priorityToPrefix } from './kanbanPriority'
-import { ReminderDateTimePicker } from './ReminderDateTimePicker'
 
 type DragPayload =
   | { kind: 'card'; columnId: string; cardId: string }
@@ -328,7 +327,6 @@ export const KanbanBoard = () => {
       title: string
       description: string
       priority: Exclude<KanbanCardPriority, null>
-      remindAt: string | null
     }
   ) => {
     const trimmed = payload.title.trim()
@@ -344,7 +342,7 @@ export const KanbanBoard = () => {
                 createKanbanCard(trimmed, {
                   description: payload.description.trim(),
                   priority: payload.priority,
-                  remindAt: payload.remindAt,
+                  remindAt: null,
                 }),
               ],
             }
@@ -1046,7 +1044,6 @@ const AddCardForm = ({
     title: string
     description: string
     priority: Exclude<KanbanCardPriority, null>
-    remindAt: string | null
   }) => void
 }) => {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -1054,7 +1051,6 @@ const AddCardForm = ({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Exclude<KanbanCardPriority, null>>('low')
-  const [remindAt, setRemindAt] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const [popover, setPopover] = useState<{
     left: number
@@ -1074,11 +1070,10 @@ const AddCardForm = ({
   const submit = () => {
     const trimmed = title.trim()
     if (!trimmed) return
-    onAdd({ title: trimmed, description, priority, remindAt })
+    onAdd({ title: trimmed, description, priority })
     setTitle('')
     setDescription('')
     setPriority('low')
-    setRemindAt(null)
     closeExpanded()
     requestAnimationFrame(() => inputRef.current?.focus())
   }
@@ -1259,20 +1254,6 @@ const AddCardForm = ({
                   />
                   <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
                     Enter to add, Shift+Enter for a new line
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
-                  </div>
-                  <div className="mt-1">
-                    <ReminderDateTimePicker
-                      valueIso={remindAt}
-                      onChange={setRemindAt}
-                      className="w-full"
-                      placeholder="Set reminder (today)"
-                    />
                   </div>
                 </div>
 

@@ -258,32 +258,51 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   }, [setExpandedNodes])
 
   const handleCreateFile = useCallback((parentPath?: string) => {
-    const parent = parentPath ?? getCreationParent()
-    createNote(parent)
-    if (parent) {
-      setExpandedNodes((prev) => {
-        if (prev.has(parent)) return prev
-        const next = new Set(prev)
-        next.add(parent)
-        return next
-      })
-    }
-    setContextMenu(null)
+    void (async () => {
+      const parent = parentPath ?? getCreationParent()
+      const createdPath = await createNote(parent)
+      if (parent) {
+        setExpandedNodes((prev) => {
+          if (prev.has(parent)) return prev
+          const next = new Set(prev)
+          next.add(parent)
+          return next
+        })
+      }
+      if (createdPath) {
+        setRenamingPath(createdPath)
+      }
+      setContextMenu(null)
+    })()
   }, [createNote, getCreationParent, setExpandedNodes])
 
   const handleCreateFolder = useCallback((parentPath?: string) => {
-    const parent = parentPath ?? getCreationParent()
-    createDirectory(parent)
-    if (parent) {
-      setExpandedNodes((prev) => {
-        if (prev.has(parent)) return prev
-        const next = new Set(prev)
-        next.add(parent)
-        return next
-      })
-    }
-    setContextMenu(null)
-  }, [createDirectory, getCreationParent, setExpandedNodes])
+    void (async () => {
+      const parent = parentPath ?? getCreationParent()
+      const createdPath = await createDirectory(parent)
+      if (parent) {
+        setExpandedNodes((prev) => {
+          if (prev.has(parent)) return prev
+          const next = new Set(prev)
+          next.add(parent)
+          return next
+        })
+      }
+      if (createdPath) {
+        const name = createdPath.substring(Math.max(createdPath.lastIndexOf('/'), createdPath.lastIndexOf('\\')) + 1)
+        setSelectedNode({
+          id: createdPath,
+          name,
+          path: createdPath,
+          type: 'folder',
+          isExpanded: false,
+          children: []
+        })
+        setRenamingPath(createdPath)
+      }
+      setContextMenu(null)
+    })()
+  }, [createDirectory, getCreationParent, setExpandedNodes, setSelectedNode])
 
   const handleCollapseAll = useCallback(() => {
     setExpandedNodes(() => new Set())

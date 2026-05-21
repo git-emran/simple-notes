@@ -8,6 +8,7 @@ import {
   CreateNoteNew,
   CreateCanvasNew,
   CreateDirectory,
+  EnsureDirectory,
   DeletePath,
   ReadFile,
   WriteFile,
@@ -45,6 +46,7 @@ contextBridge.exposeInMainWorld('context', {
   createCanvasNew: (...args: Parameters<CreateCanvasNew>) =>
     ipcRenderer.invoke('createCanvasNew', ...args),
   createDirectory: (...args: Parameters<CreateDirectory>) => ipcRenderer.invoke('createDirectory', ...args),
+  ensureDirectory: (...args: Parameters<EnsureDirectory>) => ipcRenderer.invoke('ensureDirectory', ...args),
   deletePath: (...args: Parameters<DeletePath>) => ipcRenderer.invoke('deletePath', ...args),
   readFileNew: (...args: Parameters<ReadFile>) => ipcRenderer.invoke('readFileNew', ...args),
   writeFileNew: (...args: Parameters<WriteFile>) => ipcRenderer.invoke('writeFileNew', ...args),

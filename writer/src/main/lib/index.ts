@@ -9,6 +9,7 @@ import {
   GetFileTree,
   CreateNoteNew,
   CreateDirectory,
+  EnsureDirectory,
   DeletePath,
   ReadFile,
   WriteFile,
@@ -326,6 +327,16 @@ export const createDirectory: CreateDirectory = async (parentDir) => {
 
   await ensureDir(dirPath)
   return dirPath
+}
+
+export const ensureDirectory: EnsureDirectory = async (dirPath) => {
+  try {
+    const safeDirPath = ensurePathWithinRoot(dirPath)
+    await ensureDir(safeDirPath)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export const deletePath: DeletePath = async (filePath) => {

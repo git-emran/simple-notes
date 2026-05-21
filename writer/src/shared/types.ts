@@ -13,6 +13,7 @@ export type CreateNoteNew = (parentDir: string) => Promise<string | false>
 export type CreateCanvasNew = (parentDir?: string) => Promise<string | false>
 export type DeletePath = (path: string) => Promise<boolean>
 export type CreateDirectory = (parentDir: string) => Promise<string | false>
+export type EnsureDirectory = (dirPath: string) => Promise<boolean>
 export type MovePath = (src: string, dest: string) => Promise<boolean>
 export type ExportNoteToPdf = (notePath: string, noteTitle: string, content: string) => Promise<boolean>
 export type ExportCanvasToPdf = (
