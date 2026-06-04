@@ -269,6 +269,21 @@ const App = () => {
         return
       }
 
+      /* Esc closes sidebar search */
+      if (e.key === 'Escape' && sidebarView === 'search') {
+        e.preventDefault()
+        setSidebarView('files')
+        setAppMode('editor')
+        return
+      }
+
+      /* Alt + H toggles sidebar */
+      if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyH') {
+        e.preventDefault()
+        setCollapsed((prev) => !prev)
+        return
+      }
+
       /* Cmd + W */
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'w') {
         e.preventDefault()
@@ -292,19 +307,19 @@ const App = () => {
     window.addEventListener('mousedown', handleMouseDown)
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseup', handleMouseUp)
-    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown, true)
 
     return () => {
       window.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
-      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keydown', handleKeyDown, true)
       if (isDragging.current) {
         isDragging.current = false
         unlockResizeInteraction()
       }
     }
-  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, switchTabByIndex])
+  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, sidebarView, switchTabByIndex])
 
   return (
     <ErrorBoundary>

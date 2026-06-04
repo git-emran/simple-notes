@@ -18,11 +18,29 @@ import {
   selectedNodeAtom
 } from '@renderer/store'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { ComponentProps, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import {
+  ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
-import { VscNewFile, VscNewFolder, VscCollapseAll, VscExpandAll, VscEdit, VscGoToFile, VscSearch, VscTrash } from 'react-icons/vsc'
+import {
+  VscNewFile,
+  VscNewFolder,
+  VscCollapseAll,
+  VscExpandAll,
+  VscEdit,
+  VscGoToFile,
+  VscSearch,
+  VscTrash
+} from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
+import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
 
 /* Compact row height (Obsidian-like density). Must match FileTreeItem styling. */
 /* Heights are per-row to keep dense UI without sacrificing metadata readability. */
@@ -55,8 +73,14 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const reindexTodoStats = useSetAtom(reindexTodoStatsAtom)
 
   const rootKey = notesRootDir ?? '__no_root__'
-  const expandedNodeList = useMemo(() => fileTreeUiByRoot[rootKey]?.expanded ?? [], [fileTreeUiByRoot, rootKey])
-  const persistedScrollTop = useMemo(() => fileTreeUiByRoot[rootKey]?.scrollTop ?? 0, [fileTreeUiByRoot, rootKey])
+  const expandedNodeList = useMemo(
+    () => fileTreeUiByRoot[rootKey]?.expanded ?? [],
+    [fileTreeUiByRoot, rootKey]
+  )
+  const persistedScrollTop = useMemo(
+    () => fileTreeUiByRoot[rootKey]?.scrollTop ?? 0,
+    [fileTreeUiByRoot, rootKey]
+  )
   const expandedNodes = useMemo(() => new Set(expandedNodeList), [expandedNodeList])
   const setExpandedNodes = useCallback(
     (updater: (prev: Set<string>) => Set<string>) => {
@@ -74,7 +98,9 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
     },
     [rootKey, setFileTreeUiByRoot]
   )
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(
+    null
+  )
   const [renamingPath, setRenamingPath] = useState<string | null>(null)
   const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
   const [showScrollbar, setShowScrollbar] = useState(false)
@@ -158,7 +184,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
     const treeMatch = fileTreeIndex.get(activeTabPath) ?? null
     if (treeMatch && treeMatch.path) {
       setSelectedNode((prev) => (prev?.path === treeMatch.path ? prev : treeMatch))
-      
+
       /* Auto-reveal: expand all parents of the active note */
       const parents = getAllParentPaths(activeTabPath)
       if (parents.length > 0) {
@@ -179,7 +205,9 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
     setSelectedNode((prev) => {
       if (prev?.path === activeTabPath) return prev
-      const name = activeTabPath.substring(Math.max(activeTabPath.lastIndexOf('/'), activeTabPath.lastIndexOf('\\')) + 1)
+      const name = activeTabPath.substring(
+        Math.max(activeTabPath.lastIndexOf('/'), activeTabPath.lastIndexOf('\\')) + 1
+      )
       return {
         id: activeTabPath,
         name,
@@ -245,64 +273,75 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
     [openTab, setSelectedNode]
   )
 
-  const handleToggleExpand = useCallback((path: string) => {
-    setExpandedNodes((prev) => {
-      const next = new Set(prev)
-      if (next.has(path)) {
-        next.delete(path)
-      } else {
-        next.add(path)
-      }
-      return next
-    })
-  }, [setExpandedNodes])
+  const handleToggleExpand = useCallback(
+    (path: string) => {
+      setExpandedNodes((prev) => {
+        const next = new Set(prev)
+        if (next.has(path)) {
+          next.delete(path)
+        } else {
+          next.add(path)
+        }
+        return next
+      })
+    },
+    [setExpandedNodes]
+  )
 
-  const handleCreateFile = useCallback((parentPath?: string) => {
-    void (async () => {
-      const parent = parentPath ?? getCreationParent()
-      const createdPath = await createNote(parent)
-      if (parent) {
-        setExpandedNodes((prev) => {
-          if (prev.has(parent)) return prev
-          const next = new Set(prev)
-          next.add(parent)
-          return next
-        })
-      }
-      if (createdPath) {
-        setRenamingPath(createdPath)
-      }
-      setContextMenu(null)
-    })()
-  }, [createNote, getCreationParent, setExpandedNodes])
+  const handleCreateFile = useCallback(
+    (parentPath?: string) => {
+      void (async () => {
+        const parent = parentPath ?? getCreationParent()
+        const createdPath = await createNote(parent)
+        if (parent) {
+          setExpandedNodes((prev) => {
+            if (prev.has(parent)) return prev
+            const next = new Set(prev)
+            next.add(parent)
+            return next
+          })
+        }
+        if (createdPath) {
+          setRenamingPath(createdPath)
+        }
+        setContextMenu(null)
+      })()
+    },
+    [createNote, getCreationParent, setExpandedNodes]
+  )
 
-  const handleCreateFolder = useCallback((parentPath?: string) => {
-    void (async () => {
-      const parent = parentPath ?? getCreationParent()
-      const createdPath = await createDirectory(parent)
-      if (parent) {
-        setExpandedNodes((prev) => {
-          if (prev.has(parent)) return prev
-          const next = new Set(prev)
-          next.add(parent)
-          return next
-        })
-      }
-      if (createdPath) {
-        const name = createdPath.substring(Math.max(createdPath.lastIndexOf('/'), createdPath.lastIndexOf('\\')) + 1)
-        setSelectedNode({
-          id: createdPath,
-          name,
-          path: createdPath,
-          type: 'folder',
-          isExpanded: false,
-          children: []
-        })
-        setRenamingPath(createdPath)
-      }
-      setContextMenu(null)
-    })()
-  }, [createDirectory, getCreationParent, setExpandedNodes, setSelectedNode])
+  const handleCreateFolder = useCallback(
+    (parentPath?: string) => {
+      void (async () => {
+        const parent = parentPath ?? getCreationParent()
+        const createdPath = await createDirectory(parent)
+        if (parent) {
+          setExpandedNodes((prev) => {
+            if (prev.has(parent)) return prev
+            const next = new Set(prev)
+            next.add(parent)
+            return next
+          })
+        }
+        if (createdPath) {
+          const name = createdPath.substring(
+            Math.max(createdPath.lastIndexOf('/'), createdPath.lastIndexOf('\\')) + 1
+          )
+          setSelectedNode({
+            id: createdPath,
+            name,
+            path: createdPath,
+            type: 'folder',
+            isExpanded: false,
+            children: []
+          })
+          setRenamingPath(createdPath)
+        }
+        setContextMenu(null)
+      })()
+    },
+    [createDirectory, getCreationParent, setExpandedNodes, setSelectedNode]
+  )
 
   const handleCollapseAll = useCallback(() => {
     setExpandedNodes(() => new Set())
@@ -350,7 +389,9 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
     const rows: Row[] = []
     const roots = fileTree ?? []
-    const stack: Array<{ nodes: FileNode[]; index: number; depth: number }> = [{ nodes: roots, index: 0, depth: 0 }]
+    const stack: Array<{ nodes: FileNode[]; index: number; depth: number }> = [
+      { nodes: roots, index: 0, depth: 0 }
+    ]
 
     while (stack.length) {
       const frame = stack[stack.length - 1]
@@ -364,8 +405,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
       const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
       const noteTag = node.type === 'file' ? noteTags[node.path] : undefined
       const todoTotal = node.todoTotal ?? 0
-      const hasMeta =
-        node.type === 'file' && (!!node.lastEditTime || !!noteStatus || !!noteTag)
+      const hasMeta = node.type === 'file' && (!!node.lastEditTime || !!noteStatus || !!noteTag)
       const baseRowHeight =
         node.type === 'folder'
           ? FILE_TREE_FOLDER_ROW_HEIGHT
@@ -538,14 +578,10 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           const src = e.dataTransfer.getData('text/plain')
           if (!src) return
           if (!notesRootDir) return
+          const node = fileTreeIndex.get(src)
+          if (!node || !canMovePathToDirectory(src, notesRootDir, node.type)) return
 
-          const separator = notesRootDir.includes('\\') ? '\\' : '/'
-          const fileName = src.substring(Math.max(src.lastIndexOf('/'), src.lastIndexOf('\\')) + 1)
-          const dest = `${notesRootDir}${separator}${fileName}`
-
-          if (dest !== src) {
-            void movePath({ src, dest })
-          }
+          void movePath({ src, dest: buildMoveDestination(src, notesRootDir) })
         }}
       >
         {windowing.windowedRows.length > 0 ? (
@@ -553,40 +589,43 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
             {shouldWindow && windowing.beforeHeight > 0 && (
               <li aria-hidden style={{ height: windowing.beforeHeight, pointerEvents: 'none' }} />
             )}
-            {windowing.windowedRows.map(({ node, depth, isExpanded, noteStatus, noteTag, rowHeight }) => (
-              <FileTreeItem
-                key={node.path}
-                node={node}
-                depth={depth}
-                isExpanded={isExpanded}
-                renderChildren={false}
-                rowHeight={rowHeight}
-                noteStatus={noteStatus}
-                noteTag={noteTag}
-                onNodeSelect={handleNodeSelect}
-                selectedPath={selectedNode?.path ?? null}
-                onToggleExpand={handleToggleExpand}
-                onDropNode={handleDropNode}
-                onNodeContextMenu={handleNodeContextMenu}
-                showFolderIcons={showFolderIcons}
-                isRenaming={renamingPath === node.path}
-                onRenameComplete={() => setRenamingPath(null)}
-              />
-            ))}
+            {windowing.windowedRows.map(
+              ({ node, depth, isExpanded, noteStatus, noteTag, rowHeight }) => (
+                <FileTreeItem
+                  key={node.path}
+                  node={node}
+                  depth={depth}
+                  isExpanded={isExpanded}
+                  renderChildren={false}
+                  rowHeight={rowHeight}
+                  noteStatus={noteStatus}
+                  noteTag={noteTag}
+                  onNodeSelect={handleNodeSelect}
+                  selectedPath={selectedNode?.path ?? null}
+                  onToggleExpand={handleToggleExpand}
+                  onDropNode={handleDropNode}
+                  onNodeContextMenu={handleNodeContextMenu}
+                  showFolderIcons={showFolderIcons}
+                  isRenaming={renamingPath === node.path}
+                  onRenameComplete={() => setRenamingPath(null)}
+                />
+              )
+            )}
             {shouldWindow && windowing.afterHeight > 0 && (
               <li aria-hidden style={{ height: windowing.afterHeight, pointerEvents: 'none' }} />
             )}
           </ul>
         ) : (
           <div className="px-4 mt-4 text-center text-xs text-[var(--obsidian-text-muted)]">
-            No files found.<br />
+            No files found.
+            <br />
             Create a file to start.
           </div>
         )}
       </div>
-      
-       {/* Context Actions (Delete - temporary place as standard toolbar) */}
-       {/* Context Menu */}
+
+      {/* Context Actions (Delete - temporary place as standard toolbar) */}
+      {/* Context Menu */}
       {contextMenu && (
         <ContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}>
           <ContextMenuItem
@@ -611,15 +650,11 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           )}
           {contextMenu.node.type === 'folder' && (
             <>
-              <ContextMenuItem
-                onClick={() => handleCreateFile(contextMenu.node.path)}
-              >
+              <ContextMenuItem onClick={() => handleCreateFile(contextMenu.node.path)}>
                 <VscNewFile className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
                 <span>New File</span>
               </ContextMenuItem>
-              <ContextMenuItem
-                onClick={() => handleCreateFolder(contextMenu.node.path)}
-              >
+              <ContextMenuItem onClick={() => handleCreateFolder(contextMenu.node.path)}>
                 <VscNewFolder className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
                 <span>New Folder</span>
               </ContextMenuItem>

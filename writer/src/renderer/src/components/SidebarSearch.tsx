@@ -85,6 +85,12 @@ export const SidebarSearch = ({ className, onCloseRequested, ...props }: Sidebar
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Escape') return
+              e.preventDefault()
+              e.stopPropagation()
+              onCloseRequested?.()
+            }}
             spellCheck={false}
             autoCorrect="off"
             autoCapitalize="off"

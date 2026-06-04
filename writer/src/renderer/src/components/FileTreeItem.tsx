@@ -1,32 +1,33 @@
 import { FileNode } from '@shared/models'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
-import { ComponentProps, memo, useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react'
-import { VscChevronDown, VscChevronRight, VscFile, VscFolder, VscFolderOpened } from 'react-icons/vsc'
+import {
+  ComponentProps,
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type KeyboardEvent,
+  type MouseEvent
+} from 'react'
+import {
+  VscChevronDown,
+  VscChevronRight,
+  VscFile,
+  VscFolder,
+  VscFolderOpened
+} from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
+import {
+  buildMoveDestination,
+  canMovePathToDirectory,
+  getParentPath,
+  joinPath
+} from '@renderer/utils/fileTreeDrag'
 
 const INDENT_PX = 10
 const BASE_PADDING_LEFT_PX = 4
-
-const getBasenameFromPath = (fullPath: string) => {
-  const lastSlash = fullPath.lastIndexOf('/')
-  const lastBackslash = fullPath.lastIndexOf('\\')
-  const idx = Math.max(lastSlash, lastBackslash)
-  return idx === -1 ? fullPath : fullPath.substring(idx + 1)
-}
-
-const getParentPath = (fullPath: string) => {
-  const lastSlash = fullPath.lastIndexOf('/')
-  const lastBackslash = fullPath.lastIndexOf('\\')
-  const idx = Math.max(lastSlash, lastBackslash)
-  return idx === -1 ? '' : fullPath.substring(0, idx)
-}
-
-const joinPath = (parentPath: string, name: string) => {
-  if (!parentPath) return name
-  const separator = parentPath.includes('\\') ? '\\' : '/'
-  return `${parentPath}${separator}${name}`
-}
 
 const splitFileName = (name: string) => {
   const lastDotIndex = name.lastIndexOf('.')
@@ -94,7 +95,8 @@ const FileTreeItemComponent = ({
   const todoTotal = node.todoTotal ?? 0
   const todoCompleted = node.todoCompleted ?? 0
   const showProgress = node.type === 'file' && todoTotal > 0
-  const todoProgress = showProgress && todoTotal > 0 ? Math.round((todoCompleted / todoTotal) * 100) : 0
+  const todoProgress =
+    showProgress && todoTotal > 0 ? Math.round((todoCompleted / todoTotal) * 100) : 0
 
   const showMeta = node.type === 'file' && (!!node.lastEditTime || !!noteStatus || !!noteTag)
 
@@ -162,17 +164,16 @@ const FileTreeItemComponent = ({
     const src = e.dataTransfer.getData('text/plain')
     if (!src || src === node.path) return
 
-    const fileName = getBasenameFromPath(src)
-
     if (node.type === 'folder') {
-      const dest = joinPath(node.path, fileName)
+      if (!canMovePathToDirectory(src, node.path, node.type)) return
+      const dest = buildMoveDestination(src, node.path)
       onDropNode?.(src, dest)
       return
     }
 
     const parentPath = getParentPath(node.path)
-    const dest = joinPath(parentPath, fileName)
-    if (dest !== src) {
+    if (canMovePathToDirectory(src, parentPath, 'folder')) {
+      const dest = buildMoveDestination(src, parentPath)
       onDropNode?.(src, dest)
     }
   }
@@ -218,7 +219,8 @@ const FileTreeItemComponent = ({
     ? 'bg-[var(--writr-sidebar-selection-bg)] text-[var(--obsidian-text)]'
     : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
 
-  const contentLeftMargin = node.type === 'folder' || isMarkdownOrCanvas || !showFolderIcons ? 'ml-0' : 'ml-1'
+  const contentLeftMargin =
+    node.type === 'folder' || isMarkdownOrCanvas || !showFolderIcons ? 'ml-0' : 'ml-1'
 
   const renderMetaRow = () => {
     if (!showMeta) return null
@@ -283,7 +285,10 @@ const FileTreeItemComponent = ({
       const iconSizeClass = depth > 0 ? 'w-[10px] h-[10px]' : 'w-4 h-4'
       return (
         <FolderIcon
-          className={twMerge(iconSizeClass, isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-accent)]')}
+          className={twMerge(
+            iconSizeClass,
+            isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-accent)]'
+          )}
         />
       )
     }
@@ -291,7 +296,10 @@ const FileTreeItemComponent = ({
     if (node.type === 'file' && !isMarkdownOrCanvas) {
       return (
         <VscFile
-          className={twMerge('w-4 h-4', isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-text-muted)]')}
+          className={twMerge(
+            'w-4 h-4',
+            isSelected ? 'text-[var(--obsidian-text)]' : 'text-[var(--obsidian-text-muted)]'
+          )}
         />
       )
     }
@@ -334,7 +342,12 @@ const FileTreeItemComponent = ({
 
     if (showProgress) {
       return (
-        <div className={twMerge('flex flex-1 min-w-0 h-full flex-col justify-start gap-[1.5px]', contentLeftMargin)}>
+        <div
+          className={twMerge(
+            'flex flex-1 min-w-0 h-full flex-col justify-start gap-[1.5px]',
+            contentLeftMargin
+          )}
+        >
           {renderMetaRow()}
           {renderTitleRow()}
           {renderProgressRow()}
@@ -344,14 +357,23 @@ const FileTreeItemComponent = ({
 
     if (showMeta) {
       return (
-        <div className={twMerge('flex flex-1 min-w-0 flex-col justify-center gap-[1.5px]', contentLeftMargin)}>
+        <div
+          className={twMerge(
+            'flex flex-1 min-w-0 flex-col justify-center gap-[1.5px]',
+            contentLeftMargin
+          )}
+        >
           {renderMetaRow()}
           {renderTitleRow()}
         </div>
       )
     }
 
-    return <div className={twMerge('flex flex-1 min-w-0 items-center gap-2', contentLeftMargin)}>{renderTitleRow()}</div>
+    return (
+      <div className={twMerge('flex flex-1 min-w-0 items-center gap-2', contentLeftMargin)}>
+        {renderTitleRow()}
+      </div>
+    )
   }
 
   return (
@@ -372,19 +394,24 @@ const FileTreeItemComponent = ({
         onDrop={handleDrop}
         {...props}
       >
-        {depth > 0 && Array.from({ length: depth }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute top-0 bottom-0 pointer-events-none border-l border-[var(--writr-filetree-indent-guide)]"
-            style={{
-              left: `${i * INDENT_PX + BASE_PADDING_LEFT_PX + 8}px`,
-            }}
-          />
-        ))}
+        {depth > 0 &&
+          Array.from({ length: depth }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute top-0 bottom-0 pointer-events-none border-l border-[var(--writr-filetree-indent-guide)]"
+              style={{
+                left: `${i * INDENT_PX + BASE_PADDING_LEFT_PX + 8}px`
+              }}
+            />
+          ))}
 
         <span className="flex-shrink-0 w-4 flex justify-center z-10">
           {node.type === 'folder' &&
-            (isExpanded ? <VscChevronDown className="w-3.5 h-3.5" /> : <VscChevronRight className="w-3.5 h-3.5" />)}
+            (isExpanded ? (
+              <VscChevronDown className="w-3.5 h-3.5" />
+            ) : (
+              <VscChevronRight className="w-3.5 h-3.5" />
+            ))}
         </span>
 
         {nodeIcon && <span className="flex-shrink-0 z-10">{nodeIcon}</span>}
