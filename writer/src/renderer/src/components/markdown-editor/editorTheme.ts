@@ -18,13 +18,13 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     height: '100%',
     fontSize: editorFontSizeVar,
     lineHeight: '1.55',
-    backgroundColor: isDark ? '#232530' : 'var(--obsidian-workspace)',
+    backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)',
     color: isDark ? '#d4d7df' : '#111827'
   },
   '.cm-scroller': {
     fontFamily: editorFontFamilyVar,
     padding: '0',
-    backgroundColor: isDark ? '#232530' : 'var(--obsidian-workspace)'
+    backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)'
   },
   '.cm-focused': {
     outline: 'none'
@@ -38,7 +38,7 @@ export const getEditorTheme = (isDark: boolean) => EditorView.theme({
     paddingRight: '24px'
   },
   '.cm-gutters': {
-    backgroundColor: isDark ? '#232530' : 'var(--obsidian-workspace)',
+    backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)',
     paddingLeft: '0',
     borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.16)'
   },

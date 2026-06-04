@@ -1306,7 +1306,7 @@ export const MarkdownEditor = () => {
 
   if (!selectedNote?.path) {
     return (
-      <div className="flex items-center justify-center h-full bg-[var(--obsidian-workspace)]">
+      <div className="flex items-center justify-center h-full bg-[var(--obsidian-base)]">
         <div className="text-center">
           <h2 className="text-lg font-semibold text-[var(--obsidian-text)]">No note selected</h2>
           <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">Create a note to start writing.</p>
@@ -1325,7 +1325,7 @@ export const MarkdownEditor = () => {
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--obsidian-workspace)]">
+    <div className="flex flex-col h-full w-full bg-[var(--obsidian-base)]">
       {exportNotice && (
         <div className="absolute top-14 right-5 z-50 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg">
           {exportNotice}
@@ -1392,7 +1392,7 @@ export const MarkdownEditor = () => {
         {/* Toggleable Preview Container */}
         <div
           ref={previewContainerRef}
-          className="h-full writr-markdown-preview preview-scrollbar overflow-auto p-8 bg-[var(--obsidian-workspace)]"
+          className="h-full writr-markdown-preview preview-scrollbar overflow-auto bg-[var(--obsidian-base)] p-8"
           style={{ 
             width: isFullPreview ? '100%' : '50%',
             display: isPreview ? 'block' : 'none'

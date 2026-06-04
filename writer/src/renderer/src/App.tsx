@@ -15,6 +15,7 @@ import { KanbanReminderHost } from './components/kanban/KanbanReminderHost'
 import { TerminalTab } from './components/terminal/TerminalTab'
 import { Tooltip } from './components/Tooltip'
 import { UpdateManager } from './components/updater/UpdateManager'
+import { MIN_SIDEBAR_WIDTH } from './constants/sidebarLayout'
 import { useRef, useState, useEffect } from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { 
@@ -82,13 +83,14 @@ const getEditorFontStack = (font: EditorFontOption) => {
 }
 
 const App = () => {
-  const minSidebarWidth = 170
   const contentContainerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(450) // default width increased for VirtualFilesList
   const isDragging = useRef(false)
+  const previousBodyCursor = useRef('')
+  const previousBodyUserSelect = useRef('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
@@ -216,20 +218,40 @@ const App = () => {
 
   /* Drag to resize logic */
   useEffect(() => {
+    const lockResizeInteraction = () => {
+      previousBodyCursor.current = document.body.style.cursor
+      previousBodyUserSelect.current = document.body.style.userSelect
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    }
+
+    const unlockResizeInteraction = () => {
+      document.body.style.cursor = previousBodyCursor.current
+      document.body.style.userSelect = previousBodyUserSelect.current
+    }
+
     const handleMouseDown = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).id === 'resize-handle') {
-        isDragging.current = true
-      }
+      const target = e.target as HTMLElement | null
+      if (!target?.closest('[data-sidebar-resize-handle="true"]')) return
+
+      e.preventDefault()
+      e.stopPropagation()
+      isDragging.current = true
+      lockResizeInteraction()
     }
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging.current) {
-        setSidebarWidth(Math.max(minSidebarWidth, e.clientX))
-      }
+      if (!isDragging.current) return
+
+      e.preventDefault()
+      setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, e.clientX))
     }
 
     const handleMouseUp = () => {
+      if (!isDragging.current) return
+
       isDragging.current = false
+      unlockResizeInteraction()
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -277,6 +299,10 @@ const App = () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
       window.removeEventListener('keydown', handleKeyDown)
+      if (isDragging.current) {
+        isDragging.current = false
+        unlockResizeInteraction()
+      }
     }
   }, [closeActiveTab, isSettingsOpen, restoreClosedTab, switchTabByIndex])
 
@@ -385,11 +411,13 @@ const App = () => {
           {!collapsed && (
             <Sidebar
               width={sidebarWidth}
-              minWidth={minSidebarWidth}
+              minWidth={MIN_SIDEBAR_WIDTH}
               onClose={() => setCollapsed(true)}
             >
               <VirtualFilesList 
                   sidebarView={sidebarView}
+                  sidebarWidth={sidebarWidth}
+                  setSidebarWidth={setSidebarWidth}
                   onSearchRequested={() => {
                     setSidebarView('search')
                     setAppMode('editor')

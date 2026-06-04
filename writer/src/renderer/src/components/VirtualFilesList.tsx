@@ -15,7 +15,7 @@ import {
 } from '@renderer/store'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { useState, useMemo, useCallback, useRef, MouseEvent } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect, MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { 
   VscFolder, VscSearch, VscAdd, VscChevronDown, VscChevronRight, 
@@ -23,6 +23,13 @@ import {
 } from 'react-icons/vsc'
 import { SidebarSearch } from './SidebarSearch'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
+import {
+  MAX_FOLDER_PANEL_WIDTH,
+  MIN_FOLDER_PANEL_WIDTH,
+  MIN_NOTES_PANEL_WIDTH,
+  MIN_SIDEBAR_WIDTH,
+  SIDEBAR_PANEL_DIVIDER_WIDTH
+} from '@renderer/constants/sidebarLayout'
 
 // Helper to get parent path
 const getParentPath = (fullPath: string) => {
@@ -68,10 +75,14 @@ const joinPath = (parentPath: string, name: string) => {
 
 export const VirtualFilesList = ({ 
   sidebarView = 'files',
+  sidebarWidth,
+  setSidebarWidth,
   onSearchRequested,
   onCloseSearch
 }: { 
   sidebarView?: 'files' | 'search',
+  sidebarWidth: number,
+  setSidebarWidth: (width: number | ((currentWidth: number) => number)) => void,
   onSearchRequested?: () => void,
   onCloseSearch?: () => void
 }) => {
@@ -94,32 +105,107 @@ export const VirtualFilesList = ({
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
   const [renamingPath, setRenamingPath] = useState<string | null>(null)
 
-  // Resizable panels
-  const MIN_FOLDER_WIDTH = 120
-  const MAX_FOLDER_WIDTH = 320
   const [folderWidth, setFolderWidth] = useState(160)
   const isDraggingDivider = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const previousBodyCursor = useRef('')
+  const previousBodyUserSelect = useRef('')
+  const dividerListenersRef = useRef<{
+    onMove: (ev: globalThis.MouseEvent) => void
+    onUp: () => void
+  } | null>(null)
+
+  const lockResizeInteraction = useCallback(() => {
+    previousBodyCursor.current = document.body.style.cursor
+    previousBodyUserSelect.current = document.body.style.userSelect
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }, [])
+
+  const unlockResizeInteraction = useCallback(() => {
+    document.body.style.cursor = previousBodyCursor.current
+    document.body.style.userSelect = previousBodyUserSelect.current
+  }, [])
+
+  const cleanupDividerDrag = useCallback(() => {
+    const listeners = dividerListenersRef.current
+    if (listeners) {
+      window.removeEventListener('mousemove', listeners.onMove)
+      window.removeEventListener('mouseup', listeners.onUp)
+      dividerListenersRef.current = null
+    }
+
+    if (!isDraggingDivider.current) return
+
+    isDraggingDivider.current = false
+    unlockResizeInteraction()
+  }, [unlockResizeInteraction])
+
+  const getMaxFolderWidth = useCallback((containerWidth: number) => {
+    return Math.max(
+      MIN_FOLDER_PANEL_WIDTH,
+      Math.min(
+        MAX_FOLDER_PANEL_WIDTH,
+        containerWidth - SIDEBAR_PANEL_DIVIDER_WIDTH - MIN_NOTES_PANEL_WIDTH
+      )
+    )
+  }, [])
 
   const handleDividerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault()
+    e.stopPropagation()
+    cleanupDividerDrag()
     isDraggingDivider.current = true
+    lockResizeInteraction()
+
     const onMove = (ev: globalThis.MouseEvent) => {
       if (!isDraggingDivider.current) return
+      ev.preventDefault()
       const container = containerRef.current
       if (!container) return
       const rect = container.getBoundingClientRect()
       const newWidth = ev.clientX - rect.left
-      setFolderWidth(Math.min(MAX_FOLDER_WIDTH, Math.max(MIN_FOLDER_WIDTH, newWidth)))
+      const nextFolderWidth = Math.min(
+        MAX_FOLDER_PANEL_WIDTH,
+        Math.max(MIN_FOLDER_PANEL_WIDTH, newWidth)
+      )
+      const requiredSidebarWidth =
+        nextFolderWidth + SIDEBAR_PANEL_DIVIDER_WIDTH + MIN_NOTES_PANEL_WIDTH
+
+      if (requiredSidebarWidth > rect.width) {
+        setSidebarWidth((currentWidth) => Math.max(currentWidth, requiredSidebarWidth))
+      }
+
+      setFolderWidth(nextFolderWidth)
     }
-    const onUp = () => {
-      isDraggingDivider.current = false
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
+    const onUp = () => cleanupDividerDrag()
+
+    dividerListenersRef.current = { onMove, onUp }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
   }
+
+  useEffect(() => {
+    return cleanupDividerDrag
+  }, [cleanupDividerDrag])
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const clampFolderWidth = () => {
+      const maxFolderWidth = getMaxFolderWidth(container.getBoundingClientRect().width)
+      setFolderWidth((currentWidth) =>
+        Math.min(maxFolderWidth, Math.max(MIN_FOLDER_PANEL_WIDTH, currentWidth))
+      )
+    }
+
+    clampFolderWidth()
+    const resizeObserver = new ResizeObserver(clampFolderWidth)
+    resizeObserver.observe(container)
+
+    return () => resizeObserver.disconnect()
+  }, [getMaxFolderWidth, sidebarWidth])
 
   const toggleExpand = (path: string, e: MouseEvent) => {
     e.stopPropagation()
@@ -218,15 +304,15 @@ export const VirtualFilesList = ({
   return (
     <div 
       ref={containerRef}
-      className="flex h-full w-full bg-[var(--obsidian-sidebar)] overflow-hidden"
-      style={{ minWidth: MIN_FOLDER_WIDTH + 180 }}
+      className="flex h-full w-full overflow-hidden bg-transparent"
+      style={{ minWidth: MIN_SIDEBAR_WIDTH }}
       onClick={() => setContextMenu(null)}
       onContextMenu={() => setContextMenu(null)}
     >
       {/* Folders Panel */}
       <div
-        className="flex flex-col border-r border-[var(--obsidian-border)] bg-[var(--obsidian-sidebar)] shrink-0"
-        style={{ width: folderWidth, minWidth: MIN_FOLDER_WIDTH }}
+        className="writr-folders-glass flex shrink-0 flex-col border-r border-[var(--obsidian-border)]"
+        style={{ width: folderWidth, minWidth: MIN_FOLDER_PANEL_WIDTH }}
       >
         <div className="px-2 py-3 text-xs font-bold text-[var(--obsidian-text-muted)] uppercase tracking-wider border-b border-[var(--obsidian-border-soft)] flex items-center justify-between">
           <span>Folders</span>
@@ -298,13 +384,16 @@ export const VirtualFilesList = ({
 
       {/* Drag divider */}
       <div
-        className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-[var(--obsidian-accent)] transition-colors z-10"
+        className="w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-[var(--obsidian-accent)]"
         onMouseDown={handleDividerMouseDown}
         title="Drag to resize"
       />
 
       {/* Notes List Panel */}
-      <div className="flex-1 min-w-[180px] flex flex-col bg-[var(--obsidian-workspace)] border-r border-[var(--obsidian-border)] overflow-hidden">
+      <div
+        className="flex flex-1 flex-col overflow-hidden border-r border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)]"
+        style={{ minWidth: MIN_NOTES_PANEL_WIDTH }}
+      >
         {sidebarView === 'search' ? (
            <SidebarSearch onCloseRequested={onCloseSearch} className="h-full border-0" />
         ) : (
@@ -349,7 +438,7 @@ export const VirtualFilesList = ({
                     onClick={() => openTab(note)}
                     onContextMenu={(e) => handleNodeContextMenu(note, e)}
                   >
-                    <div className="font-semibold text-sm truncate mb-2">
+                    <div className="font-semibold text-xs truncate mb-2">
                       {renamingPath === note.path ? (
                         <input 
                           autoFocus

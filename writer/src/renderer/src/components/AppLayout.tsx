@@ -22,7 +22,7 @@ export const Sidebar = ({
   return (
     <aside
       className={twMerge(
-        'h-full flex flex-col relative border-r border-[var(--obsidian-border)] bg-[var(--obsidian-sidebar)]',
+        'h-full flex flex-col relative border-r border-[var(--obsidian-border)] bg-transparent',
         className
       )}
       style={{ width, minWidth }}
@@ -31,8 +31,9 @@ export const Sidebar = ({
       <div className="flex-1 overflow-auto">{children}</div>
 
       <div
-        className="absolute top-0 right-0 w-0.5 h-full cursor-col-resize hover:bg-[var(--obsidian-accent-dim)]"
+        className="absolute top-0 -right-1 h-full w-2 cursor-col-resize bg-transparent hover:bg-[var(--obsidian-accent-dim)]"
         id="resize-handle"
+        data-sidebar-resize-handle="true"
       />
     </aside>
   )
