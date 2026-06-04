@@ -10,6 +10,20 @@ const buildMain = processEnv === 'all' || processEnv.includes('main')
 const buildPreload = processEnv === 'all' || processEnv.includes('preload')
 const buildRenderer = processEnv === 'all' || processEnv.includes('renderer')
 
+const ignoredRendererWarnings = [
+  '@codemirror/lang-css',
+  '@codemirror/lang-html',
+  '@codemirror/lang-javascript'
+]
+
+const onRendererWarn = (warning: any, warn: (warning: any) => void) => {
+  const message = typeof warning === 'string' ? warning : warning.message
+  if (message?.includes('is dynamically imported by') && ignoredRendererWarnings.some((text) => message.includes(text))) {
+    return
+  }
+  warn(warning)
+}
+
 const config: any = {}
 
 if (buildMain) {
@@ -45,6 +59,11 @@ if (buildRenderer) {
       }
     },
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        onwarn: onRendererWarn
+      }
+    },
     /* ** Add this css block for Tailwind CSS ** */
     css: {
       postcss: {

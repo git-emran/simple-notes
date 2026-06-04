@@ -375,7 +375,7 @@ const FileTreeItemComponent = ({
         {depth > 0 && Array.from({ length: depth }).map((_, i) => (
           <div
             key={i}
-            className="absolute top-0 bottom-0 pointer-events-none border-l border-[var(--obsidian-border)]/40 dark:border-[var(--obsidian-border)]/20"
+            className="absolute top-0 bottom-0 pointer-events-none border-l border-[var(--writr-filetree-indent-guide)]"
             style={{
               left: `${i * INDENT_PX + BASE_PADDING_LEFT_PX + 8}px`,
             }}

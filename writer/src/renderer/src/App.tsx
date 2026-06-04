@@ -5,8 +5,8 @@ import {
   EditorTabs,
   ErrorBoundary
 } from './components'
-import { FileExplorer } from './components/FileExplorer'
-import { SidebarSearch } from './components/SidebarSearch'
+// import { FileExplorer } from './components/FileExplorer'
+import { VirtualFilesList } from './components/VirtualFilesList'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
 import { SettingsModal } from './components/SettingsModal'
@@ -36,13 +36,12 @@ import {
   activeTabIdAtom,
   rememberLastStateAtom,
   isDarkModeAtom,
+  accentColorAtom,
   type EditorFontOption
 } from '@renderer/store'
 import {
   VscFiles,
   VscCalendar,
-  VscChevronLeft,
-  VscChevronRight,
   VscLayoutSidebarLeft,
   VscLayoutSidebarLeftOff,
   VscProject,
@@ -88,7 +87,7 @@ const App = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
-  const [sidebarWidth, setSidebarWidth] = useState(220) // default width
+  const [sidebarWidth, setSidebarWidth] = useState(450) // default width increased for VirtualFilesList
   const isDragging = useRef(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -105,6 +104,7 @@ const App = () => {
   const themeMode = useAtomValue(themeModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
+  const accentColor = useAtomValue(accentColorAtom)
   const fileTree = useAtomValue(fileTreeAtom)
   const openTab = useSetAtom(openTabAtom)
   const [tabs, setTabs] = useAtom(tabsAtom)
@@ -199,6 +199,20 @@ const App = () => {
     root.style.setProperty('--writr-editor-font-family', stack)
     root.style.setProperty('--writr-editor-font-size', `${Math.max(11, Math.min(20, editorFontSize))}px`)
   }, [editorFont, editorFontSize])
+
+  /* Apply user-chosen accent color as CSS custom properties */
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--obsidian-accent', accentColor)
+    // Parse hex → r,g,b for the dim variant
+    const hex = accentColor.replace('#', '')
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+    if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+      root.style.setProperty('--obsidian-accent-dim', `rgba(${r}, ${g}, ${b}, 0.15)`)
+    }
+  }, [accentColor])
 
   /* Drag to resize logic */
   useEffect(() => {
@@ -374,21 +388,17 @@ const App = () => {
               minWidth={minSidebarWidth}
               onClose={() => setCollapsed(true)}
             >
-              {sidebarView === 'files' ? (
-                <FileExplorer
+              <VirtualFilesList 
+                  sidebarView={sidebarView}
                   onSearchRequested={() => {
                     setSidebarView('search')
                     setAppMode('editor')
                   }}
-                />
-              ) : (
-                <SidebarSearch
-                  onCloseRequested={() => {
+                  onCloseSearch={() => {
                     setSidebarView('files')
                     setAppMode('editor')
                   }}
                 />
-              )}
             </Sidebar>
           )}
 

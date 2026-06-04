@@ -32,3 +32,7 @@ export const vimModeEnabledAtom = atomWithStorage<boolean>('writr-vim-mode-enabl
 
 export const rememberLastStateAtom = atomWithStorage<boolean>('writr-remember-last-state', true)
 
+export const aiApiKeyAtom = atomWithStorage<string>('writr-openrouter-api-key', '')
+
+/** User-chosen primary accent color (hex). Applied to --obsidian-accent via App.tsx. */
+export const accentColorAtom = atomWithStorage<string>('writr-accent-color', '#3b82f6')

@@ -11,6 +11,7 @@ import {
   createKanbanTabAtom,
   createNoteAtom,
   createTerminalTabAtom,
+  aiApiKeyAtom,
   fileTreeAtom,
   fileTreeIndexAtom,
   lineWrappingEnabledAtom,
@@ -108,7 +109,7 @@ export const MarkdownEditor = () => {
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiModels, setAiModels] = useState<AiModelInfo[]>([])
   const [selectedAiModel, setSelectedAiModel] = useState('')
-  const [aiApiKey, setAiApiKey] = useState('')
+  const aiApiKey = useAtomValue(aiApiKeyAtom)
   const [isLoadingAiModels, setIsLoadingAiModels] = useState(false)
   const [isGeneratingWithAi, setIsGeneratingWithAi] = useState(false)
   const [aiProgress, setAiProgress] = useState(0)
@@ -568,11 +569,8 @@ export const MarkdownEditor = () => {
     setAiError(null)
     setIsLoadingAiModels(true)
 
-    const storedKey = localStorage.getItem('writr-openrouter-api-key') || ''
-    setAiApiKey(storedKey)
-
     try {
-      const models = await window.context.listFreeAiModels(storedKey || undefined)
+      const models = await window.context.listFreeAiModels(aiApiKey.trim() || undefined)
       setAiModels(models)
       setSelectedAiModel((prev) => prev || models[0]?.id || '')
     } catch (error) {
@@ -580,7 +578,7 @@ export const MarkdownEditor = () => {
     } finally {
       setIsLoadingAiModels(false)
     }
-  }, [])
+  }, [aiApiKey])
 
   /* EditorMenuEntry type is now imported from editorMenuLogic */
 
@@ -674,7 +672,6 @@ export const MarkdownEditor = () => {
 
     setIsGeneratingWithAi(true)
     setAiError(null)
-    localStorage.setItem('writr-openrouter-api-key', aiApiKey.trim())
 
     try {
       const currentContent = viewRef.current.state.doc.toString()
@@ -1419,8 +1416,6 @@ export const MarkdownEditor = () => {
       <AiModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
-        aiApiKey={aiApiKey}
-        setAiApiKey={setAiApiKey}
         selectedAiModel={selectedAiModel}
         setSelectedAiModel={setSelectedAiModel}
         aiModels={aiModels}

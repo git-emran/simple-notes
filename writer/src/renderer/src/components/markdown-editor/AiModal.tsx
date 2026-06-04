@@ -8,8 +8,6 @@ import { VscFile, VscFolder, VscClose } from 'react-icons/vsc'
 interface AiModalProps {
   isOpen: boolean;
   onClose: () => void;
-  aiApiKey: string;
-  setAiApiKey: (key: string) => void;
   selectedAiModel: string;
   setSelectedAiModel: (model: string) => void;
   aiModels: AiModelInfo[];
@@ -27,8 +25,6 @@ interface AiModalProps {
 export const AiModal = ({
   isOpen,
   onClose,
-  aiApiKey,
-  setAiApiKey,
   selectedAiModel,
   setSelectedAiModel,
   aiModels,
@@ -244,20 +240,6 @@ export const AiModal = ({
           </button>
         </div>
         <div className="space-y-3 px-4 py-4">
-          <div>
-            <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">OpenRouter API Key</label>
-            <input
-              type="password"
-              value={aiApiKey}
-              onChange={(e) => setAiApiKey(e.target.value)}
-              spellCheck={false}
-              autoCorrect="off"
-              autoCapitalize="off"
-              placeholder="sk-or-v1-..."
-              className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)] placeholder:opacity-30"
-            />
-          </div>
-
           <div className="flex gap-3">
              <div className="flex-1">
                 <label className="mb-1 block text-xs text-[var(--obsidian-text-muted)]">Model</label>
