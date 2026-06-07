@@ -1,3 +1,4 @@
+import React from 'react'
 import { FileNode } from '@shared/models'
 import {
   fileTreeAtom,
@@ -15,6 +16,7 @@ import {
   showFolderIconsAtom
 } from '@renderer/store'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
+import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useState, useMemo, useCallback, useRef, useEffect, MouseEvent, DragEvent } from 'react'
 import { LiaBookSolid } from 'react-icons/lia'
@@ -367,11 +369,11 @@ export const VirtualFilesList = ({
     >
       {/* Notebooks Panel */}
       <div
-        className="writr-folders-glass flex shrink-0 flex-col border-r border-[var(--obsidian-border)]"
+        className="flex shrink-0 flex-col border-r border-[var(--obsidian-border)]"
         style={{ width: folderWidth, minWidth: MIN_FOLDER_PANEL_WIDTH }}
       >
         <div className="px-2 py-3 text-xs font-bold text-[var(--obsidian-text-muted)] uppercase tracking-wider border-b border-[var(--obsidian-border-soft)] flex items-center justify-between">
-          <span>NOTEBOOKS</span>
+          <span className="text-xs">NOTEBOOKS</span>
           <button
             onClick={() => handleCreateFolder()}
             className="p-1 rounded-full hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-colors"
@@ -409,12 +411,12 @@ export const VirtualFilesList = ({
           {folders.map(({ node, depth, isExpanded, hasChildren, noteCount }) => (
             <div
               key={node.path}
-              className="mx-1"
+              className="m-1"
               onContextMenu={(e) => handleNodeContextMenu(node, e)}
             >
               <div
                 className={twMerge(
-                  'flex items-center justify-between px-2 py-1.5 cursor-pointer text-[12px] transition-colors rounded-md',
+                  'flex items-center justify-between px-2 py-1.5 cursor-pointer text-[10px] transition-colors rounded-md',
                   selectedFolder === node.path
                     ? 'bg-[var(--obsidian-accent)] text-white shadow-sm'
                     : 'text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]',
@@ -536,7 +538,7 @@ export const VirtualFilesList = ({
         ) : (
           <>
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--obsidian-border-soft)]">
-              <span className="font-semibold text-sm text-[var(--obsidian-text)]">NOTES</span>
+              <span className="font-semibold text-xs text-[var(--obsidian-text)]">NOTES</span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handleCreateNote()}
@@ -569,7 +571,7 @@ export const VirtualFilesList = ({
                   <div
                     key={note.path}
                     className={twMerge(
-                      'p-3.5 cursor-pointer transition-colors border-b border-[var(--obsidian-border-soft)]',
+                      'px-3 py-3.5 cursor-pointer transition-colors border-b border-[var(--obsidian-border-soft)]',
                       isSelected
                         ? 'bg-[var(--obsidian-accent)] text-white'
                         : 'bg-transparent hover:bg-[var(--obsidian-hover)]'
@@ -631,10 +633,8 @@ export const VirtualFilesList = ({
                         {tag && (
                           <span
                             className={twMerge(
-                              'px-2 py-0.5 rounded-full font-medium whitespace-nowrap truncate max-w-[80px]',
-                              isSelected
-                                ? 'bg-white/20'
-                                : 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-accent)]'
+                              'rounded-full border px-1.5 py-[1px] text-[9px] font-semibold whitespace-nowrap truncate max-w-[80px]',
+                              CUSTOM_TAG_STYLE
                             )}
                           >
                             {tag}
