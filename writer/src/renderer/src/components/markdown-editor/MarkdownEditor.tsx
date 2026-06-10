@@ -1,5 +1,5 @@
 'use client'
-import { Children, isValidElement, useEffect, useRef, useCallback, useMemo, useState, memo, startTransition, type ReactNode } from 'react'
+import React, { isValidElement, useEffect, useRef, useCallback, useMemo, useState, memo } from 'react'
 import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { EditorView, keymap, drawSelection } from '@codemirror/view'
 import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
@@ -24,15 +24,28 @@ import {
   showToolbarAtom,
   tabIndentUnitAtom,
   vimModeEnabledAtom,
-  isDarkModeAtom,
+  isDarkModeAtom
 } from '@renderer/store'
 import { autoSavingTime } from '@shared/constants'
 import type { FileNode } from '@shared/models'
 import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
 import { markdown } from '@codemirror/lang-markdown'
-import { syntaxHighlighting, syntaxTree, ensureSyntaxTree, LanguageDescription, LanguageSupport } from '@codemirror/language'
-import { markdownLanguage } from "@codemirror/lang-markdown"
-import { gutterTheme, getEditorTheme, markdownHighlightStyle, markdownHighlightStyleDark } from './editorTheme'
+import {
+  syntaxHighlighting,
+  syntaxTree,
+  ensureSyntaxTree,
+  LanguageDescription,
+  LanguageSupport,
+  foldGutter,
+  foldKeymap
+} from '@codemirror/language'
+import { markdownLanguage } from '@codemirror/lang-markdown'
+import {
+  gutterTheme,
+  getEditorTheme,
+  markdownHighlightStyle,
+  markdownHighlightStyleDark
+} from './editorTheme'
 import { codeLanguages } from './languageConfig'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { autoCloseTags } from '@codemirror/lang-html'
@@ -43,25 +56,30 @@ import { statusBarExtension } from './statusbar'
 import { MarkdownToolbar } from './MarkdownToolbar'
 const MarkdownToolbarMemo = memo(MarkdownToolbar)
 import { tabAsSpaces } from './tabAsSpaces'
-import { twMerge } from 'tailwind-merge'
 import { markdownTableEnhancement } from './extendTableEditing'
 import { codeBlockCopy } from './codeBlockCopy'
 import { codeBlockBackground } from './codeBlockBackground'
 import { createLivePreviewImages } from './livePreviewImages'
-import { toLocalFileUrl } from './localFileUrl'
 import { tripleBacktickExtension } from './tripleBacktick'
 import { quoteLineStyling } from './quoteLineStyling'
 import { createClipboardExperience } from './clipboardExperience'
-import { MdDragIndicator } from "react-icons/md";
+import { headingFoldExtension } from './headingFold'
+import { MdDragIndicator } from 'react-icons/md'
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import * as commands from './editorCommands'
 import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
 import { markdownMarkupColors } from './markdownMarkupColors'
-import { VscError, VscInfo, VscLightbulb, VscProject, VscSymbolRuler, VscTerminal, VscWarning } from 'react-icons/vsc'
+import {
+  VscError,
+  VscInfo,
+  VscLightbulb,
+  VscProject,
+  VscSymbolRuler,
+  VscTerminal,
+  VscWarning
+} from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
-import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
-import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
-import { MoreActionsMenu } from './MoreActionsMenu'
+import { NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 import { MarkdownPreview } from './MarkdownPreview'
 import { AiModal } from './AiModal'
 import { EditorHeader } from './EditorHeader'
@@ -97,7 +115,6 @@ export const MarkdownEditor = () => {
   const lastScrollPercentageRef = useRef<number>(0)
   const [isPreview, setIsPreview] = useState(false)
   const [isFullPreview, setIsFullPreview] = useState(false) // New state for full preview
-  const [currentContent, setCurrentContent] = useState('')
   const [debouncedContent, setDebouncedContent] = useState('')
   const isDarkMode = useAtomValue(isDarkModeAtom)
   const [rootDir, setRootDir] = useState<string>('')
@@ -166,53 +183,56 @@ export const MarkdownEditor = () => {
     if (node == null) return ''
     if (typeof node === 'string' || typeof node === 'number') return String(node)
     if (Array.isArray(node)) return node.map(getReactNodeText).join('')
-    if (isValidElement(node)) return getReactNodeText((node.props as any)?.children)
+    if (isValidElement(node)) return getReactNodeText((node.props as { children?: unknown })?.children)
     return ''
   }, [])
 
-  const getCalloutMeta = useCallback((type: string) => {
-    const upper = type.toUpperCase()
-    const isDark = isDarkMode
+  const getCalloutMeta = useCallback(
+    (type: string) => {
+      const upper = type.toUpperCase()
+      const isDark = isDarkMode
 
-    const make = (
-      label: string,
-      Icon: any,
-      colors: { light: { border: string; fg: string }; dark: { border: string; fg: string } }
-    ) => {
-      const c = isDark ? colors.dark : colors.light
-      return { label, Icon, ...c }
-    }
+      const make = (
+        label: string,
+        Icon: React.ComponentType<{ className?: string }>,
+        colors: { light: { border: string; fg: string }; dark: { border: string; fg: string } }
+      ) => {
+        const c = isDark ? colors.dark : colors.light
+        return { label, Icon, ...c }
+      }
 
-    switch (upper) {
-      case 'NOTE':
-        return make('Note', VscInfo, {
-          light: { border: '#3b82f6', fg: '#2563eb' },
-          dark: { border: '#60a5fa', fg: '#93c5fd' },
-        })
-      case 'TIP':
-        return make('Tip', VscLightbulb, {
-          light: { border: '#22c55e', fg: '#16a34a' },
-          dark: { border: '#34d399', fg: '#6ee7b7' },
-        })
-      case 'IMPORTANT':
-        return make('Important', VscWarning, {
-          light: { border: '#a855f7', fg: '#a855f7' },
-          dark: { border: '#c084fc', fg: '#d8b4fe' },
-        })
-      case 'WARNING':
-        return make('Warning', VscWarning, {
-          light: { border: '#f97316', fg: '#f97316' },
-          dark: { border: '#fb923c', fg: '#fdba74' },
-        })
-      case 'CAUTION':
-        return make('Caution', VscError, {
-          light: { border: '#ef4444', fg: '#ef4444' },
-          dark: { border: '#f87171', fg: '#fecaca' },
-        })
-      default:
-        return null
-    }
-  }, [isDarkMode])
+      switch (upper) {
+        case 'NOTE':
+          return make('Note', VscInfo, {
+            light: { border: '#3b82f6', fg: '#2563eb' },
+            dark: { border: '#60a5fa', fg: '#93c5fd' }
+          })
+        case 'TIP':
+          return make('Tip', VscLightbulb, {
+            light: { border: '#22c55e', fg: '#16a34a' },
+            dark: { border: '#34d399', fg: '#6ee7b7' }
+          })
+        case 'IMPORTANT':
+          return make('Important', VscWarning, {
+            light: { border: '#a855f7', fg: '#a855f7' },
+            dark: { border: '#c084fc', fg: '#d8b4fe' }
+          })
+        case 'WARNING':
+          return make('Warning', VscWarning, {
+            light: { border: '#f97316', fg: '#f97316' },
+            dark: { border: '#fb923c', fg: '#fdba74' }
+          })
+        case 'CAUTION':
+          return make('Caution', VscError, {
+            light: { border: '#ef4444', fg: '#ef4444' },
+            dark: { border: '#f87171', fg: '#fecaca' }
+          })
+        default:
+          return null
+      }
+    },
+    [isDarkMode]
+  )
 
   const vimCompartment = useMemo(() => new Compartment(), [])
   const themeCompartment = useMemo(() => new Compartment(), [])
@@ -226,10 +246,10 @@ export const MarkdownEditor = () => {
   const reconfigureLanguage = useMemo(
     () =>
       debounce((view: EditorView, support: LanguageSupport | []) => {
-        if (!view.state) return;
+        if (!view.state) return
         view.dispatch({
           effects: languageSupportCompartment.reconfigure(support)
-        });
+        })
       }, 100),
     [languageSupportCompartment]
   )
@@ -250,9 +270,11 @@ export const MarkdownEditor = () => {
         ),
         lineWrappingCompartment.reconfigure(lineWrappingEnabled ? EditorView.lineWrapping : []),
         tabIndentCompartment.reconfigure(tabAsSpaces(tabIndentUnit)),
-        livePreviewImagesCompartment.reconfigure(createLivePreviewImages(selectedNote?.path, rootDir || undefined)),
-        languageSupportCompartment.reconfigure([]),
-      ],
+        livePreviewImagesCompartment.reconfigure(
+          createLivePreviewImages(selectedNote?.path, rootDir || undefined)
+        ),
+        languageSupportCompartment.reconfigure([])
+      ]
     })
   }, [
     highlightCompartment,
@@ -269,7 +291,7 @@ export const MarkdownEditor = () => {
     vimCompartment,
     vimModeEnabled,
     rootDir,
-    languageSupportCompartment,
+    languageSupportCompartment
   ])
 
   useEffect(() => {
@@ -298,19 +320,10 @@ export const MarkdownEditor = () => {
     setTagInput('')
   }, [selectedNote?.path])
 
-
-
   const debouncedSetContent = useMemo(
     () => debounce((content: string) => setDebouncedContent(content), 300),
     []
   )
-
-  useEffect(() => {
-    startTransition(() => {
-      debouncedSetContent(currentContent)
-    })
-    return debouncedSetContent.cancel
-  }, [currentContent, debouncedSetContent])
 
   const insertTextAtCursor = useCallback((view: EditorView, text: string) => {
     const selection = view.state.selection.main
@@ -359,7 +372,7 @@ export const MarkdownEditor = () => {
                 : `${originalName}${extensionFromMimeType(file.type)}`
               return window.context.importImageToRootImageFolder({
                 fileName: effectiveName,
-                data: buffer,
+                data: buffer
               })
             })()
 
@@ -399,7 +412,7 @@ export const MarkdownEditor = () => {
               suppressNativeFormatUntilRef.current.bold = Date.now() + 150
               commands.applyFormat(view, '**', '**')
               return true
-            },
+            }
           },
           {
             key: 'Mod-i',
@@ -409,15 +422,16 @@ export const MarkdownEditor = () => {
               suppressNativeFormatUntilRef.current.italic = Date.now() + 150
               commands.applyFormat(view, '*', '*')
               return true
-            },
-          },
+            }
+          }
         ])
       ),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
+      keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
       drawSelection(),
       closeBrackets(),
       autoCloseTags,
       gutterTheme,
+      foldGutter(),
       markdown({ base: markdownLanguage, codeLanguages, addKeymap: true, completeHTMLTags: false }),
       lintGutter(),
       indentationMarkers({
@@ -429,8 +443,8 @@ export const MarkdownEditor = () => {
           light: 'rgba(0, 0, 0, 0.05)',
           dark: 'rgba(255, 255, 255, 0.05)',
           activeLight: 'rgba(0, 0, 0, 0.1)',
-          activeDark: 'rgba(255, 255, 255, 0.1)',
-        },
+          activeDark: 'rgba(255, 255, 255, 0.1)'
+        }
       }),
       autocompletion({ activateOnTyping: true, icons: true }),
       markdownTableEnhancement,
@@ -442,18 +456,11 @@ export const MarkdownEditor = () => {
       quoteLineStyling,
       tripleBacktickExtension,
       markdownMarkupColors,
-      EditorView.contentAttributes.of({ spellcheck: 'true' }),
+      ...headingFoldExtension,
+      EditorView.contentAttributes.of({ spellcheck: 'true' })
     ],
     [
-      highlightCompartment,
-      isDarkMode,
-      lineWrappingCompartment,
-      livePreviewImagesCompartment,
-      relativeLineNumbersCompartment,
-      tabIndentCompartment,
-      themeCompartment,
-      vimCompartment,
-      handleClipboardImagePaste,
+      handleClipboardImagePaste
     ]
   )
 
@@ -464,7 +471,9 @@ export const MarkdownEditor = () => {
       isSavingRef.current = true
       try {
         await saveNote({ newContent: content, path: notePath })
-      } catch {} finally {
+      } catch {
+        /* Silently ignore save errors — the next autosave will retry */
+      } finally {
         isSavingRef.current = false
       }
     },
@@ -473,9 +482,7 @@ export const MarkdownEditor = () => {
 
   const queueSave = useCallback(
     (content: string, notePath: string) => {
-      saveQueueRef.current = saveQueueRef.current.then(() =>
-        executeSave(content, notePath)
-      )
+      saveQueueRef.current = saveQueueRef.current.then(() => executeSave(content, notePath))
       return saveQueueRef.current
     },
     [executeSave]
@@ -494,11 +501,8 @@ export const MarkdownEditor = () => {
   const handleBlurSave = useCallback(async () => {
     /* When focus is lost, we save the content of whatever is currently loaded in the CodeMirror view. */
     if (!currentNotePathRef.current || !viewRef.current || isSwitchingRef.current) return
-    const content = viewRef.current.state.doc.toString()
-    const notePath = currentNotePathRef.current
     debouncedSave.flush()
-    await queueSave(content, notePath)
-  }, [queueSave, debouncedSave])
+  }, [debouncedSave])
 
   const handleEditorImageDrop = useCallback(
     async (event: DragEvent, view: EditorView) => {
@@ -528,7 +532,7 @@ export const MarkdownEditor = () => {
     if (!selectedNote?.path) return
     setIsExportingPdf(true)
     try {
-      const latestContent = viewRef.current?.state.doc.toString() ?? currentContent
+      const latestContent = viewRef.current?.state.doc.toString() ?? selectedNote?.content ?? ''
       const success = await window.context.exportNoteToPdf(
         selectedNote.path,
         selectedNote.title,
@@ -540,22 +544,32 @@ export const MarkdownEditor = () => {
     } finally {
       setIsExportingPdf(false)
     }
-  }, [currentContent, selectedNote?.path, selectedNote?.title])
+  }, [selectedNote?.content, selectedNote?.path, selectedNote?.title])
 
-  const handleHeaderRename = useCallback((newName: string) => {
-    if (!selectedNote?.path) return
-    const currentName = selectedNote.path.substring(Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\')) + 1)
-    const ext = currentName.includes('.') ? currentName.substring(currentName.lastIndexOf('.')) : ''
-    const newFileName = newName.endsWith(ext) ? newName : `${newName}${ext}`
-    
-    const parentPath = selectedNote.path.substring(0, Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\')))
-    const separator = selectedNote.path.includes('\\') ? '\\' : '/'
-    const newPath = parentPath ? `${parentPath}${separator}${newFileName}` : newFileName
+  const handleHeaderRename = useCallback(
+    (newName: string) => {
+      if (!selectedNote?.path) return
+      const currentName = selectedNote.path.substring(
+        Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\')) + 1
+      )
+      const ext = currentName.includes('.')
+        ? currentName.substring(currentName.lastIndexOf('.'))
+        : ''
+      const newFileName = newName.endsWith(ext) ? newName : `${newName}${ext}`
 
-    if (newPath !== selectedNote.path) {
-      void movePath({ src: selectedNote.path, dest: newPath })
-    }
-  }, [selectedNote?.path, movePath])
+      const parentPath = selectedNote.path.substring(
+        0,
+        Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\'))
+      )
+      const separator = selectedNote.path.includes('\\') ? '\\' : '/'
+      const newPath = parentPath ? `${parentPath}${separator}${newFileName}` : newFileName
+
+      if (newPath !== selectedNote.path) {
+        void movePath({ src: selectedNote.path, dest: newPath })
+      }
+    },
+    [selectedNote?.path, movePath]
+  )
 
   useEffect(() => {
     if (!exportNotice) return
@@ -603,22 +617,22 @@ export const MarkdownEditor = () => {
         label: 'Kanban',
         icon: <VscProject />,
         keywords: ['panel', 'left', 'board', 'project'],
-        run: () => createKanbanTab(),
+        run: () => createKanbanTab()
       },
       {
         id: 'panel-terminal',
         label: 'Terminal',
         icon: <VscTerminal />,
         keywords: ['panel', 'left', 'shell', 'cli'],
-        run: () => createTerminalTab(),
+        run: () => createTerminalTab()
       },
       {
         id: 'panel-canvas',
         label: 'Canvas',
         icon: <VscSymbolRuler />,
         keywords: ['panel', 'left', 'diagram', 'whiteboard'],
-        run: () => void createCanvas(getSelectedNoteDir()),
-      },
+        run: () => void createCanvas(getSelectedNoteDir())
+      }
     ]
   }, [createCanvas, createKanbanTab, createTerminalTab, selectedNote?.path])
 
@@ -632,7 +646,7 @@ export const MarkdownEditor = () => {
           icon,
           shortcut,
           keywords,
-          run: () => run(viewRef.current),
+          run: () => run(viewRef.current)
         })),
     [editorMenuEntries]
   )
@@ -657,151 +671,155 @@ export const MarkdownEditor = () => {
   const fileTree = useAtomValue(fileTreeAtom)
   const fileTreeIndex = useAtomValue(fileTreeIndexAtom)
 
-  const handleGenerateWithAi = useCallback(async (contextPaths: string[] = []) => {
-    if (!viewRef.current) return
+  const handleGenerateWithAi = useCallback(
+    async (contextPaths: string[] = []) => {
+      if (!viewRef.current) return
 
-    const prompt = aiPrompt.trim()
-    if (!prompt) {
-      setAiError('Prompt is required.')
-      return
-    }
-    if (!selectedAiModel) {
-      setAiError('Please select a model.')
-      return
-    }
-
-    setIsGeneratingWithAi(true)
-    setAiError(null)
-
-    try {
-      const currentContent = viewRef.current.state.doc.toString()
-
-      const normalizePath = (p: string) => p.replace(/\\/g, '/')
-      const rootDirNormalized = normalizePath(rootDir || '').replace(/\/+$/, '')
-      const displayPath = (absPath: string) => {
-        const n = normalizePath(absPath)
-        if (rootDirNormalized && n.startsWith(`${rootDirNormalized}/`)) {
-          return n.slice(rootDirNormalized.length + 1)
-        }
-        return n
+      const prompt = aiPrompt.trim()
+      if (!prompt) {
+        setAiError('Prompt is required.')
+        return
+      }
+      if (!selectedAiModel) {
+        setAiError('Please select a model.')
+        return
       }
 
-      const truncateMiddle = (text: string, maxChars: number) => {
-        if (text.length <= maxChars) return text
-        const head = Math.floor(maxChars * 0.6)
-        const tail = maxChars - head
-        return `${text.slice(0, head)}\n\n…(truncated ${text.length - maxChars} chars)…\n\n${text.slice(
-          text.length - tail
-        )}`
-      }
+      setIsGeneratingWithAi(true)
+      setAiError(null)
 
-      const MAX_NOTE_CHARS = 40_000
-      const contentForAi = truncateMiddle(currentContent, MAX_NOTE_CHARS)
-      const currentNotePath = selectedNote?.path || ''
-      const effectiveContextPaths = currentNotePath
-        ? Array.from(new Set([currentNotePath, ...contextPaths]))
-        : contextPaths
+      try {
+        const currentContent = viewRef.current.state.doc.toString()
 
-      // Gather context content
-      let fullContext = ''
-      if (effectiveContextPaths.length > 0) {
-        const MAX_CONTEXT_FILES = 20
-        const MAX_CONTEXT_TOTAL_CHARS = 60_000
-        const MAX_CONTEXT_CHARS_PER_FILE = 12_000
-
-        const collectedFiles: FileNode[] = []
-        const visited = new Set<string>()
-        const stack: string[] = [...effectiveContextPaths]
-        while (stack.length) {
-          const p = stack.pop()!
-          if (visited.has(p)) continue
-          visited.add(p)
-
-          const node = fileTreeIndex.get(p)
-          if (!node) continue
-
-          if (node.type === 'file') {
-            if (currentNotePath && node.path === currentNotePath) continue
-            collectedFiles.push(node)
-          } else if (node.children?.length) {
-            for (const child of node.children) stack.push(child.path)
+        const normalizePath = (p: string) => p.replace(/\\/g, '/')
+        const rootDirNormalized = normalizePath(rootDir || '').replace(/\/+$/, '')
+        const displayPath = (absPath: string) => {
+          const n = normalizePath(absPath)
+          if (rootDirNormalized && n.startsWith(`${rootDirNormalized}/`)) {
+            return n.slice(rootDirNormalized.length + 1)
           }
+          return n
         }
 
-        const uniqueFiles = Array.from(
-          new Map(collectedFiles.map((n) => [n.path, n])).values()
-        ).sort((a, b) => displayPath(a.path).localeCompare(displayPath(b.path)))
+        const truncateMiddle = (text: string, maxChars: number) => {
+          if (text.length <= maxChars) return text
+          const head = Math.floor(maxChars * 0.6)
+          const tail = maxChars - head
+          return `${text.slice(0, head)}\n\n…(truncated ${text.length - maxChars} chars)…\n\n${text.slice(
+            text.length - tail
+          )}`
+        }
 
-        const contextLines: string[] = []
-        let used = 0
-        let addedFiles = 0
-        let hitLimit = false
+        const MAX_NOTE_CHARS = 40_000
+        const contentForAi = truncateMiddle(currentContent, MAX_NOTE_CHARS)
+        const currentNotePath = selectedNote?.path || ''
+        const effectiveContextPaths = currentNotePath
+          ? Array.from(new Set([currentNotePath, ...contextPaths]))
+          : contextPaths
 
-        for (const node of uniqueFiles) {
-          if (addedFiles >= MAX_CONTEXT_FILES) {
-            hitLimit = true
-            break
+        // Gather context content
+        let fullContext = ''
+        if (effectiveContextPaths.length > 0) {
+          const MAX_CONTEXT_FILES = 20
+          const MAX_CONTEXT_TOTAL_CHARS = 60_000
+          const MAX_CONTEXT_CHARS_PER_FILE = 12_000
+
+          const collectedFiles: FileNode[] = []
+          const visited = new Set<string>()
+          const stack: string[] = [...effectiveContextPaths]
+          while (stack.length) {
+            const p = stack.pop()!
+            if (visited.has(p)) continue
+            visited.add(p)
+
+            const node = fileTreeIndex.get(p)
+            if (!node) continue
+
+            if (node.type === 'file') {
+              if (currentNotePath && node.path === currentNotePath) continue
+              collectedFiles.push(node)
+            } else if (node.children?.length) {
+              for (const child of node.children) stack.push(child.path)
+            }
           }
 
-          try {
-            const raw = await window.context.readFileNew(node.path)
-            if (raw == null) continue
+          const uniqueFiles = Array.from(
+            new Map(collectedFiles.map((n) => [n.path, n])).values()
+          ).sort((a, b) => displayPath(a.path).localeCompare(displayPath(b.path)))
 
-            const truncated = raw.length > MAX_CONTEXT_CHARS_PER_FILE
-            const snippet = truncated
-              ? `${raw.slice(0, MAX_CONTEXT_CHARS_PER_FILE)}\n…(truncated ${
-                  raw.length - MAX_CONTEXT_CHARS_PER_FILE
-                } chars)…\n`
-              : raw
+          const contextLines: string[] = []
+          let used = 0
+          let addedFiles = 0
+          let hitLimit = false
 
-            const block = `--- FILE: ${displayPath(node.path)} ---\n${snippet}\n`
-            if (used + block.length > MAX_CONTEXT_TOTAL_CHARS) {
+          for (const node of uniqueFiles) {
+            if (addedFiles >= MAX_CONTEXT_FILES) {
               hitLimit = true
               break
             }
 
-            contextLines.push(block)
-            used += block.length
-            addedFiles++
-          } catch (e) {
+            try {
+              const raw = await window.context.readFileNew(node.path)
+              if (raw == null) continue
+
+              const truncated = raw.length > MAX_CONTEXT_CHARS_PER_FILE
+              const snippet = truncated
+                ? `${raw.slice(0, MAX_CONTEXT_CHARS_PER_FILE)}\n…(truncated ${
+                    raw.length - MAX_CONTEXT_CHARS_PER_FILE
+                  } chars)…\n`
+                : raw
+
+              const block = `--- FILE: ${displayPath(node.path)} ---\n${snippet}\n`
+              if (used + block.length > MAX_CONTEXT_TOTAL_CHARS) {
+                hitLimit = true
+                break
+              }
+
+              contextLines.push(block)
+              used += block.length
+              addedFiles++
+            } catch {
+              /* Silently skip files that can't be read */
+            }
           }
+
+          if (hitLimit) {
+            contextLines.push(
+              `---\n(Some context was omitted to stay within size limits. Try selecting fewer files/folders.)\n---\n`
+            )
+          }
+
+          fullContext = contextLines.join('\n')
         }
 
-        if (hitLimit) {
-          contextLines.push(
-            `---\n(Some context was omitted to stay within size limits. Try selecting fewer files/folders.)\n---\n`
-          )
+        const noteLine = currentNotePath ? `Current note: ${displayPath(currentNotePath)}\n\n` : ''
+        const finalPrompt = fullContext
+          ? `${noteLine}I am providing some file context below to help with your task.\n\nContext:\n${fullContext}\n\nTask:\n${prompt}`
+          : `${noteLine}${prompt}`
+
+        const result = await window.context.generateWithAi({
+          model: selectedAiModel,
+          prompt: finalPrompt,
+          content: contentForAi,
+          apiKey: aiApiKey.trim() || undefined
+        })
+
+        if ('error' in result) {
+          setAiError(result.error)
+          return
         }
 
-        fullContext = contextLines.join('\n')
+        insertAiText(result.text)
+        setIsAiModalOpen(false)
+        setAiPrompt('')
+      } catch (error) {
+        setAiError('Failed to generate text.')
+      } finally {
+        setIsGeneratingWithAi(false)
       }
-
-      const noteLine = currentNotePath ? `Current note: ${displayPath(currentNotePath)}\n\n` : ''
-      const finalPrompt = fullContext
-        ? `${noteLine}I am providing some file context below to help with your task.\n\nContext:\n${fullContext}\n\nTask:\n${prompt}`
-        : `${noteLine}${prompt}`
-
-      const result = await window.context.generateWithAi({
-        model: selectedAiModel,
-        prompt: finalPrompt,
-        content: contentForAi,
-        apiKey: aiApiKey.trim() || undefined
-      })
-
-      if ('error' in result) {
-        setAiError(result.error)
-        return
-      }
-
-      insertAiText(result.text)
-      setIsAiModalOpen(false)
-      setAiPrompt('')
-    } catch (error) {
-      setAiError('Failed to generate text.')
-    } finally {
-      setIsGeneratingWithAi(false)
-    }
-  }, [aiApiKey, aiPrompt, insertAiText, selectedAiModel, fileTreeIndex, rootDir, selectedNote?.path])
+    },
+    [aiApiKey, aiPrompt, insertAiText, selectedAiModel, fileTreeIndex, rootDir, selectedNote?.path]
+  )
 
   useEffect(() => {
     if (!isGeneratingWithAi) {
@@ -823,7 +841,8 @@ export const MarkdownEditor = () => {
   /* Initialize editor (once per mount) + switch documents without recreating the view */
   useEffect(() => {
     if (!selectedNote?.path || !editorRef.current) {
-      setCurrentContent('')
+      debouncedSetContent.cancel()
+      setDebouncedContent('')
       return
     }
 
@@ -843,59 +862,69 @@ export const MarkdownEditor = () => {
           ),
           lineWrappingCompartment.of(lineWrappingEnabled ? EditorView.lineWrapping : []),
           tabIndentCompartment.of(tabAsSpaces(tabIndentUnit)),
-          livePreviewImagesCompartment.of(createLivePreviewImages(selectedNote?.path, rootDir || undefined)),
+          livePreviewImagesCompartment.of(
+            createLivePreviewImages(selectedNote?.path, rootDir || undefined)
+          ),
           languageSupportCompartment.of([]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged || update.selectionSet) {
-               /* Only check for language changes if the cursor moved or content changed */
-               const pos = update.state.selection.main.head;
-               
-               /* Optimization: skip if cursor didn't move much and we already know the language */
-               /* This is handled by resolveInner being fast enough usually,  */
-               /* but we can be more strategic. */
-               
-               const tree = ensureSyntaxTree(update.state, pos, 50) || syntaxTree(update.state);
-               const node = tree.resolveInner(pos, -1);
-               let fence = node;
-               while (fence && fence.name !== "FencedCode") {
-                 fence = fence.parent!;
-                 if (!fence) break;
-               }
-               
-               let langName: string | null = null;
-               if (fence) {
-                 const info = fence.getChild("CodeInfo");
-                 if (info) {
-                   langName = update.state.sliceDoc(info.from, info.to).trim().split(/\s+/)[0].toLowerCase();
-                 }
-               }
+              /* Only check for language changes if the cursor moved or content changed */
+              const pos = update.state.selection.main.head
 
-               if (langName !== lastLanguageRef.current) {
-                 lastLanguageRef.current = langName;
-                 
-                 if (langName) {
-                    const desc = LanguageDescription.matchLanguageName(codeLanguages, langName) || 
-                                 LanguageDescription.matchFilename(codeLanguages, `f.${langName}`);
-                    
-                    if (desc) {
-		                      desc.load().then(support => {
-		                        if (lastLanguageRef.current === langName) {
-		                          reconfigureLanguage(update.view, support);
-		                        }
-		                      }).catch(() => {
-		                        reconfigureLanguage(update.view, []);
-		                      });
-		                    } else {
-		                      reconfigureLanguage(update.view, []);
-		                    }
-                 } else {
-                   reconfigureLanguage(update.view, []);
-                 }
-               }
+              /* Optimization: skip if cursor didn't move much and we already know the language */
+              /* This is handled by resolveInner being fast enough usually,  */
+              /* but we can be more strategic. */
+
+              const tree = ensureSyntaxTree(update.state, pos, 50) || syntaxTree(update.state)
+              const node = tree.resolveInner(pos, -1)
+              let fence = node
+              while (fence && fence.name !== 'FencedCode') {
+                fence = fence.parent!
+                if (!fence) break
+              }
+
+              let langName: string | null = null
+              if (fence) {
+                const info = fence.getChild('CodeInfo')
+                if (info) {
+                  langName = update.state
+                    .sliceDoc(info.from, info.to)
+                    .trim()
+                    .split(/\s+/)[0]
+                    .toLowerCase()
+                }
+              }
+
+              if (langName !== lastLanguageRef.current) {
+                lastLanguageRef.current = langName
+
+                if (langName) {
+                  const desc =
+                    LanguageDescription.matchLanguageName(codeLanguages, langName) ||
+                    LanguageDescription.matchFilename(codeLanguages, `f.${langName}`)
+
+                  if (desc) {
+                    desc
+                      .load()
+                      .then((support) => {
+                        if (lastLanguageRef.current === langName) {
+                          reconfigureLanguage(update.view, support)
+                        }
+                      })
+                      .catch(() => {
+                        reconfigureLanguage(update.view, [])
+                      })
+                  } else {
+                    reconfigureLanguage(update.view, [])
+                  }
+                } else {
+                  reconfigureLanguage(update.view, [])
+                }
+              }
             }
             if (update.docChanged && !isSwitchingRef.current) {
               const content = update.state.doc.toString()
-              setCurrentContent(content)
+              debouncedSetContent(content)
               debouncedSave(content, currentNotePathRef.current)
             }
           }),
@@ -909,7 +938,10 @@ export const MarkdownEditor = () => {
                 event.preventDefault()
                 return true
               }
-              if (inputType === 'formatItalic' && now < suppressNativeFormatUntilRef.current.italic) {
+              if (
+                inputType === 'formatItalic' &&
+                now < suppressNativeFormatUntilRef.current.italic
+              ) {
                 event.preventDefault()
                 return true
               }
@@ -932,9 +964,9 @@ export const MarkdownEditor = () => {
               if (!event.dataTransfer?.files?.length) return false
               void handleEditorImageDrop(event, view)
               return true
-            },
-          }),
-        ],
+            }
+          })
+        ]
       })
 
     const ensureView = () => {
@@ -943,37 +975,34 @@ export const MarkdownEditor = () => {
       viewRef.current = new EditorView({ state: buildState(''), parent: editorRef.current! })
     }
 
-      const switchNote = () => {
-        isSwitchingRef.current = true
-        ensureView()
-  
-        const newTitle = selectedNote.title
-        const newContent = selectedNote.content
-  
-        /* FLUSH pending debounced saves for the OLD note before replacing refs */
-        /* This prevents data loss when rapidly switching tabs while typing */
-        debouncedSave.flush()
-  
-        currentNoteTitleRef.current = newTitle
-        currentNotePathRef.current = selectedNote.path
-        lastLanguageRef.current = null
-        
-        /* Update state immediately for visual snappiness */
-        setCurrentContent(newContent)
-        startTransition(() => {
-          setDebouncedContent(newContent)
-        })
-  
-        const view = viewRef.current
-        if (view) {
-          /* Replace state entirely to reset undo history and prevent Ctrl+Z cross-contamination */
-          view.setState(buildState(newContent))
-        }
-        applyEditorSettings()
-        isSwitchingRef.current = false
+    const switchNote = () => {
+      isSwitchingRef.current = true
+      ensureView()
+
+      const newTitle = selectedNote.title
+      const newContent = selectedNote.content
+
+      /* FLUSH pending debounced saves for the OLD note before replacing refs */
+      /* This prevents data loss when rapidly switching tabs while typing */
+      debouncedSave.flush()
+
+      currentNoteTitleRef.current = newTitle
+      currentNotePathRef.current = selectedNote.path
+      lastLanguageRef.current = null
+
+      /* Update state immediately for visual snappiness */
+      debouncedSetContent.cancel()
+      setDebouncedContent(newContent)
+
+      const view = viewRef.current
+      if (view) {
+        /* Replace state entirely to reset undo history and prevent Ctrl+Z cross-contamination */
+        view.setState(buildState(newContent))
       }
-  
-      switchNote()
+      isSwitchingRef.current = false
+    }
+
+    switchNote()
     return () => {
       debouncedSave.cancel()
     }
@@ -984,6 +1013,7 @@ export const MarkdownEditor = () => {
     handleBlurSave,
     handleEditorImageDrop,
     applyEditorSettings,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ])
 
   useEffect(() => {
@@ -993,8 +1023,8 @@ export const MarkdownEditor = () => {
   /* Destroy editor if no note is selected */
   useEffect(() => {
     if (!selectedNote?.path && viewRef.current) {
-        viewRef.current.destroy()
-        viewRef.current = null
+      viewRef.current.destroy()
+      viewRef.current = null
     }
   }, [selectedNote?.path])
 
@@ -1052,47 +1082,47 @@ export const MarkdownEditor = () => {
   }, [isPreview, isFullPreview])
 
   /* FAB Visibility & Inactivity Timer */
-  const fabTimerRef = useRef<any>(null)
+  const fabTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const fabThreshold = 5
     const inactivityTimeout = 10000 // 10 seconds
-    
+
     const showAndResetTimer = () => {
-        setShowFAB(true)
-        if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
-        fabTimerRef.current = setTimeout(() => {
-            setShowFAB(false)
-        }, inactivityTimeout)
+      setShowFAB(true)
+      if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
+      fabTimerRef.current = setTimeout(() => {
+        setShowFAB(false)
+      }, inactivityTimeout)
     }
 
     const handleScroll = (e: Event) => {
-        const target = e.target as HTMLElement
-        if (target.scrollTop !== undefined && target.scrollTop > fabThreshold) {
-            showAndResetTimer()
-        }
+      const target = e.target as HTMLElement
+      if (target.scrollTop !== undefined && target.scrollTop > fabThreshold) {
+        showAndResetTimer()
+      }
     }
 
     const handleMouseMove = () => {
-        showAndResetTimer()
+      showAndResetTimer()
     }
 
     const container = containerRef.current
     if (container) {
-        container.addEventListener('scroll', handleScroll, true)
-        container.addEventListener('mousemove', handleMouseMove)
+      container.addEventListener('scroll', handleScroll, true)
+      container.addEventListener('mousemove', handleMouseMove)
     }
 
     return () => {
-        container?.removeEventListener('scroll', handleScroll, true)
-        container?.removeEventListener('mousemove', handleMouseMove)
-        if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
+      container?.removeEventListener('scroll', handleScroll, true)
+      container?.removeEventListener('mousemove', handleMouseMove)
+      if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
     }
   }, [selectedNote?.path, isPreview, isFullPreview])
 
   useEffect(() => {
-      /* Reset FAB when switching notes */
-      setShowFAB(false)
+    /* Reset FAB when switching notes */
+    setShowFAB(false)
   }, [selectedNote?.path])
 
   const captureScrollPercentage = useCallback(() => {
@@ -1145,7 +1175,10 @@ export const MarkdownEditor = () => {
 
   const scrollSyncLockRef = useRef<null | 'editor' | 'preview'>(null)
   const scrollSyncRafRef = useRef<number | null>(null)
-  const lastProgrammaticScrollRef = useRef<{ editor: number; preview: number }>({ editor: 0, preview: 0 })
+  const lastProgrammaticScrollRef = useRef<{ editor: number; preview: number }>({
+    editor: 0,
+    preview: 0
+  })
 
   /* Sync scroll between editor + preview in split view */
   useEffect(() => {
@@ -1251,21 +1284,25 @@ export const MarkdownEditor = () => {
   const handleFullPreviewToggle = () => {
     captureScrollPercentage()
     /* Synchronize preview content immediately for a safe and efficient transition */
-    setDebouncedContent(currentContent)
+    if (viewRef.current) {
+      setDebouncedContent(viewRef.current.state.doc.toString())
+    }
 
     if (isFullPreview) {
-      setIsFullPreview(false);
-      setIsPreview(false);
+      setIsFullPreview(false)
+      setIsPreview(false)
     } else {
-      setIsFullPreview(true);
-      setIsPreview(true);
+      setIsFullPreview(true)
+      setIsPreview(true)
     }
   }
 
   const handleSplitViewToggle = () => {
     captureScrollPercentage()
     /* Synchronize preview content immediately for a safe and efficient transition */
-    setDebouncedContent(currentContent)
+    if (viewRef.current) {
+      setDebouncedContent(viewRef.current.state.doc.toString())
+    }
     if (isFullPreview) {
       setIsFullPreview(false)
       setIsPreview(true)
@@ -1288,7 +1325,7 @@ export const MarkdownEditor = () => {
       return next
     })
   }
-  
+
   const handleTagChange = (tag: string) => {
     const notePath = selectedNote?.path
     if (!notePath) return
@@ -1299,7 +1336,7 @@ export const MarkdownEditor = () => {
         delete next[notePath]
         return next
       }
-      next[notePath] = tag as any
+      next[notePath] = tag
       return next
     })
   }
@@ -1309,7 +1346,9 @@ export const MarkdownEditor = () => {
       <div className="flex items-center justify-center h-full bg-[var(--obsidian-base)]">
         <div className="text-center">
           <h2 className="text-lg font-semibold text-[var(--obsidian-text)]">No note selected</h2>
-          <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">Create a note to start writing.</p>
+          <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">
+            Create a note to start writing.
+          </p>
           <button
             type="button"
             onClick={() => {
@@ -1370,14 +1409,11 @@ export const MarkdownEditor = () => {
           ref={editorContainerRef}
           className="h-full"
           style={{
-            width: isFullPreview ? '0' : (isPreview ? '50%' : '100%'),
+            width: isFullPreview ? '0' : isPreview ? '50%' : '100%',
             display: isFullPreview ? 'none' : 'block'
           }}
         >
-          <div
-            ref={editorRef}
-            className="absolute inset-0 w-full h-full visible"
-          />
+          <div ref={editorRef} className="absolute inset-0 w-full h-full visible" />
         </div>
 
         {isPreview && !isFullPreview && (
@@ -1393,22 +1429,22 @@ export const MarkdownEditor = () => {
         <div
           ref={previewContainerRef}
           className="h-full writr-markdown-preview preview-scrollbar overflow-auto bg-[var(--obsidian-base)] p-8"
-          style={{ 
+          style={{
             width: isFullPreview ? '100%' : '50%',
             display: isPreview ? 'block' : 'none'
           }}
         >
           <div className="w-full min-w-0">
             <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
-            <MarkdownPreview 
-                  previewMarkdown={previewMarkdown}
-                  selectedNotePath={selectedNote.path}
-                  rootDir={rootDir || undefined}
-                  isDarkMode={isDarkMode}
-                  previewReadableWidthClass={previewReadableWidthClass}
-                  getReactNodeText={getReactNodeText}
-                  getCalloutMeta={getCalloutMeta}
-                />
+              <MarkdownPreview
+                previewMarkdown={previewMarkdown}
+                selectedNotePath={selectedNote.path}
+                rootDir={rootDir || undefined}
+                isDarkMode={isDarkMode}
+                previewReadableWidthClass={previewReadableWidthClass}
+                getReactNodeText={getReactNodeText}
+                getCalloutMeta={getCalloutMeta}
+              />
             </div>
           </div>
         </div>
@@ -1438,12 +1474,7 @@ export const MarkdownEditor = () => {
         >
           {editorMenuEntries.map((entry) => {
             if (entry.type === 'separator') {
-              return (
-                <div
-                  key={entry.id}
-                  className="my-1 h-px bg-[var(--obsidian-border-soft)]"
-                />
-              )
+              return <div key={entry.id} className="my-1 h-px bg-[var(--obsidian-border-soft)]" />
             }
 
             return (
