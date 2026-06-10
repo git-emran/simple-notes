@@ -96,11 +96,11 @@ export const MarkdownPreview = memo(
       }
 
       return (
-        <section className={twMerge(previewReadableWidthClass, 'group/section w-full mb-1')}>
+        <section className={twMerge(previewReadableWidthClass, 'group/section w-full')}>
           {/* Header container */}
           <div
             className={twMerge(
-              'flex items-center justify-center gap-1 group/hdr cursor-pointer select-none rounded hover:bg-[var(--obsidian-hover-soft)] transition-colors py-0.5 px-1 ml-1',
+              'flex items-center gap-1 group/hdr cursor-pointer select-none rounded hover:bg-[var(--obsidian-hover-soft)] transition-colors py-0.5 px-1 ml-1',
               containerClass
             )}
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -108,7 +108,7 @@ export const MarkdownPreview = memo(
             {/* Collapse Indicator Chevron */}
             <span
               className={twMerge(
-                'flex items-center justify-center w-5 h-5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-all duration-200 opacity-30 group-hover/hdr:opacity-100',
+                'self-center flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-all duration-200 opacity-30 group-hover/hdr:opacity-100',
                 isCollapsed ? '-rotate-90' : 'rotate-0'
               )}
             >
@@ -123,7 +123,7 @@ export const MarkdownPreview = memo(
             </span>
 
             {/* Header itself */}
-            <div className="flex-1 min-w-0">{header}</div>
+            <div className="flex-1 min-w-0 flex items-center [&>*]:!my-0 [&>*]:!leading-tight">{header}</div>
           </div>
 
           {/* Collapsible content area */}

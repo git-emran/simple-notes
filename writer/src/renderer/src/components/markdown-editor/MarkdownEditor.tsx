@@ -1006,6 +1006,9 @@ export const MarkdownEditor = () => {
     return () => {
       debouncedSave.cancel()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally only re-runs on note path change; compartments/settings
+    // are reconfigured separately by applyEditorSettings.
   }, [
     selectedNote?.path,
     baseExtensions,
@@ -1013,7 +1016,6 @@ export const MarkdownEditor = () => {
     handleBlurSave,
     handleEditorImageDrop,
     applyEditorSettings,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   ])
 
   useEffect(() => {

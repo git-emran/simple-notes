@@ -1,3 +1,4 @@
+import type React from 'react'
 import {
   Content,
   RootLayout,
@@ -115,6 +116,7 @@ const App = () => {
   const setIsDarkMode = useSetAtom(isDarkModeAtom)
 
   /* Startup session state loading / resetting */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!rememberLastState) {
       setTabs([{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
@@ -327,7 +329,7 @@ const App = () => {
         {/* Persistent Title Bar */}
         <div 
           className="h-9 flex shrink-0 bg-[var(--obsidian-pane)] border-b border-[var(--obsidian-border)] z-50"
-          style={{ WebkitAppRegion: 'drag' } as any}
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties & { WebkitAppRegion: string }}
         >
           {/* macOS traffic lights safe area */}
           <div className="shrink-0 w-[82px]" />
@@ -339,7 +341,7 @@ const App = () => {
             <Tooltip content={collapsed ? 'Show sidebar' : 'Hide sidebar'} position="bottom">
               <button
                 className="writr-titlebar-sidebar-toggle"
-                style={{ WebkitAppRegion: 'no-drag' } as any}
+                style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties & { WebkitAppRegion: string }}
                 onClick={() => setCollapsed((prev) => !prev)}
                 aria-label={collapsed ? 'Show sidebar' : 'Hide sidebar'}
               >
