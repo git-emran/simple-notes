@@ -88,12 +88,7 @@ export const EditorHeader = ({
         </div>
       </div>
 
-      <div className='flex items-center flex-wrap gap-3 text-[12px]'>
-        <div className="flex items-center gap-1 text-[var(--obsidian-text-muted)] opacity-80">
-          <span className="truncate max-w-[200px]">{path}</span>
-        </div>
-
-        <div className="w-px h-3 bg-[var(--obsidian-border)]" />
+      <div className='flex items-center flex-wrap gap-3 ml-1 text-[12px]'>
 
         <div className="relative group">
           <div className="flex items-center gap-1 cursor-pointer text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]">
