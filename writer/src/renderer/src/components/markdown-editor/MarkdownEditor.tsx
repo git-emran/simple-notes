@@ -1018,6 +1018,36 @@ export const MarkdownEditor = () => {
     applyEditorSettings,
   ])
 
+  /* Sync editor when selectedNote content resolves asynchronously for the current path.
+   * `selectedNoteAtom` uses `unwrap()` which emits the fallback { content: '' } first,
+   * then re-emits with the real file content. The path-keyed effect above already handled
+   * the switch, but with empty content. This effect catches the follow-up emission. */
+  useEffect(() => {
+    if (!selectedNote?.path) return
+    if (selectedNote.path !== currentNotePathRef.current) return
+    if (isSwitchingRef.current) return
+
+    const view = viewRef.current
+    if (!view) return
+
+    const editorContent = view.state.doc.toString()
+    const incomingContent = selectedNote.content
+
+    // Only sync if the editor is still empty (showing the fallback) but real content arrived
+    if (editorContent === '' && incomingContent !== '') {
+      debouncedSetContent.cancel()
+      setDebouncedContent(incomingContent)
+      view.setState(
+        EditorState.create({
+          doc: incomingContent,
+          selection: { anchor: 0 },
+          extensions: view.state.facet(EditorState.extension)
+        })
+      )
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNote?.content, selectedNote?.path])
+
   useEffect(() => {
     applyEditorSettings()
   }, [applyEditorSettings])

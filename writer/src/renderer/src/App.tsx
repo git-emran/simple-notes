@@ -425,27 +425,26 @@ const App = () => {
             </Tooltip>
           </aside>
 
-          {!collapsed && (
-            <Sidebar
-              width={sidebarWidth}
-              minWidth={MIN_SIDEBAR_WIDTH}
-              onClose={() => setCollapsed(true)}
-            >
-              <VirtualFilesList 
-                  sidebarView={sidebarView}
-                  sidebarWidth={sidebarWidth}
-                  setSidebarWidth={setSidebarWidth}
-                  onSearchRequested={() => {
-                    setSidebarView('search')
-                    setAppMode('editor')
-                  }}
-                  onCloseSearch={() => {
-                    setSidebarView('files')
-                    setAppMode('editor')
-                  }}
-                />
-            </Sidebar>
-          )}
+          <Sidebar
+            className={collapsed ? 'hidden' : ''}
+            width={sidebarWidth}
+            minWidth={MIN_SIDEBAR_WIDTH}
+            onClose={() => setCollapsed(true)}
+          >
+            <VirtualFilesList 
+                sidebarView={sidebarView}
+                sidebarWidth={sidebarWidth}
+                setSidebarWidth={setSidebarWidth}
+                onSearchRequested={() => {
+                  setSidebarView('search')
+                  setAppMode('editor')
+                }}
+                onCloseSearch={() => {
+                  setSidebarView('files')
+                  setAppMode('editor')
+                }}
+              />
+          </Sidebar>
 
           <Content
             ref={contentContainerRef}

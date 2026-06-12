@@ -154,7 +154,7 @@ export const MarkdownPreview = memo(
           continue
         }
         if (!inCodeBlock) {
-          const match = line.match(/^(#{1,6})\s+(.*)$/)
+          const match = line.match(/^\s*(#{1,6})\s+(.*)$/)
           if (match) {
             const level = match[1].length
             const rawText = match[2].trim()
@@ -448,20 +448,42 @@ export const MarkdownPreview = memo(
       </div>
 
       {toc.length > 0 && (
-        <div className="w-56 flex-shrink-0 hidden xl:block sticky top-2 max-h-[calc(100vh-8rem)] overflow-y-auto text-[var(--obsidian-text)] text-sm border-l border-[var(--obsidian-border)] pl-4">
-          <div className="font-semibold mb-4 uppercase tracking-wider text-[10px] text-[var(--obsidian-text-muted)]">Table of Contents</div>
-          <ul className="space-y-2">
-            {toc.map((item, i) => (
-              <li key={i}>
-                <button
-                  onClick={() => scrollToHeader(item.id)}
-                  className="text-left hover:text-[var(--obsidian-accent)] hover:underline truncate w-full text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-colors"
-                  title={item.text}
-                >
-                  {item.text}
-                </button>
-              </li>
-            ))}
+        <div className="w-48 flex-shrink-0 hidden xl:block sticky top-2 max-h-[calc(100vh-8rem)] overflow-y-auto">
+          <div className="font-semibold mb-3 uppercase tracking-wider text-[10px] text-[var(--obsidian-text-muted)]">On this page</div>
+          <ul className="space-y-0.5">
+            {toc.map((item, i) => {
+              const minLevel = Math.min(...toc.map(t => t.level))
+              const depth = item.level - minLevel
+              const isNested = depth > 0
+
+              return (
+                <li key={i} className="flex items-stretch">
+                  {/* Indent guides: one vertical line segment per depth level */}
+                  {Array.from({ length: depth }).map((_, d) => (
+                    <div
+                      key={d}
+                      className="flex-shrink-0 w-2.5 flex justify-center"
+                    >
+                      <div className="w-px bg-[var(--obsidian-border)] opacity-40 h-full" />
+                    </div>
+                  ))}
+
+                  {/* The link itself */}
+                  <button
+                    onClick={() => scrollToHeader(item.id)}
+                    title={item.text}
+                    className={twMerge(
+                      'flex-1 text-left py-0.5 px-1 rounded text-[11px] leading-snug truncate transition-colors hover:text-[var(--obsidian-text)]',
+                      isNested
+                        ? 'text-[var(--obsidian-text-muted)] opacity-70'
+                        : 'font-medium text-[var(--obsidian-text-muted)]'
+                    )}
+                  >
+                    {item.text}
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
