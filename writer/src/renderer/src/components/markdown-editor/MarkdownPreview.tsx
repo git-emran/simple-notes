@@ -1,5 +1,5 @@
 'use client'
-import { Children, memo, useState } from 'react'
+import { Children, memo, useState, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import SyntaxHighlighter from 'react-syntax-highlighter'
 import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
@@ -139,8 +139,45 @@ export const MarkdownPreview = memo(
       )
     }
 
+    const generateId = (node: any) => {
+      const text = getReactNodeText(node)
+      return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    }
+
+    const toc = useMemo(() => {
+      const result: { level: number; text: string; id: string }[] = []
+      let inCodeBlock = false
+      const lines = previewMarkdown.split('\n')
+      for (const line of lines) {
+        if (line.startsWith('```')) {
+          inCodeBlock = !inCodeBlock
+          continue
+        }
+        if (!inCodeBlock) {
+          const match = line.match(/^(#{1,6})\s+(.*)$/)
+          if (match) {
+            const level = match[1].length
+            const rawText = match[2].trim()
+            const text = rawText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_~`]/g, '')
+            const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+            result.push({ level, text, id })
+          }
+        }
+      }
+      return result
+    }, [previewMarkdown])
+
+    const scrollToHeader = (id: string) => {
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+
     return (
-      <ReactMarkdown
+      <div className="flex flex-row w-full gap-8 relative items-start">
+        <div className="flex-1 min-w-0">
+          <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHeaderSections]}
         components={{
@@ -150,29 +187,34 @@ export const MarkdownPreview = memo(
             </SectionWrapper>
           ),
           h1: ({ children }) => (
-            <h1 className="font-sans text-2xl font-semibold text-[var(--obsidian-text)]">
+            <h1 id={generateId(children)} className="font-sans text-2xl font-semibold text-[var(--obsidian-text)]">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-xl font-sans text-[var(--obsidian-text)] font-semibold">
+            <h2 id={generateId(children)} className="text-xl font-sans text-[var(--obsidian-text)] font-semibold">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-lg font-sans font-medium text-[var(--obsidian-text)]">
+            <h3 id={generateId(children)} className="text-lg font-sans font-medium text-[var(--obsidian-text)]">
               {children}
             </h3>
           ),
           h4: ({ children }) => (
-            <h4 className="text-md font-sans font-medium text-[var(--obsidian-text)]">
+            <h4 id={generateId(children)} className="text-md font-sans font-medium text-[var(--obsidian-text)]">
               {children}
             </h4>
           ),
           h5: ({ children }) => (
-            <h5 className="text-md font-sans font-medium text-[var(--obsidian-text)]">
+            <h5 id={generateId(children)} className="text-md font-sans font-medium text-[var(--obsidian-text)]">
               {children}
             </h5>
+          ),
+          h6: ({ children }) => (
+            <h6 id={generateId(children)} className="text-sm font-sans font-medium text-[var(--obsidian-text)]">
+              {children}
+            </h6>
           ),
           p: ({ children }) => (
             <p
@@ -403,6 +445,27 @@ export const MarkdownPreview = memo(
       >
         {previewMarkdown}
       </ReactMarkdown>
+      </div>
+
+      {toc.length > 0 && (
+        <div className="w-56 flex-shrink-0 hidden xl:block sticky top-2 max-h-[calc(100vh-8rem)] overflow-y-auto text-[var(--obsidian-text)] text-sm border-l border-[var(--obsidian-border)] pl-4">
+          <div className="font-semibold mb-4 uppercase tracking-wider text-[10px] text-[var(--obsidian-text-muted)]">Table of Contents</div>
+          <ul className="space-y-2">
+            {toc.map((item, i) => (
+              <li key={i}>
+                <button
+                  onClick={() => scrollToHeader(item.id)}
+                  className="text-left hover:text-[var(--obsidian-accent)] hover:underline truncate w-full text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-colors"
+                  title={item.text}
+                >
+                  {item.text}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
     )
   }
 )

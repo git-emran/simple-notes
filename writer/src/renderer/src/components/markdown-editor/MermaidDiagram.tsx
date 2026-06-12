@@ -8,6 +8,7 @@ const getMermaid = async () => {
     mermaidInstance.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
+      suppressErrorRendering: true,
     })
   }
   return mermaidInstance
@@ -21,16 +22,18 @@ const sanitizeSvg = (svgMarkup: string): string => {
   const allowedTags = new Set([
     'svg', 'g', 'path', 'rect', 'circle', 'line', 'polyline', 'polygon', 'ellipse',
     'text', 'tspan', 'style', 'defs', 'marker', 'linearGradient', 'radialGradient',
-    'stop', 'clipPath', 'use', 'image', 'desc', 'title', 'symbol'
+    'stop', 'clipPath', 'use', 'image', 'desc', 'title', 'symbol',
+    'foreignobject', 'div', 'span', 'br', 'p', 'b', 'i', 'strong', 'em', 
+    'center', 'table', 'thead', 'tbody', 'tr', 'th', 'td'
   ]);
 
   /* Allowlist of safe SVG attributes */
   const allowedAttributes = new Set([
-     'width', 'height', 'viewbox', 'fill', 'stroke', 'stroke-width', 'd', 'points',
-     'cx', 'cy', 'r', 'x', 'y', 'x1', 'x2', 'y1', 'y2', 'transform', 'style', 'class',
+     'width', 'height', 'viewbox', 'preserveaspectratio', 'fill', 'stroke', 'stroke-width', 'd', 'points',
+     'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'x2', 'y1', 'y2', 'transform', 'style', 'class',
      'id', 'text-anchor', 'font-family', 'font-size', 'font-weight', 'opacity',
      'marker-start', 'marker-mid', 'marker-end', 'clip-path', 'gradientunits',
-     'spreadmethod', 'offset', 'stop-color', 'stop-opacity'
+     'spreadmethod', 'offset', 'stop-color', 'stop-opacity', 'xmlns', 'xmlns:xhtml', 'color', 'align'
   ]);
 
   const allElements = doc.querySelectorAll('*')
@@ -73,17 +76,16 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
     if (!chart || !chart.trim()) {
       setSvg('')
       setError('')
+      setIsLoading(false)
       return
     }
 
     let isMounted = true
-    const renderMermaid = async () => {
-      setIsLoading(true)
-      setError('')
+    setIsLoading(true)
 
+    const renderMermaid = async () => {
       try {
         const mermaid = await getMermaid()
-
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
         const { svg: renderedSvg } = await mermaid.render(id, chart)
 
@@ -101,9 +103,13 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
       }
     }
 
-    renderMermaid()
+    const timer = setTimeout(() => {
+      void renderMermaid()
+    }, 300)
+
     return () => {
       isMounted = false
+      clearTimeout(timer)
     }
   }, [chart])
 
@@ -117,9 +123,15 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-        <div className="text-sm text-red-700 dark:text-red-400">
-          <strong>Mermaid Error:</strong> {error}
+      <div className="my-4 p-4 bg-red-50 dark:bg-red-900/10 border-l-4 border-red-500 rounded-r-md shadow-sm">
+        <div className="flex items-start gap-3">
+          <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="text-sm text-red-700 dark:text-red-400 overflow-hidden break-words w-full">
+            <strong className="block mb-1 font-semibold text-red-800 dark:text-red-300">Mermaid Syntax Error</strong>
+            <div className="font-mono text-xs opacity-90 line-clamp-3 overflow-hidden">{error}</div>
+          </div>
         </div>
       </div>
     )
