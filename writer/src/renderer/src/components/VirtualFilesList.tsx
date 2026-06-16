@@ -486,7 +486,8 @@ export const VirtualFilesList = ({
                     {renamingPath === node.path ? (
                       <input
                         autoFocus
-                        className="w-full bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)] px-1 outline-none border border-[var(--obsidian-accent)] rounded"
+                        onFocus={(e) => e.target.select()}
+                        className="w-full bg-transparent text-[var(--obsidian-text)] px-0 outline-none rounded"
                         defaultValue={node.name}
                         onBlur={(e) => handleRenameSubmit(node, e.target.value)}
                         onKeyDown={(e) => {
@@ -567,6 +568,10 @@ export const VirtualFilesList = ({
                 const tag = noteTags[note.path]
                 const status = noteStatuses[note.path]
                 const date = note.lastEditTime ? formatRelativeTime(note.lastEditTime) : ''
+                const todoTotal = note.todoTotal ?? 0
+                const todoCompleted = note.todoCompleted ?? 0
+                const showProgress = todoTotal > 0
+                const todoProgress = showProgress ? Math.round((todoCompleted / todoTotal) * 100) : 0
                 return (
                   <div
                     key={note.path}
@@ -588,7 +593,8 @@ export const VirtualFilesList = ({
                       {renamingPath === note.path ? (
                         <input
                           autoFocus
-                          className="w-full bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)] px-1 outline-none border border-white/50 rounded"
+                          onFocus={(e) => e.target.select()}
+                          className="w-full bg-transparent text-[var(--obsidian-text)] px-0 outline-none rounded"
                           defaultValue={note.name.replace(/\.md$/, '')}
                           onBlur={(e) => handleRenameSubmit(note, e.target.value)}
                           onKeyDown={(e) => {
@@ -601,6 +607,19 @@ export const VirtualFilesList = ({
                         note.name.replace(/\.md$/, '')
                       )}
                     </div>
+                    {showProgress && (
+                      <div className="mb-2 flex items-center gap-1.5 pr-2">
+                        <div className={twMerge("h-1.5 flex-1 overflow-hidden rounded-full transition-colors duration-200", isSelected ? "bg-white/20" : "bg-[var(--obsidian-border-soft)]")}>
+                          <div
+                            className={twMerge("h-full rounded-full transition-all duration-300 ease-out", isSelected ? "bg-white" : "bg-[var(--obsidian-accent)]")}
+                            style={{ width: `${todoProgress}%` }}
+                          />
+                        </div>
+                        <span className={twMerge("shrink-0 text-[9px] tabular-nums transition-colors duration-200", isSelected ? "text-white/80" : "text-[var(--obsidian-text-muted)]")}>
+                          {todoCompleted}/{todoTotal}
+                        </span>
+                      </div>
+                    )}
                     <div
                       className={twMerge(
                         'flex items-center gap-1.5 min-w-0',

@@ -1037,13 +1037,10 @@ export const MarkdownEditor = () => {
     if (editorContent === '' && incomingContent !== '') {
       debouncedSetContent.cancel()
       setDebouncedContent(incomingContent)
-      view.setState(
-        EditorState.create({
-          doc: incomingContent,
-          selection: { anchor: 0 },
-          extensions: view.state.facet(EditorState.extension)
-        })
-      )
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: incomingContent },
+        selection: { anchor: 0 }
+      })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNote?.content, selectedNote?.path])

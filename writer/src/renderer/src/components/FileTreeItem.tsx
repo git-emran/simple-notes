@@ -266,13 +266,13 @@ const FileTreeItemComponent = ({
     if (!showProgress) return null
     return (
       <div className="mt-[1.5px] flex items-center gap-1.5 pr-2">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--obsidian-border-soft)]">
+        <div className={twMerge("h-1.5 flex-1 overflow-hidden rounded-full transition-colors duration-200", isSelected ? "bg-white/20" : "bg-[var(--obsidian-border-soft)]")}>
           <div
-            className="h-full rounded-full bg-[var(--obsidian-accent)] transition-all"
+            className={twMerge("h-full rounded-full transition-all duration-300 ease-out", isSelected ? "bg-white" : "bg-[var(--obsidian-accent)]")}
             style={{ width: `${todoProgress}%` }}
           />
         </div>
-        <span className="shrink-0 text-[9px] text-[var(--obsidian-text-muted)] tabular-nums">
+        <span className={twMerge("shrink-0 text-[9px] tabular-nums transition-colors duration-200", isSelected ? "text-white/80" : "text-[var(--obsidian-text-muted)]")}>
           {todoCompleted}/{todoTotal}
         </span>
       </div>
@@ -324,7 +324,7 @@ const FileTreeItemComponent = ({
             }}
             onKeyDown={handleKeyDown}
             className={twMerge(
-              'bg-[var(--obsidian-workspace)] border border-[var(--obsidian-accent)] outline-none px-1 rounded-sm min-w-0 flex-shrink text-[var(--obsidian-text)]',
+              'bg-transparent outline-none px-0 rounded-sm min-w-0 flex-shrink text-[var(--obsidian-text)]',
               node.type === 'file' ? 'text-[10px]' : 'text-[11px]'
             )}
           />
