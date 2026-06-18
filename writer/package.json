@@ -66,6 +66,7 @@
     "fs-extra": "^11.2.0",
     "jotai": "^2.13.1",
     "mermaid": "^11.11.0",
+    "motion": "^12.40.0",
     "node-pty": "^1.1.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.6",

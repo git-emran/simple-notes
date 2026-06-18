@@ -1,689 +1,161 @@
-import { useAtom } from 'jotai'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { twMerge } from 'tailwind-merge'
-import { VscAdd, VscBell, VscCheck, VscEllipsis, VscTrash } from 'react-icons/vsc'
-import { MdDragIndicator } from 'react-icons/md'
-import { ContextMenu, ContextMenuItem } from '@renderer/components/ContextMenu'
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { FiPlus, FiTrash } from "react-icons/fi";
+import { motion } from "motion/react";
+import { FaFire } from "react-icons/fa";
+import { VscAdd, VscTrash } from "react-icons/vsc";
+import { twMerge } from "tailwind-merge";
+import { useAtom } from "jotai";
 import {
   kanbanStateAtom,
-  createKanbanCard,
-  createKanbanColumn,
-  createKanbanWorkspace,
   normalizeKanbanState,
-  pickNewKanbanColumnColor,
-  type KanbanCard,
-  type KanbanCardPriority,
-  type KanbanWorkspace,
-} from '@renderer/store/kanbanStore'
-import { TaskDetailsPanel } from './TaskDetailsPanel'
-import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint, priorityToPrefix } from './kanbanPriority'
-
-type DragPayload =
-  | { kind: 'card'; columnId: string; cardId: string }
-  | { kind: 'column'; columnId: string }
-
-const SNACKBAR_HIDE_MS = 2200
-const SNACKBAR_ANIMATION_MS = 160
-
-const parseDragPayload = (value: string | null): DragPayload | null => {
-  if (!value) return null
-  try {
-    return JSON.parse(value) as DragPayload
-  } catch {
-    return null
-  }
-}
-
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
-
-type ColumnOverHint = { overColumnId: string | null }
+  createKanbanWorkspace,
+  createKanbanColumn,
+  createKanbanCard,
+} from "@renderer/store/kanbanStore";
+import { ContextMenu, ContextMenuItem } from "@renderer/components/ContextMenu";
 
 export const KanbanBoard = () => {
-  const [storedState, setState] = useAtom(kanbanStateAtom)
-  const state = useMemo(() => normalizeKanbanState(storedState), [storedState])
-
-  const [newColumnTitle, setNewColumnTitle] = useState('')
-  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false)
-  const [newWorkspaceName, setNewWorkspaceName] = useState('')
-  const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{
-    x: number
-    y: number
-    workspaceId: string
-  } | null>(null)
-  const [cardDragOver, setCardDragOver] = useState<{
-    columnId: string
-    targetCardId: string | null
-  } | null>(null)
-  const [draggingColumnId, setDraggingColumnId] = useState<string | null>(null)
-  const [columnDropHint, setColumnDropHint] = useState<ColumnOverHint | null>(null)
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
-  const [cardActionsMenu, setCardActionsMenu] = useState<{
-    x: number
-    y: number
-    columnId: string
-    cardId: string
-  } | null>(null)
-  const [columnActionsMenu, setColumnActionsMenu] = useState<{
-    x: number
-    y: number
-    columnId: string
-  } | null>(null)
-
-  const snackbarHideRef = useRef<number | null>(null)
-  const snackbarCleanupRef = useRef<number | null>(null)
-  const [snackbar, setSnackbar] = useState<{ message: string; kind: 'info' | 'danger' } | null>(null)
-  const [isSnackbarShown, setIsSnackbarShown] = useState(false)
-
-  const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null)
-  const [renameDraft, setRenameDraft] = useState('')
-  const renameInputRef = useRef<HTMLInputElement>(null)
-  const draggingRef = useRef<DragPayload | null>(null)
-  const cardDragOverRef = useRef<{ columnId: string; targetCardId: string | null } | null>(null)
-  const columnDropHintRef = useRef<ColumnOverHint | null>(null)
-  const columnElByIdRef = useRef<Record<string, HTMLDivElement | null>>({})
-  const newWorkspaceInputRef = useRef<HTMLInputElement>(null)
-  const [animatingCardIds, setAnimatingCardIds] = useState<Set<string>>(new Set())
+  const [storedState, setState] = useAtom(kanbanStateAtom);
+  const state = useMemo(() => normalizeKanbanState(storedState), [storedState]);
 
   useEffect(() => {
-    return () => {
-      if (snackbarHideRef.current !== null) window.clearTimeout(snackbarHideRef.current)
-      if (snackbarCleanupRef.current !== null) window.clearTimeout(snackbarCleanupRef.current)
-    }
-  }, [])
-
-  useEffect(() => {
-    const normalized = normalizeKanbanState(storedState)
+    const normalized = normalizeKanbanState(storedState);
     if (JSON.stringify(normalized) !== JSON.stringify(storedState)) {
-      setState(normalized)
+      setState(normalized);
     }
-  }, [setState, storedState])
+  }, [setState, storedState]);
+
+  const [newColumnTitle, setNewColumnTitle] = useState("");
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{ x: number; y: number; workspaceId: string } | null>(null);
+
+  const newWorkspaceInputRef = useRef<HTMLInputElement>(null);
 
   const activeWorkspace = useMemo(
-    () =>
-      state.workspaces.find((workspace) => workspace.id === state.activeWorkspaceId) ?? state.workspaces[0],
+    () => state.workspaces.find((w) => w.id === state.activeWorkspaceId) ?? state.workspaces[0],
     [state.activeWorkspaceId, state.workspaces]
-  )
+  );
 
-  const columns = activeWorkspace?.columns ?? []
+  const columns = useMemo(() => activeWorkspace?.columns ?? [], [activeWorkspace]);
 
-  const showSnackbar = (message: string, kind: 'info' | 'danger' = 'info') => {
-    if (snackbarHideRef.current !== null) window.clearTimeout(snackbarHideRef.current)
-    if (snackbarCleanupRef.current !== null) window.clearTimeout(snackbarCleanupRef.current)
+  // Adapter: Convert columns to flat array of cards
+  const cards = useMemo(() => {
+    return columns.flatMap((col) => (col.cards || []).map((card) => ({ ...card, column: col.id })));
+  }, [columns]);
 
-    setSnackbar({ message, kind })
-    setIsSnackbarShown(false)
-    requestAnimationFrame(() => setIsSnackbarShown(true))
+  // Adapter: Handle updates to the flat cards array
+  const setCards = (updater: any) => {
+    const currentFlatCards = columns.flatMap((col) => (col.cards || []).map((c) => ({ ...c, column: col.id })));
+    const nextFlatCards = typeof updater === "function" ? updater(currentFlatCards) : updater;
 
-    snackbarHideRef.current = window.setTimeout(() => {
-      setIsSnackbarShown(false)
-      snackbarCleanupRef.current = window.setTimeout(() => {
-        setSnackbar(null)
-      }, SNACKBAR_ANIMATION_MS)
-    }, SNACKBAR_HIDE_MS)
-  }
-
-  const selectedCardInfo = useMemo(() => {
-    if (!selectedCardId) return null
-    for (const column of columns) {
-      const card = (column.cards ?? []).find((c) => c.id === selectedCardId)
-      if (card) return { card, columnId: column.id }
-    }
-    return null
-  }, [columns, selectedCardId])
-
-  useEffect(() => {
-    if (!selectedCardId) return
-    if (selectedCardInfo) return
-    setSelectedCardId(null)
-  }, [selectedCardId, selectedCardInfo])
-
-  const updateActiveWorkspace = (updater: (workspace: KanbanWorkspace) => KanbanWorkspace) => {
     setState((prevStored) => {
-      const prev = normalizeKanbanState(prevStored)
+      const prev = normalizeKanbanState(prevStored);
       return {
         ...prev,
-        workspaces: prev.workspaces.map((workspace) =>
-          workspace.id === prev.activeWorkspaceId ? updater(workspace) : workspace
-        ),
-      }
-    })
-  }
-
-  const updateCardById = (cardId: string, updater: (card: KanbanCard) => KanbanCard) => {
-    updateActiveWorkspace((workspace) => ({
-      ...workspace,
-      columns: workspace.columns.map((col) => ({
-        ...col,
-        cards: (col.cards ?? []).map((card) => (card.id === cardId ? updater(card) : card)),
-      })),
-    }))
-  }
-
-  const moveColumnToEnd = (columnId: string) => {
-    updateActiveWorkspace((workspace) => {
-      const fromIndex = workspace.columns.findIndex((c) => c.id === columnId)
-      if (fromIndex < 0) return workspace
-      if (fromIndex === workspace.columns.length - 1) return workspace
-      const moving = workspace.columns[fromIndex]
-      const without = workspace.columns.filter((c) => c.id !== columnId)
-      return { ...workspace, columns: [...without, moving] }
-    })
-  }
-
-  const swapColumns = (aId: string, bId: string) => {
-    if (aId === bId) return
-    updateActiveWorkspace((workspace) => {
-      const aIndex = workspace.columns.findIndex((c) => c.id === aId)
-      const bIndex = workspace.columns.findIndex((c) => c.id === bId)
-      if (aIndex < 0 || bIndex < 0) return workspace
-      if (aIndex === bIndex) return workspace
-
-      const next = workspace.columns.slice()
-      ;[next[aIndex], next[bIndex]] = [next[bIndex], next[aIndex]]
-      return { ...workspace, columns: next }
-    })
-  }
-
-  const beginRenameColumn = (columnId: string) => {
-    const col = columns.find((c) => c.id === columnId)
-    if (!col) return
-    setRenamingColumnId(columnId)
-    setRenameDraft(col.title)
-    requestAnimationFrame(() => {
-      renameInputRef.current?.focus()
-      renameInputRef.current?.select()
-    })
-  }
-
-  const commitRename = () => {
-    if (!renamingColumnId) return
-    const nextTitle = renameDraft.trim()
-    if (nextTitle) {
-      updateActiveWorkspace((workspace) => ({
-        ...workspace,
-        columns: workspace.columns.map((c) => (c.id === renamingColumnId ? { ...c, title: nextTitle } : c)),
-      }))
-    }
-    setRenamingColumnId(null)
-    setRenameDraft('')
-  }
-
-  const cancelRename = () => {
-    setRenamingColumnId(null)
-    setRenameDraft('')
-  }
+        workspaces: prev.workspaces.map((workspace) => {
+          if (workspace.id !== prev.activeWorkspaceId) return workspace;
+          return {
+            ...workspace,
+            columns: workspace.columns.map((col) => ({
+              ...col,
+              cards: nextFlatCards
+                .filter((c: any) => c.column === col.id)
+                .map((c: any) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  const { column: _col, ...rest } = c;
+                  return rest as any;
+                }),
+            })),
+          };
+        }),
+      };
+    });
+  };
 
   const addColumn = () => {
-    const title = newColumnTitle.trim()
-    if (!title) {
-      alert('You need to add a name to the Board')
-      return
-    }
-    updateActiveWorkspace((workspace) => ({
-      ...workspace,
-      columns: [
-        ...workspace.columns,
-        createKanbanColumn(
-          title,
-          pickNewKanbanColumnColor(workspace.columns.map((c) => c.color).filter(Boolean) as string[])
-        ),
-      ],
-    }))
-    setNewColumnTitle('')
-  }
+    const title = newColumnTitle.trim();
+    if (!title) return;
+    setState((prev) => {
+      const wIdx = prev.workspaces.findIndex((w) => w.id === prev.activeWorkspaceId);
+      if (wIdx < 0) return prev;
+      const nextWs = [...prev.workspaces];
+      nextWs[wIdx] = {
+        ...nextWs[wIdx],
+        columns: [...nextWs[wIdx].columns, createKanbanColumn(title)],
+      };
+      return { ...prev, workspaces: nextWs };
+    });
+    setNewColumnTitle("");
+  };
 
   const addWorkspace = () => {
-    const name = newWorkspaceName.trim()
-    if (!name) {
-      alert('You need to add a workspace name')
-      return
-    }
-
-    const workspace = createKanbanWorkspace(name)
-    setState((prevStored) => {
-      const prev = normalizeKanbanState(prevStored)
-      return {
-        ...prev,
-        activeWorkspaceId: workspace.id,
-        workspaces: [...prev.workspaces, workspace],
-      }
-    })
-    setNewWorkspaceName('')
-    setIsWorkspaceModalOpen(false)
-  }
+    const name = newWorkspaceName.trim();
+    if (!name) return;
+    const workspace = createKanbanWorkspace(name);
+    setState((prev) => ({
+      ...prev,
+      activeWorkspaceId: workspace.id,
+      workspaces: [...prev.workspaces, workspace],
+    }));
+    setNewWorkspaceName("");
+    setIsWorkspaceModalOpen(false);
+  };
 
   const removeWorkspace = (workspaceId: string) => {
-    if (state.workspaces.length <= 1) {
-      alert('At least one workspace is required.')
-      return
-    }
-
-    const workspace = state.workspaces.find((item) => item.id === workspaceId)
-    if (!workspace) return
-
-    const confirmed = window.confirm(`Delete workspace "${workspace.name}"? This cannot be undone.`)
-    if (!confirmed) return
-
-    setState((prevStored) => {
-      const prev = normalizeKanbanState(prevStored)
-      const nextWorkspaces = prev.workspaces.filter((item) => item.id !== workspaceId)
-      const nextActiveWorkspaceId =
-        prev.activeWorkspaceId === workspaceId
-          ? (nextWorkspaces[0]?.id ?? prev.activeWorkspaceId)
-          : prev.activeWorkspaceId
-
+    if (state.workspaces.length <= 1) return;
+    setState((prev) => {
+      const nextWs = prev.workspaces.filter((w) => w.id !== workspaceId);
       return {
         ...prev,
-        activeWorkspaceId: nextActiveWorkspaceId,
-        workspaces: nextWorkspaces,
-      }
-    })
+        activeWorkspaceId: prev.activeWorkspaceId === workspaceId ? nextWs[0].id : prev.activeWorkspaceId,
+        workspaces: nextWs,
+      };
+    });
+  };
 
-    showSnackbar('Workspace deleted.', 'danger')
-  }
+  const updateColumnTitle = (columnId: string, newTitle: string) => {
+    setState((prev) => {
+      const wIdx = prev.workspaces.findIndex((w) => w.id === prev.activeWorkspaceId);
+      if (wIdx < 0) return prev;
+      const nextWs = [...prev.workspaces];
+      nextWs[wIdx] = {
+        ...nextWs[wIdx],
+        columns: nextWs[wIdx].columns.map((c) => (c.id === columnId ? { ...c, title: newTitle } : c)),
+      };
+      return { ...prev, workspaces: nextWs };
+    });
+  };
 
   useEffect(() => {
-    if (!isWorkspaceModalOpen) return
-    requestAnimationFrame(() => newWorkspaceInputRef.current?.focus())
-  }, [isWorkspaceModalOpen])
-
-  const removeColumn = (columnId: string) => {
-    updateActiveWorkspace((workspace) => ({
-      ...workspace,
-      columns: workspace.columns.filter((c) => c.id !== columnId),
-    }))
-    showSnackbar('Board deleted.', 'danger')
-  }
-
-  const clearColumnCards = (columnId: string) => {
-    const col = columns.find((c) => c.id === columnId)
-    if (!col || !col.cards || col.cards.length === 0) return
-
-    const cardIds = col.cards.map((c) => c.id)
-    setAnimatingCardIds((prev) => {
-      const next = new Set(prev)
-      cardIds.forEach((id) => next.add(id))
-      return next
-    })
-
-    setTimeout(() => {
-      updateActiveWorkspace((workspace) => ({
-        ...workspace,
-        columns: workspace.columns.map((c) => (c.id === columnId ? { ...c, cards: [] } : c)),
-      }))
-      setAnimatingCardIds((prev) => {
-        const next = new Set(prev)
-        cardIds.forEach((id) => next.delete(id))
-        return next
-      })
-      showSnackbar('Board cleared.', 'info')
-    }, 200)
-  }
-
-  const addCard = (
-    columnId: string,
-    payload: {
-      title: string
-      description: string
-      priority: Exclude<KanbanCardPriority, null>
-    }
-  ) => {
-    const trimmed = payload.title.trim()
-    if (!trimmed) return
-    updateActiveWorkspace((workspace) => ({
-      ...workspace,
-      columns: workspace.columns.map((col) =>
-        col.id === columnId
-          ? {
-              ...col,
-              cards: [
-                ...col.cards,
-                createKanbanCard(trimmed, {
-                  description: payload.description.trim(),
-                  priority: payload.priority,
-                  remindAt: null,
-                }),
-              ],
-            }
-          : col
-      ),
-    }))
-    showSnackbar('Task created.')
-  }
-
-  const removeCard = (columnId: string, cardId: string) => {
-    updateActiveWorkspace((workspace) => ({
-      ...workspace,
-      columns: workspace.columns.map((col) =>
-        col.id === columnId ? { ...col, cards: col.cards.filter((c) => c.id !== cardId) } : col
-      ),
-    }))
-    showSnackbar('Task deleted.', 'danger')
-  }
-
-  const toggleCardCompleted = (columnId: string, cardId: string) => {
-    updateActiveWorkspace((workspace) => ({
-      ...workspace,
-      columns: workspace.columns.map((col) => {
-        if (col.id !== columnId) return col
-        return {
-          ...col,
-          cards: col.cards.map((c) =>
-            c.id === cardId ? { ...c, completed: !c.completed } : c
-          ),
-        }
-      }),
-    }))
-  }
-
-  const moveCard = (
-    fromColumnId: string,
-    cardId: string,
-    toColumnId: string,
-    beforeCardId: string | null
-  ) => {
-    updateActiveWorkspace((workspace) => {
-      const fromCol = workspace.columns.find((c) => c.id === fromColumnId)
-      const toCol = workspace.columns.find((c) => c.id === toColumnId)
-      if (!fromCol || !toCol) return workspace
-
-      const card = fromCol.cards.find((c) => c.id === cardId)
-      if (!card) return workspace
-
-      if (fromColumnId === toColumnId) {
-        if (beforeCardId === cardId) return workspace
-
-        const without = fromCol.cards.filter((c) => c.id !== cardId)
-        const rawIndex = beforeCardId == null ? without.length : without.findIndex((c) => c.id === beforeCardId)
-        const insertIndex = rawIndex < 0 ? without.length : rawIndex
-        const nextCards = [...without.slice(0, insertIndex), card, ...without.slice(insertIndex)]
-
-        const sameOrder =
-          nextCards.length === fromCol.cards.length &&
-          nextCards.every((c, idx) => c.id === fromCol.cards[idx]!.id)
-        if (sameOrder) return workspace
-
-        return {
-          ...workspace,
-          columns: workspace.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
-        }
-      }
-
-      const fromWithout = fromCol.cards.filter((c) => c.id !== cardId)
-      const rawDestIndex =
-        beforeCardId == null ? toCol.cards.length : toCol.cards.findIndex((c) => c.id === beforeCardId)
-      const destIndex = rawDestIndex < 0 ? toCol.cards.length : rawDestIndex
-      const nextDestCards = [
-        ...toCol.cards.slice(0, destIndex),
-        card,
-        ...toCol.cards.slice(destIndex),
-      ]
-
-      return {
-        ...workspace,
-        columns: workspace.columns.map((c) => {
-          if (c.id === fromColumnId) return { ...c, cards: fromWithout }
-          if (c.id === toColumnId) return { ...c, cards: nextDestCards }
-          return c
-        }),
-      }
-    })
-  }
-
-  const swapCards = (fromColumnId: string, cardId: string, toColumnId: string, targetCardId: string) => {
-    updateActiveWorkspace((workspace) => {
-      const fromCol = workspace.columns.find((c) => c.id === fromColumnId)
-      const toCol = workspace.columns.find((c) => c.id === toColumnId)
-      if (!fromCol || !toCol) return workspace
-
-      const fromIndex = fromCol.cards.findIndex((c) => c.id === cardId)
-      const toIndex = toCol.cards.findIndex((c) => c.id === targetCardId)
-      if (fromIndex < 0 || toIndex < 0) return workspace
-      if (fromColumnId === toColumnId && fromIndex === toIndex) return workspace
-
-      if (fromColumnId === toColumnId) {
-        const nextCards = fromCol.cards.slice()
-        ;[nextCards[fromIndex], nextCards[toIndex]] = [nextCards[toIndex], nextCards[fromIndex]]
-        return {
-          ...workspace,
-          columns: workspace.columns.map((c) => (c.id === fromColumnId ? { ...c, cards: nextCards } : c)),
-        }
-      }
-
-      const nextFromCards = fromCol.cards.slice()
-      const nextToCards = toCol.cards.slice()
-      const draggedCard = nextFromCards[fromIndex]
-      const targetCard = nextToCards[toIndex]
-      nextFromCards[fromIndex] = targetCard
-      nextToCards[toIndex] = draggedCard
-
-      return {
-        ...workspace,
-        columns: workspace.columns.map((c) => {
-          if (c.id === fromColumnId) return { ...c, cards: nextFromCards }
-          if (c.id === toColumnId) return { ...c, cards: nextToCards }
-          return c
-        }),
-      }
-    })
-  }
-
-  const clearDragUi = () => {
-    draggingRef.current = null
-    cardDragOverRef.current = null
-    setDraggingColumnId(null)
-    setColumnDropHint(null)
-    columnDropHintRef.current = null
-    setCardDragOver(null)
-  }
-
-  const setCardDragOverStable = (next: { columnId: string; targetCardId: string | null } | null) => {
-    cardDragOverRef.current = next
-    setCardDragOver((prev) => {
-      if (prev?.columnId === next?.columnId && prev?.targetCardId === next?.targetCardId) {
-        return prev
-      }
-      return next
-    })
-  }
-
-  const getCurrentPayload = (dataTransfer: DataTransfer | null): DragPayload | null => {
-    const fromTransfer = parseDragPayload(dataTransfer?.getData('application/json') ?? null)
-    return fromTransfer ?? draggingRef.current
-  }
-
-  const shouldIgnoreColumnDragStart = (target: EventTarget | null) => {
-    const el = target as HTMLElement | null
-    if (!el) return false
-    return Boolean(
-      el.closest('input, textarea, select, button, [contenteditable="true"], [data-kanban-card="true"]')
-    )
-  }
-
-  const Card = ({ columnId, card }: { columnId: string; card: KanbanCard }) => {
-    const prefix = priorityToPrefix(card.priority)
-    const hasDescription = Boolean(card.description && card.description.trim().length > 0)
-    const prefixTint =
-      card.priority && card.priority !== null ? getPriorityChipTint(card.priority).borderActive : undefined
-    const remindAtLabel = (() => {
-      if (!card.remindAt) return null
-      const date = new Date(card.remindAt)
-      if (!Number.isFinite(date.getTime())) return null
-      return date.toLocaleString(undefined, {
-        month: 'short',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      })
-    })()
-
-    return (
-      <div
-        data-kanban-card="true"
-        draggable
-        onDragStart={(e) => {
-          e.stopPropagation()
-          const payload = { kind: 'card', columnId, cardId: card.id } satisfies DragPayload
-          draggingRef.current = payload
-          e.dataTransfer.setData('application/json', JSON.stringify(payload))
-          e.dataTransfer.effectAllowed = 'move'
-        }}
-        onDragEnd={() => {
-          clearDragUi()
-        }}
-        onDragOver={(e) => {
-          if (draggingRef.current?.kind !== 'card') return
-          e.preventDefault()
-          e.stopPropagation()
-          setCardDragOverStable({ columnId, targetCardId: card.id })
-        }}
-        onDrop={(e) => {
-          if (draggingRef.current?.kind !== 'card') return
-          e.preventDefault()
-          e.stopPropagation()
-          const payload = getCurrentPayload(e.dataTransfer)
-          if (!payload || payload.kind !== 'card') return
-          if (payload.columnId === columnId && payload.cardId === card.id) {
-            clearDragUi()
-            return
-          }
-          swapCards(payload.columnId, payload.cardId, columnId, card.id)
-          clearDragUi()
-        }}
-        className={twMerge(
-          'rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] px-3 py-2 shadow-md transition-shadow hover:shadow-lg',
-          cardDragOver?.columnId === columnId &&
-            cardDragOver.targetCardId === card.id &&
-            'ring-2 ring-[var(--obsidian-accent)]',
-          Boolean(card.completed) && 'opacity-90',
-          animatingCardIds.has(card.id) && 'animate-card-clear'
-        )}
-        onClick={() => setSelectedCardId(card.id)}
-      >
-        <div className="flex items-start gap-2">
-          <button
-            type="button"
-            title={card.completed ? 'Mark as not done' : 'Mark as done'}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCardCompleted(columnId, card.id)
-            }}
-            className={twMerge(
-              'mt-0.5 h-5 w-5 shrink-0 rounded-full border flex items-center justify-center',
-              card.completed
-                ? 'border-emerald-500 bg-emerald-500/10'
-                : 'border-[var(--obsidian-border)] bg-transparent'
-            )}
-          >
-            {card.completed ? <VscCheck className="h-4 w-4 text-emerald-500" /> : null}
-          </button>
-
-          <div className="flex-1 min-w-0">
-            <div
-              className={twMerge(
-                'text-sm text-[var(--obsidian-text)] whitespace-pre-wrap break-words',
-                Boolean(card.completed) && 'line-through text-[var(--obsidian-text-muted)]'
-              )}
-            >
-              {prefix ? (
-                <span className="mr-px font-mono text-[12px] opacity-80" style={{ color: prefixTint }}>
-                  {prefix}
-                </span>
-              ) : null}
-              {card.text}
-            </div>
-            {hasDescription ? (
-              <div
-                className={twMerge(
-                  'mt-1 text-xs leading-5 text-[var(--obsidian-text-muted)] whitespace-pre-wrap break-words clamp-2',
-                  Boolean(card.completed) && 'line-through opacity-80'
-                )}
-              >
-                {card.description}
-              </div>
-            ) : null}
-            {remindAtLabel ? (
-              <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-[var(--obsidian-text-muted)]">
-                <VscBell className="h-3.5 w-3.5" />
-                <span>{remindAtLabel}</span>
-              </div>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            className="p-1 rounded hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)]"
-            title="More actions"
-            onMouseDown={(e) => {
-              e.stopPropagation()
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              setColumnActionsMenu(null)
-              const rect = e.currentTarget.getBoundingClientRect()
-              setCardActionsMenu((prev) => {
-                if (prev?.columnId === columnId && prev.cardId === card.id) return null
-                return {
-                  x: rect.left,
-                  y: rect.bottom + 6,
-                  columnId,
-                  cardId: card.id,
-                }
-              })
-            }}
-          >
-            <VscEllipsis className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  const gridClass =
-    columns.length <= 3 ? 'grid-cols-3' : 'grid-flow-col auto-cols-[320px] grid-rows-1'
-  const gridStyle =
-    columns.length <= 3
-      ? { gridTemplateColumns: `repeat(${Math.max(1, columns.length)}, minmax(0, 1fr))` }
-      : { gridTemplateRows: '1fr' }
+    if (isWorkspaceModalOpen) newWorkspaceInputRef.current?.focus();
+  }, [isWorkspaceModalOpen]);
 
   return (
-    <div className="h-full w-full bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]">
-      <div className="px-6 py-4 border-b border-[var(--obsidian-border-soft)] bg-[var(--obsidian-pane)]">
+    <div className="flex h-screen w-full flex-col bg-[var(--obsidian-base)] text-[var(--obsidian-text)] overflow-hidden">
+      <div className="px-6 py-4 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {state.workspaces.map((workspace) => (
             <button
               key={workspace.id}
-              type="button"
-              onClick={() => {
-                setState((prevStored) => ({
-                  ...normalizeKanbanState(prevStored),
-                  activeWorkspaceId: workspace.id,
-                }))
+              onClick={() => setState((prev) => ({ ...prev, activeWorkspaceId: workspace.id }))}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setWorkspaceContextMenu({ x: e.clientX, y: e.clientY, workspaceId: workspace.id });
               }}
               className={twMerge(
-                'inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-sm transition-colors',
+                "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-sm transition-colors",
                 workspace.id === state.activeWorkspaceId
-                  ? 'bg-[var(--obsidian-hover)] font-semibold text-[var(--obsidian-text)]'
-                  : 'text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]'
+                  ? "bg-[var(--obsidian-hover)] font-semibold text-[var(--obsidian-text)]"
+                  : "text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]"
               )}
-              onContextMenu={(e) => {
-                e.preventDefault()
-                setWorkspaceContextMenu({
-                  x: e.clientX,
-                  y: e.clientY,
-                  workspaceId: workspace.id,
-                })
-              }}
             >
               {workspace.name}
             </button>
           ))}
           <button
-            type="button"
             onClick={() => setIsWorkspaceModalOpen(true)}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)] hover:text-[var(--obsidian-text)]"
-            title="Create workspace"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)]"
           >
             <VscAdd className="h-5 w-5" />
           </button>
@@ -692,18 +164,13 @@ export const KanbanBoard = () => {
           <input
             value={newColumnTitle}
             onChange={(e) => setNewColumnTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addColumn()}
             placeholder="Add board name"
-            spellCheck={false}
-            autoCorrect="off"
-            autoCapitalize="off"
-            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') addColumn()
-            }}
+            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-violet-500"
           />
           <button
             onClick={addColumn}
-            className="inline-flex items-center gap-2 rounded bg-[#098fe8] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500"
           >
             <VscAdd className="w-4 h-4" />
             Add board
@@ -711,587 +178,318 @@ export const KanbanBoard = () => {
         </div>
       </div>
 
-      <div className="h-[calc(100%-72px)] kanban-scroll overflow-x-scroll overflow-y-hidden px-6 py-5 kanban-scrollbar">
-        <div
-          className={twMerge('grid gap-4 h-full min-h-full items-start', gridClass)}
-          style={gridStyle}
-          onDragOver={(e) => {
-            const payload = draggingRef.current
-            if (!payload || payload.kind !== 'column') return
-            e.preventDefault()
-
-            if (e.currentTarget !== e.target) return
-            const hint = { overColumnId: null } satisfies ColumnOverHint
-            columnDropHintRef.current = hint
-            setColumnDropHint((prev) => (prev?.overColumnId === null ? prev : hint))
-          }}
-          onDrop={(e) => {
-            if (draggingRef.current?.kind !== 'column') return
-            e.preventDefault()
-            const payload = parseDragPayload(e.dataTransfer.getData('application/json'))
-            if (!payload || payload.kind !== 'column') return
-            const hint = columnDropHintRef.current
-            if (hint?.overColumnId === null) moveColumnToEnd(payload.columnId)
-            clearDragUi()
-          }}
-        >
-          {columns.map((column) => (
-            <div
-              key={column.id}
-              ref={(el) => {
-                columnElByIdRef.current[column.id] = el
-              }}
-              draggable
-              style={{
-                willChange: 'transform',
-                backgroundColor: column.color
-                  ? `color-mix(in srgb, var(--obsidian-pane) 88%, ${column.color} 12%)`
-                  : undefined,
-              }}
-              onDragStart={(e) => {
-                if (shouldIgnoreColumnDragStart(e.target)) {
-                  return
-                }
-                const payload = { kind: 'column', columnId: column.id } satisfies DragPayload
-                draggingRef.current = payload
-                setDraggingColumnId(column.id)
-                setColumnDropHint(null)
-                columnDropHintRef.current = null
-                e.dataTransfer.setData('application/json', JSON.stringify(payload))
-                e.dataTransfer.effectAllowed = 'move'
-              }}
-              onDragEnd={() => {
-                clearDragUi()
-              }}
-              className={twMerge(
-                'min-w-[280px] self-start mb-[10px] min-h-[70%] max-h-[calc(100%-10px)] flex flex-col overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] relative',
-                draggingColumnId === column.id && 'opacity-60',
-                columnDropHint?.overColumnId === column.id && 'ring-2 ring-[var(--obsidian-accent)]'
-              )}
-              onDragOver={(e) => {
-                const payload = draggingRef.current
-                if (!payload) return
-
-                if (payload.kind === 'card') {
-                  e.preventDefault()
-                  setCardDragOverStable({ columnId: column.id, targetCardId: null })
-                  return
-                }
-
-                if (payload.kind === 'column') {
-                  if (payload.columnId === column.id) return
-                  e.preventDefault()
-
-                  const hint: ColumnOverHint = { overColumnId: column.id }
-                  columnDropHintRef.current = hint
-                  setColumnDropHint((prev) =>
-                    prev?.overColumnId === hint.overColumnId ? prev : hint
-                  )
-                }
-              }}
-              onDrop={(e) => {
-                const payload = getCurrentPayload(e.dataTransfer)
-                if (!payload) return
-
-                if (payload.kind === 'card') {
-                  e.preventDefault()
-                  const beforeCardId =
-                    cardDragOverRef.current?.columnId === column.id
-                      ? cardDragOverRef.current.targetCardId
-                      : null
-                  moveCard(payload.columnId, payload.cardId, column.id, beforeCardId)
-                  clearDragUi()
-                } else if (payload.kind === 'column') {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  if (payload.columnId === column.id) {
-                    clearDragUi()
-                    return
-                  }
-
-                  swapColumns(payload.columnId, column.id)
-                  clearDragUi()
-                }
-              }}
-            >
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
-                <div
-                  className="p-1 text-[var(--obsidian-text-muted)]"
-                  title="Drag column to reorder"
-                >
-                  <MdDragIndicator className="w-4 h-4" />
-                </div>
-                {renamingColumnId === column.id ? (
-                  <input
-                    ref={renameInputRef}
-                    value={renameDraft}
-                    onChange={(e) => setRenameDraft(e.target.value)}
-                    spellCheck={false}
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    className="flex-1 bg-transparent outline-none text-sm font-semibold text-[var(--obsidian-text)]"
-                    onBlur={commitRename}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') commitRename()
-                      if (e.key === 'Escape') cancelRename()
-                    }}
-                  />
-                ) : (
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="inline-flex max-w-full items-center gap-2 rounded-full px-2.5 py-1 text-sm font-semibold text-[var(--obsidian-text)] select-none"
-                      style={{
-                        backgroundColor: column.color
-                          ? `color-mix(in srgb, var(--obsidian-workspace) 78%, ${column.color} 22%)`
-                          : 'var(--obsidian-workspace)',
-                      }}
-                      title="Double click to rename"
-                      onDoubleClick={() => beginRenameColumn(column.id)}
-                    >
-                      <span className="truncate">{column.title}</span>
-                      <span className="text-[var(--obsidian-text-muted)]">{(column.cards ?? []).length}</span>
-                    </div>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)]"
-                  title="More actions"
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    setCardActionsMenu(null)
-                    setColumnActionsMenu((prev) => {
-                      if (prev?.columnId === column.id) return null
-                      return {
-                        x: rect.left,
-                        y: rect.bottom + 6,
-                        columnId: column.id,
-                      }
-                    })
-                  }}
-                >
-                  <VscEllipsis className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex-auto min-h-0 px-3 py-3 space-y-2 overflow-y-auto overflow-x-hidden kanban-scrollbar">
-                {(column.cards ?? []).map((card) => (
-                  <Card key={card.id} columnId={column.id} card={card} />
-                ))}
-              </div>
-
-              <div className="px-3 py-3 border-t border-[var(--obsidian-border-soft)]">
-                <AddCardForm onAdd={(payload) => addCard(column.id, payload)} />
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="flex h-full w-full gap-3 overflow-scroll p-12">
+        {columns.map((col) => (
+          <Column
+            key={col.id}
+            title={col.title}
+            column={col.id}
+            headingColor="text-[var(--obsidian-text)]"
+            cards={cards}
+            setCards={setCards}
+            color={col.color}
+            onRename={(newTitle: string) => updateColumnTitle(col.id, newTitle)}
+          />
+        ))}
+        <BurnBarrel setCards={setCards} />
       </div>
 
-      {isWorkspaceModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4">
+      {isWorkspaceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-md rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-5 shadow-2xl">
             <div className="text-lg font-semibold text-[var(--obsidian-text)]">Create workspace</div>
-            <div className="mt-1 text-sm text-[var(--obsidian-text-muted)]">
-              Add a name for your new Kanban tab.
-            </div>
             <input
               ref={newWorkspaceInputRef}
               value={newWorkspaceName}
               onChange={(e) => setNewWorkspaceName(e.target.value)}
-              placeholder="Workspace name"
-              spellCheck={false}
-              autoCorrect="off"
-              autoCapitalize="off"
-              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
               onKeyDown={(e) => {
-                if (e.key === 'Enter') addWorkspace()
-                if (e.key === 'Escape') {
-                  setIsWorkspaceModalOpen(false)
-                  setNewWorkspaceName('')
-                }
+                if (e.key === "Enter") addWorkspace();
+                if (e.key === "Escape") setIsWorkspaceModalOpen(false);
               }}
+              placeholder="Workspace name"
+              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-violet-500"
             />
-            <div className="mt-4 flex items-center justify-end gap-2">
+            <div className="mt-4 flex justify-end gap-2">
               <button
-                type="button"
-                onClick={() => {
-                  setIsWorkspaceModalOpen(false)
-                  setNewWorkspaceName('')
-                }}
-                className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                onClick={() => setIsWorkspaceModalOpen(false)}
+                className="rounded px-3 py-2 text-sm text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]"
               >
                 Cancel
               </button>
               <button
-                type="button"
                 onClick={addWorkspace}
-                className="rounded bg-[var(--obsidian-accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+                className="rounded bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500"
               >
                 Create
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {workspaceContextMenu ? (
-        <ContextMenu
-          x={workspaceContextMenu.x}
-          y={workspaceContextMenu.y}
-          onClose={() => setWorkspaceContextMenu(null)}
-          className="min-w-[120px]"
-        >
+      {workspaceContextMenu && (
+        <ContextMenu x={workspaceContextMenu.x} y={workspaceContextMenu.y} onClose={() => setWorkspaceContextMenu(null)}>
           <ContextMenuItem
             onClick={() => {
-              removeWorkspace(workspaceContextMenu.workspaceId)
-              setWorkspaceContextMenu(null)
+              removeWorkspace(workspaceContextMenu.workspaceId);
+              setWorkspaceContextMenu(null);
             }}
           >
             <VscTrash className="h-4 w-4 text-red-400" />
             <span className="text-red-400">Delete</span>
           </ContextMenuItem>
         </ContextMenu>
-      ) : null}
-
-      {cardActionsMenu ? (
-        <ContextMenu
-          x={cardActionsMenu.x}
-          y={cardActionsMenu.y}
-          onClose={() => setCardActionsMenu(null)}
-          className="min-w-[120px]"
-        >
-          <ContextMenuItem
-            onClick={() => {
-              removeCard(cardActionsMenu.columnId, cardActionsMenu.cardId)
-              setCardActionsMenu(null)
-            }}
-          >
-            <VscTrash className="h-4 w-4 text-red-400" />
-            <span className="text-red-400">Delete</span>
-          </ContextMenuItem>
-        </ContextMenu>
-      ) : null}
-
-      {columnActionsMenu ? (
-        <ContextMenu
-          x={columnActionsMenu.x}
-          y={columnActionsMenu.y}
-          onClose={() => setColumnActionsMenu(null)}
-          className="min-w-[120px]"
-        >
-          <ContextMenuItem
-            onClick={() => {
-              clearColumnCards(columnActionsMenu.columnId)
-              setColumnActionsMenu(null)
-            }}
-          >
-            <VscTrash className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
-            <span>Clear Board</span>
-          </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => {
-              removeColumn(columnActionsMenu.columnId)
-              setColumnActionsMenu(null)
-            }}
-          >
-            <VscTrash className="h-4 w-4 text-red-400" />
-            <span className="text-red-400">Delete</span>
-          </ContextMenuItem>
-        </ContextMenu>
-      ) : null}
-
-      <TaskDetailsPanel
-        isOpen={Boolean(selectedCardInfo)}
-        card={selectedCardInfo?.card ?? null}
-        onClose={() => setSelectedCardId(null)}
-        onUpdate={(next) => {
-          const cardId = selectedCardInfo?.card.id
-          if (!cardId) return
-          updateCardById(cardId, (card) => ({ ...card, ...next }))
-        }}
-      />
-
-      {snackbar ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className={twMerge(
-            'pointer-events-none fixed bottom-5 left-1/2 z-[2000] flex -translate-x-1/2 items-center gap-2 rounded-full border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
-            isSnackbarShown ? 'translate-y-0 opacity-100' : 'translate-y-1 opacity-0'
-          )}
-        >
-          {snackbar.kind === 'danger' ? (
-            <VscTrash className="h-4 w-4 text-red-400" />
-          ) : (
-            <VscCheck className="h-4 w-4 text-emerald-500" />
-          )}
-          <span>{snackbar.message}</span>
-        </div>
-      ) : null}
+      )}
     </div>
-  )
-}
+  );
+};
 
-const AddCardForm = ({
-  onAdd,
-}: {
-  onAdd: (payload: {
-    title: string
-    description: string
-    priority: Exclude<KanbanCardPriority, null>
-  }) => void
-}) => {
-  const rootRef = useRef<HTMLDivElement>(null)
-  const popoverRef = useRef<HTMLDivElement>(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<Exclude<KanbanCardPriority, null>>('low')
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [popover, setPopover] = useState<{
-    left: number
-    bottom: number
-    width: number
-    maxHeight: number
-    ready: boolean
-  } | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const descriptionRef = useRef<HTMLTextAreaElement>(null)
+const Column = ({ title, headingColor, cards, column, setCards, onRename, color }: any) => {
+  const [active, setActive] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(title);
 
-  const closeExpanded = () => {
-    setIsExpanded(false)
-    setPopover(null)
-  }
+  const handleDragStart = (e: any, card: any) => {
+    e.dataTransfer.setData("cardId", card.id);
+  };
 
-  const submit = () => {
-    const trimmed = title.trim()
-    if (!trimmed) return
-    onAdd({ title: trimmed, description, priority })
-    setTitle('')
-    setDescription('')
-    setPriority('low')
-    closeExpanded()
-    requestAnimationFrame(() => inputRef.current?.focus())
-  }
+  const handleDragEnd = (e: any) => {
+    const cardId = e.dataTransfer.getData("cardId");
+    setActive(false);
+    clearHighlights();
 
-  useEffect(() => {
-    if (!isExpanded) return
-    const shouldCloseForTarget = (target: Node | null) => {
-      if (!target) return true
-      if (rootRef.current?.contains(target)) return false
-      if (popoverRef.current?.contains(target)) return false
-      return true
+    const indicators = getIndicators();
+    const { element } = getNearestIndicator(e, indicators);
+    const before = element.dataset.before || "-1";
+
+    if (before !== cardId) {
+      let copy = [...cards];
+      let cardToTransfer = copy.find((c) => c.id === cardId);
+      if (!cardToTransfer) return;
+      cardToTransfer = { ...cardToTransfer, column };
+      copy = copy.filter((c) => c.id !== cardId);
+      const moveToBack = before === "-1";
+      if (moveToBack) {
+        copy.push(cardToTransfer);
+      } else {
+        const insertAtIndex = copy.findIndex((el) => el.id === before);
+        if (insertAtIndex === undefined) return;
+        copy.splice(insertAtIndex, 0, cardToTransfer);
+      }
+      setCards(copy);
     }
+  };
 
-    const onMouseDown = (e: MouseEvent) => {
-      const target = e.target as Node | null
-      if (shouldCloseForTarget(target)) closeExpanded()
-    }
-    const onFocusIn = (e: FocusEvent) => {
-      const target = e.target as Node | null
-      if (shouldCloseForTarget(target)) closeExpanded()
-    }
-    window.addEventListener('mousedown', onMouseDown, true)
-    window.addEventListener('focusin', onFocusIn, true)
-    return () => {
-      window.removeEventListener('mousedown', onMouseDown, true)
-      window.removeEventListener('focusin', onFocusIn, true)
-    }
-  }, [isExpanded])
+  const handleDragOver = (e: any) => {
+    e.preventDefault();
+    highlightIndicator(e);
+    setActive(true);
+  };
 
-  useLayoutEffect(() => {
-    if (!isExpanded) return
+  const clearHighlights = (els?: any) => {
+    const indicators = els || getIndicators();
+    indicators.forEach((i: any) => {
+      i.style.opacity = "0";
+    });
+  };
 
-    let raf = 0
-    const margin = 12
-    const gap = 10
+  const highlightIndicator = (e: any) => {
+    const indicators = getIndicators();
+    clearHighlights(indicators);
+    const el = getNearestIndicator(e, indicators);
+    el.element.style.opacity = "1";
+  };
 
-    const schedule = () => {
-      cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => {
-        const anchorRect = inputRef.current?.getBoundingClientRect()
-        if (!anchorRect) return
+  const getNearestIndicator = (e: any, indicators: any[]) => {
+    const DISTANCE_OFFSET = 50;
+    return indicators.reduce(
+      (closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = e.clientY - (box.top + DISTANCE_OFFSET);
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      },
+      {
+        offset: Number.NEGATIVE_INFINITY,
+        element: indicators[indicators.length - 1],
+      }
+    );
+  };
 
-        const availableWidth = Math.max(0, window.innerWidth - margin * 2)
-        const width = Math.min(420, Math.max(260, anchorRect.width), availableWidth)
-        const left = clamp(
-          anchorRect.left,
-          margin,
-          Math.max(margin, window.innerWidth - width - margin)
-        )
+  const getIndicators = () => {
+    return Array.from(document.querySelectorAll(`[data-column="${column}"]`));
+  };
 
-        const spaceAbove = Math.max(0, anchorRect.top - margin)
-        const maxHeight = Math.max(0, spaceAbove - gap)
-        const bottom = window.innerHeight - anchorRect.top + gap
+  const handleDragLeave = () => {
+    clearHighlights();
+    setActive(false);
+  };
 
-        setPopover((prev) => {
-          const next = {
-            left,
-            bottom,
-            width,
-            maxHeight,
-            ready: true,
-          }
-          if (
-            prev &&
-            prev.left === next.left &&
-            prev.bottom === next.bottom &&
-            prev.width === next.width &&
-            prev.maxHeight === next.maxHeight
-          ) {
-            return prev
-          }
-          return next
-        })
-      })
-    }
+  const filteredCards = cards.filter((c: any) => c.column === column);
 
-    const onResizeOrScroll = () => schedule()
-    window.addEventListener('resize', onResizeOrScroll)
-    window.addEventListener('scroll', onResizeOrScroll, true)
-    schedule()
+  const commitRename = () => {
+    if (renameDraft.trim()) onRename(renameDraft.trim());
+    setIsRenaming(false);
+  };
 
-    return () => {
-      cancelAnimationFrame(raf)
-      window.removeEventListener('resize', onResizeOrScroll)
-      window.removeEventListener('scroll', onResizeOrScroll, true)
-    }
-  }, [isExpanded])
+  const bgStyle = color
+    ? { backgroundColor: `color-mix(in srgb, var(--obsidian-workspace) 92%, ${color} 8%)` }
+    : {};
 
   return (
     <div
-      ref={rootRef}
-      className="space-y-2"
-      onFocusCapture={() => setIsExpanded(true)}
+      className="w-56 shrink-0 rounded-xl border border-[var(--obsidian-border)] px-3 pt-3 pb-2"
+      style={bgStyle}
     >
-      <div className="flex items-center gap-2 pb-2">
-        <div className="relative flex-1 min-w-0">
-          {isExpanded ? (
-            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[12px] opacity-70">
-              {priorityToPrefix(priority)}
-            </div>
-          ) : null}
+      <div className="mb-3 flex items-center justify-between">
+        {isRenaming ? (
           <input
-            ref={inputRef}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Add task..."
-            spellCheck={false}
-            autoCorrect="off"
-            autoCapitalize="off"
-            className={twMerge(
-              'w-full rounded bg-[var(--obsidian-workspace)] py-2 text-sm text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]',
-              isExpanded ? 'pl-10 pr-3' : 'px-3'
-            )}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                submit()
-              }
-              if (e.key === 'Escape') {
-                closeExpanded()
-                inputRef.current?.blur()
-              }
-            }}
+            autoFocus
+            value={renameDraft}
+            onChange={(e) => setRenameDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => e.key === "Enter" && commitRename()}
+            className="w-full bg-transparent text-sm font-medium outline-none text-[var(--obsidian-text)]"
           />
-        </div>
-        <button
-          type="button"
-          onClick={submit}
-          className="inline-flex items-center gap-1 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2.5 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
-          title="Add task"
-        >
-          <VscAdd className="w-4 h-4" />
-        </button>
+        ) : (
+          <h3
+            className={`font-medium ${headingColor} cursor-pointer truncate mr-2`}
+            onDoubleClick={() => setIsRenaming(true)}
+            title="Double click to rename"
+          >
+            {title}
+          </h3>
+        )}
+        <span className="rounded text-sm text-[var(--obsidian-text-muted)]">{filteredCards.length}</span>
       </div>
-
-      {isExpanded
-        ? createPortal(
-            <div
-              ref={popoverRef}
-              className={twMerge(
-                'fixed z-[1600] overflow-auto no-scrollbar',
-                'rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] p-3 shadow-2xl'
-              )}
-              style={{
-                left: popover?.left ?? -10_000,
-                bottom: popover?.bottom ?? -10_000,
-                width: popover?.width ?? 320,
-                maxHeight: popover?.maxHeight ?? 320,
-                visibility: popover?.ready ? 'visible' : 'hidden',
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  e.stopPropagation()
-                  closeExpanded()
-                  requestAnimationFrame(() => inputRef.current?.focus())
-                }
-              }}
-            >
-              <div className="space-y-2">
-                <div>
-                  <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Description</div>
-                  <textarea
-                    ref={descriptionRef}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Description..."
-                    rows={3}
-                    spellCheck={false}
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    className="mt-1 w-full resize-none rounded bg-[var(--obsidian-pane)] px-3 py-2 text-sm leading-6 text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return
-                      if (e.shiftKey) return
-                      e.preventDefault()
-                      submit()
-                    }}
-                  />
-                  <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
-                    Enter to add, Shift+Enter for a new line
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-[11px] font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
-                  <div className="mt-1 flex flex-wrap items-center gap-1">
-                    {KANBAN_PRIORITY_OPTIONS.map((opt) => {
-                      const tint = getPriorityChipTint(opt.value)
-                      const isActive = priority === opt.value
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setPriority(opt.value)}
-                          className={twMerge(
-                            'inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[11px] leading-4 transition-colors',
-                            isActive
-                              ? 'text-[var(--obsidian-text)]'
-                              : 'text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]'
-                          )}
-                          style={{
-                            backgroundColor: isActive ? tint.bgActive : tint.bg,
-                            borderColor: isActive ? tint.borderActive : tint.border,
-                          }}
-                          title={`Priority: ${opt.label}`}
-                        >
-                          <span className="font-mono text-[11px] opacity-70">{opt.prefix}</span>
-                          <span>{opt.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+      <div
+        onDrop={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={`h-full w-full rounded-lg transition-colors ${active ? "bg-[var(--obsidian-hover-soft)]" : "bg-transparent"}`}
+      >
+        {filteredCards.map((c: any) => (
+          <Card key={c.id} {...c} handleDragStart={handleDragStart} />
+        ))}
+        <DropIndicator beforeId={null} column={column} />
+        <AddCard column={column} setCards={setCards} />
+      </div>
     </div>
-  )
-}
+  );
+};
+
+const Card = ({ text, id, column, handleDragStart }: any) => {
+  return (
+    <>
+      <DropIndicator beforeId={id} column={column} />
+      <motion.div
+        layout
+        layoutId={id}
+        draggable="true"
+        onDragStart={(e) => handleDragStart(e, { text, id, column })}
+        className="cursor-grab rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-3 active:cursor-grabbing"
+      >
+        <p className="text-sm text-[var(--obsidian-text)]">{text}</p>
+      </motion.div>
+    </>
+  );
+};
+
+const DropIndicator = ({ beforeId, column }: any) => {
+  return (
+    <div
+      data-before={beforeId || "-1"}
+      data-column={column}
+      className="my-0.5 h-0.5 w-full bg-violet-400 opacity-0 transition-opacity"
+    />
+  );
+};
+
+const BurnBarrel = ({ setCards }: any) => {
+  const [active, setActive] = useState(false);
+
+  const handleDragOver = (e: any) => {
+    e.preventDefault();
+    setActive(true);
+  };
+
+  const handleDragLeave = () => {
+    setActive(false);
+  };
+
+  const handleDragEnd = (e: any) => {
+    const cardId = e.dataTransfer.getData("cardId");
+    setCards((pv: any) => pv.filter((c: any) => c.id !== cardId));
+    setActive(false);
+  };
+
+  return (
+    <div
+      onDrop={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      className={`mt-10 grid h-56 w-56 shrink-0 place-content-center rounded border text-3xl transition-colors ${
+        active ? "border-red-800 bg-red-800/20 text-red-500" : "border-[var(--obsidian-text-muted)] bg-[var(--obsidian-text-muted)]/20 text-[var(--obsidian-text)]0"
+      }`}
+    >
+      {active ? <FaFire className="animate-bounce" /> : <FiTrash />}
+    </div>
+  );
+};
+
+const AddCard = ({ column, setCards }: any) => {
+  const [text, setText] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const handleSubmit = (e: any) => {
+    e.preventDefault();
+    if (!text.trim().length) return;
+    const newCard = createKanbanCard(text.trim());
+    setCards((pv: any) => [...pv, { ...newCard, column }]);
+    setAdding(false);
+    setText("");
+  };
+
+  return (
+    <>
+      {adding ? (
+        <motion.form layout onSubmit={handleSubmit}>
+          <textarea
+            onChange={(e) => setText(e.target.value)}
+            autoFocus
+            placeholder="Add new task..."
+            className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] p-3 text-sm text-[var(--obsidian-text)] placeholder-[var(--obsidian-text-muted)] focus:outline-0"
+          />
+          <div className="mt-1.5 flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => setAdding(false)}
+              type="button"
+              className="px-3 py-1.5 text-xs text-[var(--obsidian-text-muted)] transition-colors hover:text-[var(--obsidian-text)]"
+            >
+              Close
+            </button>
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 rounded bg-[var(--obsidian-accent)] px-3 py-1.5 text-xs text-white transition-colors hover:opacity-90"
+            >
+              <span>Add</span>
+              <FiPlus />
+            </button>
+          </div>
+        </motion.form>
+      ) : (
+        <motion.button
+          layout
+          onClick={() => setAdding(true)}
+          className="flex w-full items-center gap-1.5 px-3 py-1.5 text-xs text-[var(--obsidian-text-muted)] transition-colors hover:text-[var(--obsidian-text)]"
+        >
+          <span>Add card</span>
+          <FiPlus />
+        </motion.button>
+      )}
+    </>
+  );
+};
