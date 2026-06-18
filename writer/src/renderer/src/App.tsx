@@ -134,6 +134,7 @@ const App = () => {
         })
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /* Auto-open welcome note if it's a first run/empty root */

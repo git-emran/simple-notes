@@ -14,11 +14,15 @@ interface MarkdownPreviewProps {
   rootDir?: string
   isDarkMode: boolean
   previewReadableWidthClass: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getReactNodeText: (node: any) => string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getCalloutMeta: (type: string) => any
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function groupSections(nodes: any[]) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const root: { level: number; children: any[] } = { level: 0, children: [] }
   const stack = [root]
 
@@ -51,6 +55,7 @@ function groupSections(nodes: any[]) {
 }
 
 const rehypeHeaderSections = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (tree: any) => {
     if (tree && tree.children) {
       tree.children = groupSections(tree.children)
@@ -68,6 +73,7 @@ export const MarkdownPreview = memo(
     getReactNodeText,
     getCalloutMeta
   }: MarkdownPreviewProps) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SectionWrapper = ({ children, node }: any) => {
       const [isCollapsed, setIsCollapsed] = useState(false)
       const childrenArray = Children.toArray(children)
@@ -139,6 +145,7 @@ export const MarkdownPreview = memo(
       )
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const generateId = (node: any) => {
       const text = getReactNodeText(node)
       return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -181,6 +188,7 @@ export const MarkdownPreview = memo(
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHeaderSections]}
         components={{
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           section: ({ children, node, ...props }: any) => (
             <SectionWrapper node={node} {...props}>
               {children}

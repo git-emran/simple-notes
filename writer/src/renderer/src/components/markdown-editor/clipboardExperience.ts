@@ -111,7 +111,7 @@ const escapeTableCell = (text: string): string =>
 const containerHasBlockChildren = (element: Element): boolean =>
   Array.from(element.children).some((child) => BLOCK_TAGS.has(child.tagName.toLowerCase()))
 
-const renderChildren = (node: ParentNode, context: RenderContext): string =>
+const renderChildren = (node: Node, context: RenderContext): string =>
   Array.from(node.childNodes)
     .map((child) => renderNode(child, context))
     .join('')

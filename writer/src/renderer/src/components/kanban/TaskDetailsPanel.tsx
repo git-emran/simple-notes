@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { VscClose, VscEdit, VscSave, VscDiscard, VscBell } from 'react-icons/vsc'
+import { VscClose, VscEdit, VscSave, VscDiscard, VscChevronDown } from 'react-icons/vsc'
 import type { KanbanCard, KanbanCardPriority } from '@renderer/store/kanbanStore'
 import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint, priorityToPrefix } from './kanbanPriority'
-import { ReminderDateTimePicker } from './ReminderDateTimePicker'
+
 
 type TaskDetailsPanelProps = {
   isOpen: boolean
@@ -18,28 +18,24 @@ type TaskDetailsPanelProps = {
   }) => void
 }
 
-const formatIsoForHumans = (iso: string) => {
-  const date = new Date(iso)
-  if (!Number.isFinite(date.getTime())) return iso
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  })
-}
-
 export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetailsPanelProps) => {
   const [isVisible, setIsVisible] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
   const [descriptionDraft, setDescriptionDraft] = useState('')
   const [priorityDraft, setPriorityDraft] = useState<Exclude<KanbanCardPriority, null>>('low')
-  const [remindAtDraft, setRemindAtDraft] = useState<string | null>(null)
+  const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false)
+  const priorityDropdownRef = useRef<HTMLDivElement>(null)
+  
+  const [internalCard, setInternalCard] = useState<KanbanCard | null>(card)
 
-  const cardId = card?.id ?? null
+  useEffect(() => {
+    if (card) {
+      setInternalCard(card)
+    }
+  }, [card])
+
+  const cardId = internalCard?.id ?? null
 
   useEffect(() => {
     if (!isOpen) return
@@ -56,6 +52,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
   useEffect(() => {
     if (!isOpen) {
       setIsVisible(false)
+      setIsPriorityDropdownOpen(false)
       return
     }
 
@@ -64,45 +61,51 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
   }, [isOpen])
 
   useEffect(() => {
-    if (!card) return
-    const initialPriority = (card.priority ?? 'low') as Exclude<KanbanCardPriority, null>
+    const handleClickOutside = (e: MouseEvent) => {
+      if (priorityDropdownRef.current && !priorityDropdownRef.current.contains(e.target as Node)) {
+        setIsPriorityDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    if (!internalCard) return
+    const initialPriority = (internalCard.priority ?? 'low') as Exclude<KanbanCardPriority, null>
     setIsEditing(false)
-    setTitleDraft(card.text ?? '')
-    setDescriptionDraft(card.description ?? '')
+    setTitleDraft(internalCard.text ?? '')
+    setDescriptionDraft(internalCard.description ?? '')
     setPriorityDraft(initialPriority)
-    setRemindAtDraft(card.remindAt ?? null)
   }, [cardId])
 
   const canSave = useMemo(() => Boolean(titleDraft.trim()), [titleDraft])
 
-  if (!card) return null
+  if (!internalCard) return null
 
-  const prefix = priorityToPrefix(card.priority)
+  const prefix = priorityToPrefix(internalCard.priority)
   const prefixTint =
-    card.priority && card.priority !== null ? getPriorityChipTint(card.priority).borderActive : undefined
+    internalCard.priority && internalCard.priority !== null ? getPriorityChipTint(internalCard.priority).borderActive : undefined
 
   const save = () => {
-    if (!canSave) return
-    const previousRemindAt = card.remindAt ?? null
-    const nextReminderFiredAt =
-      remindAtDraft && remindAtDraft === previousRemindAt ? (card.reminderFiredAt ?? null) : null
+    if (!canSave || !internalCard) return
     onUpdate({
       text: titleDraft.trim(),
       description: descriptionDraft.trim(),
       priority: priorityDraft,
-      remindAt: remindAtDraft,
-      reminderFiredAt: nextReminderFiredAt,
+      remindAt: internalCard.remindAt ?? null,
+      reminderFiredAt: internalCard.reminderFiredAt ?? null,
     })
     setIsEditing(false)
   }
 
   const cancel = () => {
-    const initialPriority = (card.priority ?? 'low') as Exclude<KanbanCardPriority, null>
+    if (!internalCard) return
+    const initialPriority = (internalCard.priority ?? 'low') as Exclude<KanbanCardPriority, null>
     setIsEditing(false)
-    setTitleDraft(card.text ?? '')
-    setDescriptionDraft(card.description ?? '')
+    setTitleDraft(internalCard.text ?? '')
+    setDescriptionDraft(internalCard.description ?? '')
     setPriorityDraft(initialPriority)
-    setRemindAtDraft(card.remindAt ?? null)
   }
 
   return (
@@ -208,45 +211,48 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
               </div>
 
               <div>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
-                </div>
-                <div className="mt-2">
-                  <ReminderDateTimePicker valueIso={remindAtDraft} onChange={setRemindAtDraft} />
-                </div>
-                <div className="mt-1 text-[11px] text-[var(--obsidian-text-muted)]">
-                  Shows an in-app reminder at the selected date/time (while the app is running).
-                </div>
-              </div>
-
-              <div>
                 <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
-                <div className="mt-2 flex flex-wrap items-center gap-1">
-                  {KANBAN_PRIORITY_OPTIONS.map((opt) => {
-                    const tint = getPriorityChipTint(opt.value)
-                    const isActive = priorityDraft === opt.value
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setPriorityDraft(opt.value)}
-                        className={twMerge(
-                          'inline-flex items-center gap-0.5 rounded-full border px-2 py-1 text-[11px] leading-4 transition-colors',
-                          isActive
-                            ? 'text-[var(--obsidian-text)]'
-                            : 'text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]'
-                        )}
-                        style={{
-                          backgroundColor: isActive ? tint.bgActive : tint.bg,
-                          borderColor: isActive ? tint.borderActive : tint.border,
-                        }}
-                        title={`Priority: ${opt.label}`}
-                      >
-                        <span className="font-mono text-[11px] opacity-70">{opt.prefix}</span>
-                        <span>{opt.label}</span>
-                      </button>
-                    )
-                  })}
+                <div className="mt-2 relative inline-block" ref={priorityDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
+                    className="inline-flex items-center gap-1.5 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-1.5 text-[13px] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-all"
+                  >
+                    <span 
+                      className="h-2 w-2 rounded-full" 
+                      style={{ backgroundColor: getPriorityChipTint(priorityDraft).borderActive }} 
+                    />
+                    <span>{KANBAN_PRIORITY_OPTIONS.find(o => o.value === priorityDraft)?.label || 'Low'}</span>
+                    <VscChevronDown className="h-3.5 w-3.5 opacity-60 ml-1" />
+                  </button>
+                  
+                  {isPriorityDropdownOpen && (
+                    <div className="absolute left-0 top-full z-10 mt-1 w-32 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-1 shadow-lg">
+                      {KANBAN_PRIORITY_OPTIONS.map((opt) => {
+                        const isActive = priorityDraft === opt.value
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => {
+                              setPriorityDraft(opt.value)
+                              setIsPriorityDropdownOpen(false)
+                            }}
+                            className={twMerge(
+                              "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-[var(--obsidian-text)] transition-colors hover:bg-[var(--obsidian-hover)]",
+                              isActive ? "bg-[var(--obsidian-hover)] font-semibold" : ""
+                            )}
+                          >
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: getPriorityChipTint(opt.value).borderActive }}
+                            />
+                            <span>{opt.label}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -260,30 +266,24 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                       {prefix}
                     </span>
                   ) : null}
-                  <span>{card.text}</span>
+                  <span>{internalCard.text}</span>
                 </div>
               </div>
 
-              <div>
-                <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Reminder</div>
-                <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] px-4 py-3 text-sm text-[var(--obsidian-text)]">
-                  <VscBell className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
-                  <span>{card.remindAt ? formatIsoForHumans(card.remindAt) : 'None'}</span>
-                </div>
-              </div>
+
 
               <div>
                 <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Description</div>
-                <div className="mt-2 whitespace-pre-wrap break-words rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] px-4 py-3 text-sm leading-6 text-[var(--obsidian-text)]">
-                  {card.description?.trim() ? card.description : 'No description'}
+                <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--obsidian-text)]">
+                  {internalCard.description ? internalCard.description : <span className="italic opacity-50">No description provided</span>}
                 </div>
               </div>
 
               <div>
                 <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
                 <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-1.5 text-sm text-[var(--obsidian-text)]">
-                  <span className="font-mono text-xs opacity-70">{priorityToPrefix(card.priority) || '—'}</span>
-                  <span className="capitalize">{card.priority ?? 'low'}</span>
+                  <span className="font-mono text-xs opacity-70">{priorityToPrefix(internalCard.priority) || '—'}</span>
+                  <span className="capitalize">{internalCard.priority ?? 'low'}</span>
                 </div>
               </div>
             </div>

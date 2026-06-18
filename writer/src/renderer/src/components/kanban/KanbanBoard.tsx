@@ -17,6 +17,7 @@ import { FiPlus, FiTrash } from "react-icons/fi";
 import { VscAdd, VscTrash, VscChevronDown } from "react-icons/vsc";
 import { twMerge } from "tailwind-merge";
 import { priorityToPrefix } from "./kanbanPriority";
+import { TaskDetailsPanel } from "./TaskDetailsPanel";
 
 export const KanbanBoard = () => {
   const [storedState, setState] = useAtom(kanbanStateAtom);
@@ -34,6 +35,7 @@ export const KanbanBoard = () => {
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{ x: number; y: number; workspaceId: string } | null>(null);
   const [columnContextMenu, setColumnContextMenu] = useState<{ x: number; y: number; columnId: string } | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   const newWorkspaceInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,6 +50,15 @@ export const KanbanBoard = () => {
   const cards = useMemo(() => {
     return columns.flatMap((col) => (col.cards || []).map((card) => ({ ...card, column: col.id })));
   }, [columns]);
+
+  const selectedCard = useMemo(() => {
+    if (!selectedCardId) return null;
+    for (const col of columns) {
+      const card = col.cards.find((c) => c.id === selectedCardId);
+      if (card) return card;
+    }
+    return null;
+  }, [columns, selectedCardId]);
 
   // Adapter: Handle updates to the flat cards array
   const setCards = (updater: KanbanCardWithColumn[] | ((prev: KanbanCardWithColumn[]) => KanbanCardWithColumn[])) => {
@@ -145,6 +156,31 @@ export const KanbanBoard = () => {
     });
   };
 
+  const updateCardDetails = (next: {
+    text: string;
+    description: string;
+    priority: KanbanCardPriority;
+    remindAt: string | null;
+    reminderFiredAt: string | null;
+  }) => {
+    if (!selectedCardId) return;
+    setState((prev) => {
+      const wIdx = prev.workspaces.findIndex((w) => w.id === prev.activeWorkspaceId);
+      if (wIdx < 0) return prev;
+      const nextWs = [...prev.workspaces];
+      const workspace = { ...nextWs[wIdx] };
+      workspace.columns = workspace.columns.map((col) => {
+        if (!col.cards.some((c) => c.id === selectedCardId)) return col;
+        return {
+          ...col,
+          cards: col.cards.map((c) => (c.id === selectedCardId ? { ...c, ...next } : c)),
+        };
+      });
+      nextWs[wIdx] = workspace;
+      return { ...prev, workspaces: nextWs };
+    });
+  };
+
   useEffect(() => {
     if (isWorkspaceModalOpen) newWorkspaceInputRef.current?.focus();
   }, [isWorkspaceModalOpen]);
@@ -184,7 +220,7 @@ export const KanbanBoard = () => {
             onChange={(e) => setNewColumnTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addColumn()}
             placeholder="Add board name"
-            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-violet-500"
+            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-[var(--obsidian-accent)]/50 transition-colors"
           />
           <button
             onClick={addColumn}
@@ -196,7 +232,7 @@ export const KanbanBoard = () => {
         </div>
       </div>
 
-      <div className="flex h-full w-full gap-3 overflow-scroll p-12">
+      <div className="flex h-full w-full gap-3 overflow-x-auto overflow-y-hidden p-12 pb-8">
         {columns.map((col) => (
           <Column
             key={col.id}
@@ -210,10 +246,18 @@ export const KanbanBoard = () => {
             onContextMenu={(e: React.MouseEvent) => {
               setColumnContextMenu({ x: e.clientX, y: e.clientY, columnId: col.id });
             }}
+            onCardClick={setSelectedCardId}
           />
         ))}
         <BurnBarrel setCards={setCards} />
       </div>
+
+      <TaskDetailsPanel
+        isOpen={!!selectedCardId}
+        card={selectedCard}
+        onClose={() => setSelectedCardId(null)}
+        onUpdate={updateCardDetails}
+      />
 
       {isWorkspaceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -228,7 +272,7 @@ export const KanbanBoard = () => {
                 if (e.key === "Escape") setIsWorkspaceModalOpen(false);
               }}
               placeholder="Workspace name"
-              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-violet-500"
+              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-[var(--obsidian-accent)]/50 transition-colors"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -288,9 +332,10 @@ interface ColumnProps {
   onRename: (newTitle: string) => void;
   color?: string;
   onContextMenu: (e: React.MouseEvent) => void;
+  onCardClick?: (cardId: string) => void;
 }
 
-const Column = ({ title, headingColor, cards, column, setCards, onRename, color, onContextMenu }: ColumnProps) => {
+const Column = ({ title, headingColor, cards, column, setCards, onRename, color, onContextMenu, onCardClick }: ColumnProps) => {
   const [active, setActive] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(title);
@@ -422,9 +467,11 @@ const Column = ({ title, headingColor, cards, column, setCards, onRename, color,
         className={`flex-1 min-h-0 overflow-y-auto pr-1 rounded-lg transition-colors ${active ? "bg-[var(--obsidian-hover-soft)]" : "bg-transparent"}`}
       >
         {filteredCards.map((c: KanbanCardWithColumn) => (
-          <Card key={c.id} {...c} handleDragStart={handleDragStart} />
+          <Card key={c.id} {...c} handleDragStart={handleDragStart} onClick={() => onCardClick?.(c.id)} />
         ))}
         <DropIndicator beforeId={null} column={column} />
+      </div>
+      <div className="shrink-0">
         <AddCard column={column} setCards={setCards} />
       </div>
     </div>
@@ -436,12 +483,14 @@ interface CardProps {
   id: string;
   column: string;
   priority?: KanbanCardPriority;
+  description?: string;
   // framer-motion onDragStart passes MouseEvent | PointerEvent | TouchEvent
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handleDragStart: (e: any, card: KanbanCardWithColumn) => void;
+  onClick?: () => void;
 }
 
-const Card = ({ text, id, column, priority, handleDragStart }: CardProps) => {
+const Card = ({ text, id, column, priority, description, handleDragStart, onClick }: CardProps) => {
   const prefix = priorityToPrefix(priority);
   const priorityColors: Record<string, string> = {
     low: "#10B981", // Emerald/Green
@@ -458,10 +507,10 @@ const Card = ({ text, id, column, priority, handleDragStart }: CardProps) => {
         layoutId={id}
         draggable="true"
         onDragStart={(e) => handleDragStart(e, { text, id, column })}
+        onClick={onClick}
         className="cursor-grab rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-3 active:cursor-grabbing transition-all hover:border-[var(--obsidian-accent)]/50"
       >
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm text-[var(--obsidian-text)] flex-1 break-words">{text}</p>
+        <div className="flex items-start gap-2">
           {prefix && (
             <span
               className="shrink-0 text-xs font-black px-1.5 py-0.5 rounded select-none font-mono"
@@ -474,7 +523,13 @@ const Card = ({ text, id, column, priority, handleDragStart }: CardProps) => {
               {prefix}
             </span>
           )}
+          <p className="text-sm text-[var(--obsidian-text)] flex-1 break-words mt-0.5 font-medium">{text}</p>
         </div>
+        {description && (
+          <p className="mt-1.5 text-xs text-[var(--obsidian-text-muted)] leading-relaxed line-clamp-2 break-words">
+            {description}
+          </p>
+        )}
       </motion.div>
     </>
   );
@@ -540,8 +595,9 @@ interface AddCardProps {
 
 const AddCard = ({ column, setCards }: AddCardProps) => {
   const [text, setText] = useState("");
-  const [adding, setAdding] = useState(false);
+  const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<Exclude<KanbanCardPriority, null>>("low");
+  const [adding, setAdding] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -555,13 +611,24 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && adding) {
+        setAdding(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [adding]);
+
   const handleSubmit = (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     if (!text.trim().length) return;
-    const newCard = createKanbanCard(text.trim(), { priority });
+    const newCard = createKanbanCard(text.trim(), { priority, description: description.trim() });
     setCards((pv: KanbanCardWithColumn[]) => [...pv, { ...newCard, column } as KanbanCardWithColumn]);
     setAdding(false);
     setText("");
+    setDescription("");
     setPriority("low");
   };
 
@@ -583,7 +650,7 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
         <motion.form
           layout
           onSubmit={handleSubmit}
-          className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] p-3 flex flex-col gap-2 relative mt-2"
+          className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] p-3 flex flex-col gap-2 relative mt-2 transition-colors"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--obsidian-text-muted)] font-medium">New Task</span>
@@ -638,7 +705,20 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
             }}
             autoFocus
             placeholder="Add new task..."
-            className="w-full bg-transparent text-sm text-[var(--obsidian-text)] placeholder-[var(--obsidian-text-muted)] focus:outline-0 resize-none"
+            className="w-full bg-transparent text-sm text-[var(--obsidian-text)] font-medium placeholder-[var(--obsidian-text-muted)] outline-none rounded p-1 -ml-1 focus:bg-[var(--obsidian-pane)] focus:shadow-[0_0_0_2px_var(--obsidian-accent)] transition-shadow resize-none"
+            rows={2}
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+            placeholder="Add details..."
+            className="w-full bg-transparent text-xs text-[var(--obsidian-text)] placeholder-[var(--obsidian-text-muted)] outline-none rounded p-1 -ml-1 focus:bg-[var(--obsidian-pane)] focus:shadow-[0_0_0_2px_var(--obsidian-accent)] transition-shadow resize-none"
             rows={3}
           />
           <div className="mt-1 flex items-center justify-end gap-1.5">

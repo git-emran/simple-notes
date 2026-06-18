@@ -1,7 +1,7 @@
 'use client'
 import { AiModelInfo } from '@shared/types'
 import { FileNode } from '@shared/models'
-import { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { VscFile, VscFolder, VscClose } from 'react-icons/vsc'
 
