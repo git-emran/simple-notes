@@ -36,6 +36,7 @@ export const KanbanBoard = () => {
   const [workspaceContextMenu, setWorkspaceContextMenu] = useState<{ x: number; y: number; workspaceId: string } | null>(null);
   const [columnContextMenu, setColumnContextMenu] = useState<{ x: number; y: number; columnId: string } | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [pendingDeleteColumnId, setPendingDeleteColumnId] = useState<string | null>(null);
 
   const newWorkspaceInputRef = useRef<HTMLInputElement>(null);
 
@@ -186,7 +187,7 @@ export const KanbanBoard = () => {
   }, [isWorkspaceModalOpen]);
 
   return (
-    <div className="flex h-screen w-full flex-col bg-[var(--obsidian-base)] text-[var(--obsidian-text)] overflow-hidden">
+    <div className="flex h-full w-full flex-col bg-[var(--obsidian-base)] text-[var(--obsidian-text)] overflow-hidden">
       <div className="px-6 py-4 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {state.workspaces.map((workspace) => (
@@ -232,7 +233,7 @@ export const KanbanBoard = () => {
         </div>
       </div>
 
-      <div className="flex h-full w-full gap-3 overflow-x-auto overflow-y-hidden p-12 pb-8">
+      <div className="kanban-scroll flex min-h-0 flex-1 w-full gap-3 overflow-x-auto overflow-y-hidden p-12 pb-8">
         {columns.map((col) => (
           <Column
             key={col.id}
@@ -310,7 +311,7 @@ export const KanbanBoard = () => {
         <ContextMenu x={columnContextMenu.x} y={columnContextMenu.y} onClose={() => setColumnContextMenu(null)}>
           <ContextMenuItem
             onClick={() => {
-              removeColumn(columnContextMenu.columnId);
+              setPendingDeleteColumnId(columnContextMenu.columnId);
               setColumnContextMenu(null);
             }}
           >
@@ -319,6 +320,41 @@ export const KanbanBoard = () => {
           </ContextMenuItem>
         </ContextMenu>
       )}
+
+      {pendingDeleteColumnId && (() => {
+        const col = columns.find((c) => c.id === pendingDeleteColumnId);
+        const cardCount = col?.cards?.length ?? 0;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <div className="w-full max-w-sm rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-5 shadow-2xl">
+              <div className="text-lg font-semibold text-[var(--obsidian-text)]">Delete board</div>
+              <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">
+                Are you sure you want to delete <span className="font-medium text-[var(--obsidian-text)]">{col?.title ?? "this board"}</span>?
+                {cardCount > 0 && (
+                  <span> This will permanently remove {cardCount} {cardCount === 1 ? "card" : "cards"}.</span>
+                )}
+              </p>
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  onClick={() => setPendingDeleteColumnId(null)}
+                  className="rounded px-3 py-2 text-sm text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    removeColumn(pendingDeleteColumnId);
+                    setPendingDeleteColumnId(null);
+                  }}
+                  className="rounded bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

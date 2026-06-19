@@ -222,18 +222,23 @@ header {
 }
 
 .preview-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
 }
 
 .kanban-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--writr-scrollbar-thumb) transparent;
+  scrollbar-color: var(--writr-scrollbar-thumb) var(--obsidian-hover-soft);
   scrollbar-gutter: stable;
 }
 
 .kanban-scroll::-webkit-scrollbar {
-  height: 8px;
+  height: 6px;
+}
+
+.kanban-scroll::-webkit-scrollbar-track {
+  background: var(--obsidian-hover-soft);
+  border-radius: 99px;
 }
 
 .kanban-scroll::-webkit-scrollbar-thumb {

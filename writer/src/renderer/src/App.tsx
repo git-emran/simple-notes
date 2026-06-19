@@ -451,7 +451,7 @@ const App = () => {
             ref={contentContainerRef}
             className="relative h-full flex flex-col obsidian-workspace"
           >
-            <div className="flex-1 overflow-hidden h-full">
+            <div className="flex-1 min-h-0 h-full">
               {activeTab?.kind === 'terminal' ? (
                 <TerminalTab
                   key={activeTab.id}
