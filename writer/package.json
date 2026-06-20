@@ -1,6 +1,6 @@
 {
   "name": "writer",
-  "version": "2.0.1",
+  "version": "2.3.0",
   "description": "A Markdown Note taking app built with Electron",
   "homepage": "https://github.com/git-emran/simple-notes/writer",
   "license": "MIT",
