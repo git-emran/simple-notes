@@ -1,20 +1,12 @@
 # Writer
 > Built with love by a passionate Vim enthusiast, Emran Hossain.
 
-#### Download macOS application:
-
-[Writer macOS](https://drive.google.com/drive/u/0/folders/1Lkf1h3NBbwpEArD4GSvAekZV1X1toZO1)
 
 **Writer** is an engineered-to-order, distraction-free Markdown text editor designed for Cross platform use (Currently only macOS and Linux have not tested on windows). Architected for developers, students, and power users, it fuses the efficiency of Vim motions with modern development tools. Whether you are documenting complex system architectures, practicing DSA implementations, or capturing rapid brain dumps, Writer brings IDE-grade utility directly to your writing workflow.
 
-<img width="1364" height="1169" alt="writer_new" src="https://github.com/user-attachments/assets/51a20b38-9e14-49ca-be9b-af28410571b3" />
+<img width="1573" height="1218" alt="writer_main" src="https://github.com/user-attachments/assets/a6a58f81-5829-4296-b36f-1d16e2a5e881" />
 
-# Key Features and Latest Updates
-
-## 🚀 What's New in Version 2.02
-
-A major iteration focused on empowering product development workflows and enhancing productivity interfaces.
-
+# Key Features
 ### **Interactive Canvas**
 
 - **Visual Logic Flows:** Model architectural patterns, flowcharts, and system designs directly in an interactive sandbox.
@@ -27,7 +19,7 @@ A major iteration focused on empowering product development workflows and enhanc
 
 - **Task Management:** Maintain project velocity with an integrated Kanban board to organize backlog tasks, in-progress items, and milestones.
 
-<img width="1256" height="997" alt="kanban" src="https://github.com/user-attachments/assets/1cda9e05-141e-4eff-8240-ee6508605c7c" />
+<img width="1378" height="1053" alt="kanban" src="https://github.com/user-attachments/assets/41f337c0-de43-4c39-87e4-2aa11ebd3506" />
 
 
 ### **Automated Daily Notes**
@@ -38,14 +30,14 @@ A major iteration focused on empowering product development workflows and enhanc
 
 - **Modern Workspace Navigation:** A simplified and clean layout for the application header, reducing visual clutter to maximize focus.
 
-<img width="897" height="127" alt="header" src="https://github.com/user-attachments/assets/cb3a9a89-8f67-45c7-bb9a-81334a21b829" />
+<img width="1335" height="145" alt="header" src="https://github.com/user-attachments/assets/bd42c48c-e08d-453a-a7fd-be70ade7f496" />
 
 
 ### **Structured Note Metadata and Status**
 
 - **Lifecycle Management:** Tracks the state of your notes. You can categorize files into statuses like Active, On-Hold, Completed, and Dropped.
 
-<img width="320" height="156" alt="note_tags" src="https://github.com/user-attachments/assets/c40cee42-8066-4058-83ab-55bffab58146" />
+<img width="452" height="900" alt="Notes books" src="https://github.com/user-attachments/assets/78736864-f0e7-4170-916d-d70fbe9d9b48" />
 
 
 ### **Extensible Custom Tags**
@@ -54,11 +46,11 @@ A major iteration focused on empowering product development workflows and enhanc
 ![addtags](https://github.com/user-attachments/assets/2086b85f-95c6-44a6-bb23-13e63230b7cd)
 
 
-### **Dynamic File Tree Progress Indicators**
+### **Dynamic Progress Indicators**
 
 - **Visual Checklists:** Adding checkboxes to a file automatically generates a real-time progress bar underneath the filename in the file tree.
-<img width="235" height="93" alt="progressbar" src="https://github.com/user-attachments/assets/37a23770-0bbc-44fd-a164-35bcd0647f76" />
 
+<img width="291" height="92" alt="dynamic_progress" src="https://github.com/user-attachments/assets/53597af2-115a-4e68-a333-69fd46edc228" />
 
 ### **Floating Action Toolbar (FAB)**
 
