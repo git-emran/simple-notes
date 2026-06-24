@@ -1,39 +1,5 @@
-import React from 'react'
-import { FileNode } from '@shared/models'
-import {
-  fileTreeAtom,
-  fileTreeIndexAtom,
-  openTabAtom,
-  selectedNodeAtom,
-  noteTagByPathAtom,
-  createNoteAtom,
-  createDirectoryAtom,
-  noteStatusByPathAtom,
-  deleteNodeAtom,
-  openInNewTabAtom,
-  movePathAtom,
-  notesRootDirAtom,
-  showFolderIconsAtom
-} from '@renderer/store'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
-import { useAtomValue, useSetAtom } from 'jotai'
-import { useState, useMemo, useCallback, useRef, useEffect, MouseEvent, DragEvent } from 'react'
-import { LiaBookSolid } from 'react-icons/lia'
-import { twMerge } from 'tailwind-merge'
-import {
-  VscSearch,
-  VscAdd,
-  VscChevronDown,
-  VscChevronRight,
-  VscEdit,
-  VscGoToFile,
-  VscNewFile,
-  VscNewFolder,
-  VscTrash
-} from 'react-icons/vsc'
-import { SidebarSearch } from './SidebarSearch'
-import { ContextMenu, ContextMenuItem } from './ContextMenu'
 import {
   MAX_FOLDER_PANEL_WIDTH,
   MIN_FOLDER_PANEL_WIDTH,
@@ -42,11 +8,44 @@ import {
   SIDEBAR_PANEL_DIVIDER_WIDTH
 } from '@renderer/constants/sidebarLayout'
 import {
+  createDirectoryAtom,
+  createNoteAtom,
+  deleteNodeAtom,
+  fileTreeAtom,
+  fileTreeIndexAtom,
+  movePathAtom,
+  notesRootDirAtom,
+  noteStatusByPathAtom,
+  noteTagByPathAtom,
+  openInNewTabAtom,
+  openTabAtom,
+  selectedNodeAtom,
+  showFolderIconsAtom
+} from '@renderer/store'
+import {
   buildMoveDestination,
   canMovePathToDirectory,
   getParentPath,
   joinPath
 } from '@renderer/utils/fileTreeDrag'
+import { FileNode } from '@shared/models'
+import { useAtomValue, useSetAtom } from 'jotai'
+import React, { DragEvent, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LiaBookSolid } from 'react-icons/lia'
+import {
+  VscAdd,
+  VscChevronDown,
+  VscChevronRight,
+  VscEdit,
+  VscGoToFile,
+  VscNewFile,
+  VscNewFolder,
+  VscSearch,
+  VscTrash
+} from 'react-icons/vsc'
+import { twMerge } from 'tailwind-merge'
+import { ContextMenu, ContextMenuItem } from './ContextMenu'
+import { SidebarSearch } from './SidebarSearch'
 
 /** Returns a human-friendly relative time string for a lastEditTime timestamp.
  *  - < 60s      → "5s ago"
@@ -75,6 +74,45 @@ const formatRelativeTime = (ts: number): string => {
   const d = new Date(ts)
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
+
+const PALETTE = [
+  {
+    bg: 'bg-[rgba(59,130,246,0.03)] dark:bg-[rgba(124,158,251,0.05)]',
+    border: 'border-[rgba(59,130,246,0.08)] dark:border-[rgba(124,158,251,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(16,185,129,0.03)] dark:bg-[rgba(52,211,153,0.05)]',
+    border: 'border-[rgba(16,185,129,0.08)] dark:border-[rgba(52,211,153,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(139,92,246,0.03)] dark:bg-[rgba(167,139,250,0.05)]',
+    border: 'border-[rgba(139,92,246,0.08)] dark:border-[rgba(167,139,250,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(244,63,94,0.03)] dark:bg-[rgba(251,113,133,0.05)]',
+    border: 'border-[rgba(244,63,94,0.08)] dark:border-[rgba(251,113,133,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(20,184,166,0.03)] dark:bg-[rgba(45,212,191,0.05)]',
+    border: 'border-[rgba(20,184,166,0.08)] dark:border-[rgba(45,212,191,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(249,115,22,0.03)] dark:bg-[rgba(251,146,60,0.05)]',
+    border: 'border-[rgba(249,115,22,0.08)] dark:border-[rgba(251,146,60,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(6,182,212,0.03)] dark:bg-[rgba(34,211,238,0.05)]',
+    border: 'border-[rgba(6,182,212,0.08)] dark:border-[rgba(34,211,238,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(99,102,241,0.03)] dark:bg-[rgba(129,140,248,0.05)]',
+    border: 'border-[rgba(99,102,241,0.08)] dark:border-[rgba(129,140,248,0.12)]'
+  },
+  {
+    bg: 'bg-[rgba(245,158,11,0.03)] dark:bg-[rgba(251,191,36,0.05)]',
+    border: 'border-[rgba(245,158,11,0.08)] dark:border-[rgba(251,191,36,0.12)]'
+  }
+]
 
 export const VirtualFilesList = ({
   sidebarView = 'files',
@@ -538,7 +576,7 @@ export const VirtualFilesList = ({
           <SidebarSearch onCloseRequested={onCloseSearch} className="h-full border-0" />
         ) : (
           <>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--obsidian-border-soft)]">
+            <div className="flex items-center justify-between px-4 py-3">
               <span className="font-semibold text-xs text-[var(--obsidian-text)]">NOTES</span>
               <div className="flex items-center gap-1">
                 <button
@@ -558,112 +596,196 @@ export const VirtualFilesList = ({
               </div>
             </div>
             <div className="flex-1 overflow-auto">
-              {notes.length === 0 && (
-                <div className="text-center mt-12 text-sm text-[var(--obsidian-text-muted)]">
-                  No notes here
-                </div>
-              )}
-              {notes.map((note) => {
-                const isSelected = selectedNode?.path === note.path
-                const tag = noteTags[note.path]
-                const status = noteStatuses[note.path]
-                const date = note.lastEditTime ? formatRelativeTime(note.lastEditTime) : ''
-                const todoTotal = note.todoTotal ?? 0
-                const todoCompleted = note.todoCompleted ?? 0
-                const showProgress = todoTotal > 0
-                const todoProgress = showProgress ? Math.round((todoCompleted / todoTotal) * 100) : 0
-                return (
-                  <div
-                    key={note.path}
-                    className={twMerge(
-                      'px-3 py-3.5 cursor-pointer transition-colors border-b border-[var(--obsidian-border-soft)]',
-                      isSelected
-                        ? 'bg-[var(--obsidian-accent)] text-white'
-                        : 'bg-transparent hover:bg-[var(--obsidian-hover)]'
-                    )}
-                    onClick={() => openTab(note)}
-                    onContextMenu={(e) => handleNodeContextMenu(note, e)}
-                    draggable={renamingPath !== note.path}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', note.path)
-                      e.dataTransfer.effectAllowed = 'move'
-                    }}
-                  >
-                    <div className="font-semibold text-xs truncate mb-2">
-                      {renamingPath === note.path ? (
-                        <input
-                          autoFocus
-                          onFocus={(e) => e.target.select()}
-                          className="w-full bg-transparent text-[var(--obsidian-text)] px-0 outline-none rounded"
-                          defaultValue={note.name.replace(/\.md$/, '')}
-                          onBlur={(e) => handleRenameSubmit(note, e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleRenameSubmit(note, e.currentTarget.value)
-                            if (e.key === 'Escape') setRenamingPath(null)
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        note.name.replace(/\.md$/, '')
-                      )}
+              {(() => {
+                if (notes.length === 0) {
+                  return (
+                    <div className="text-center mt-12 text-sm text-[var(--obsidian-text-muted)]">
+                      No notes here
                     </div>
-                    {showProgress && (
-                      <div className="mb-2 flex items-center gap-1.5 pr-2">
-                        <div className={twMerge("h-1.5 flex-1 overflow-hidden rounded-full transition-colors duration-200", isSelected ? "bg-white/20" : "bg-[var(--obsidian-border-soft)]")}>
-                          <div
-                            className={twMerge("h-full rounded-full transition-all duration-300 ease-out", isSelected ? "bg-white" : "bg-[var(--obsidian-accent)]")}
-                            style={{ width: `${todoProgress}%` }}
-                          />
-                        </div>
-                        <span className={twMerge("shrink-0 text-[9px] tabular-nums transition-colors duration-200", isSelected ? "text-white/80" : "text-[var(--obsidian-text-muted)]")}>
-                          {todoCompleted}/{todoTotal}
-                        </span>
-                      </div>
-                    )}
+                  )
+                }
+
+                // Sort notes by lastEditTime descending
+                const sorted = [...notes].sort((a, b) => {
+                  const timeA = a.lastEditTime ?? 0
+                  const timeB = b.lastEditTime ?? 0
+                  return timeB - timeA
+                })
+
+                const recentNotes = sorted.slice(0, 3)
+                const remainingNotes = sorted.slice(3)
+
+                const getGroupLabel = (ts: number): string => {
+                  const date = new Date(ts)
+                  const now = new Date()
+                  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                  const yesterday = new Date(today)
+                  yesterday.setDate(yesterday.getDate() - 1)
+
+                  if (ts >= today.getTime()) {
+                    return 'Today'
+                  }
+                  if (ts >= yesterday.getTime()) {
+                    return 'Yesterday'
+                  }
+
+                  const sevenDaysAgo = new Date(today)
+                  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+                  if (ts >= sevenDaysAgo.getTime()) {
+                    return 'Previous 7 Days'
+                  }
+
+                  if (date.getFullYear() === now.getFullYear()) {
+                    return date.toLocaleDateString('en-US', { month: 'long' })
+                  }
+
+                  return date.getFullYear().toString()
+                }
+
+                const groupedRemaining: { label: string; items: FileNode[] }[] = []
+                const groupMap = new Map<string, FileNode[]>()
+
+                for (const note of remainingNotes) {
+                  const label = getGroupLabel(note.lastEditTime ?? 0)
+                  if (!groupMap.has(label)) {
+                    groupMap.set(label, [])
+                    groupedRemaining.push({ label, items: groupMap.get(label)! })
+                  }
+                  groupMap.get(label)!.push(note)
+                }
+
+                const renderNote = (note: FileNode, isRecent = false) => {
+                  const isSelected = selectedNode?.path === note.path
+                  const tag = noteTags[note.path]
+                  const status = noteStatuses[note.path]
+                  const date = note.lastEditTime ? formatRelativeTime(note.lastEditTime) : ''
+                  const todoTotal = note.todoTotal ?? 0
+                  const todoCompleted = note.todoCompleted ?? 0
+                  const showProgress = todoTotal > 0
+                  const todoProgress = showProgress ? Math.round((todoCompleted / todoTotal) * 100) : 0
+                  return (
                     <div
+                      key={note.path}
                       className={twMerge(
-                        'flex items-center gap-1.5 min-w-0',
-                        isSelected ? 'text-white/80' : 'text-[var(--obsidian-text-muted)]'
+                        'px-3 py-3.5 cursor-pointer transition-colors',
+                        isRecent ? 'rounded-md' : 'border-b border-[var(--obsidian-border-soft)]',
+                        isSelected
+                          ? 'bg-[var(--obsidian-accent)] text-white'
+                          : isRecent
+                          ? 'bg-[var(--obsidian-workspace)] hover:bg-[var(--obsidian-hover)] border border-[var(--obsidian-border-soft)] shadow-sm'
+                          : 'bg-transparent hover:bg-[var(--obsidian-hover)]'
                       )}
+                      onClick={() => openTab(note)}
+                      onContextMenu={(e) => handleNodeContextMenu(note, e)}
+                      draggable={renamingPath !== note.path}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', note.path)
+                        e.dataTransfer.effectAllowed = 'move'
+                      }}
                     >
-                      {/* Date — truncates when panel narrows */}
-                      <span
+                      <div className="font-semibold text-xs truncate mb-2">
+                        {renamingPath === note.path ? (
+                          <input
+                            autoFocus
+                            onFocus={(e) => e.target.select()}
+                            className="w-full bg-transparent text-[var(--obsidian-text)] px-0 outline-none rounded"
+                            defaultValue={note.name.replace(/\.md$/, '')}
+                            onBlur={(e) => handleRenameSubmit(note, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleRenameSubmit(note, e.currentTarget.value)
+                              if (e.key === 'Escape') setRenamingPath(null)
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          note.name.replace(/\.md$/, '')
+                        )}
+                      </div>
+                      {showProgress && (
+                        <div className="mb-2 flex items-center gap-1.5 pr-2">
+                          <div className={twMerge("h-1.5 flex-1 overflow-hidden rounded-full transition-colors duration-200", isSelected ? "bg-white/20" : "bg-[var(--obsidian-border-soft)]")}>
+                            <div
+                              className={twMerge("h-full rounded-full transition-all duration-300 ease-out", isSelected ? "bg-white" : "bg-[var(--obsidian-accent)]")}
+                              style={{ width: `${todoProgress}%` }}
+                            />
+                          </div>
+                          <span className={twMerge("shrink-0 text-[9px] tabular-nums transition-colors duration-200", isSelected ? "text-white/80" : "text-[var(--obsidian-text-muted)]")}>
+                            {todoCompleted}/{todoTotal}
+                          </span>
+                        </div>
+                      )}
+                      <div
                         className={twMerge(
-                          'truncate shrink min-w-0 flex-1 text-[9.5px]',
-                          isSelected ? 'text-white/80' : 'dark:text-sky-300'
+                          'flex items-center gap-1.5 min-w-0',
+                          isSelected ? 'text-white/80' : 'text-[var(--obsidian-text-muted)]'
                         )}
                       >
-                        {date}
-                      </span>
-                      {/* Tags & status — sticky on right, never truncate */}
-                      <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-                        {status && (
-                          <span
-                            className={twMerge(
-                              'px-1.5 py-[1px] rounded-full border text-[9px] font-semibold whitespace-nowrap',
-                              isSelected
-                                ? 'border-white/30'
-                                : NOTE_STATUS_META[status]?.className || ''
-                            )}
-                          >
-                            {NOTE_STATUS_META[status]?.label || status}
-                          </span>
-                        )}
-                        {tag && (
-                          <span
-                            className={twMerge(
-                              'rounded-full border px-1.5 py-[1px] text-[9px] font-semibold whitespace-nowrap truncate max-w-[80px]',
-                              CUSTOM_TAG_STYLE
-                            )}
-                          >
-                            {tag}
-                          </span>
-                        )}
+                        {/* Date — truncates when panel narrows */}
+                        <span
+                          className={twMerge(
+                            'truncate shrink min-w-0 flex-1 text-[9.5px]',
+                            isSelected ? 'text-white/80' : 'dark:text-sky-300'
+                          )}
+                        >
+                          {date}
+                        </span>
+                        {/* Tags & status — sticky on right, never truncate */}
+                        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                          {status && (
+                            <span
+                              className={twMerge(
+                                'px-1.5 py-[1px] rounded-full border text-[9px] font-semibold whitespace-nowrap',
+                                isSelected
+                                  ? 'border-white/30'
+                                  : NOTE_STATUS_META[status]?.className || ''
+                              )}
+                            >
+                              {NOTE_STATUS_META[status]?.label || status}
+                            </span>
+                          )}
+                          {tag && (
+                            <span
+                              className={twMerge(
+                                'rounded-full border px-1.5 py-[1px] text-[9px] font-semibold whitespace-nowrap truncate max-w-[80px]',
+                                CUSTOM_TAG_STYLE
+                              )}
+                            >
+                              {tag}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )
+                }
+
+                return (
+                  <>
+                    {recentNotes.length > 0 && (() => {
+                      const color = PALETTE[0]
+                      return (
+                        <div className={twMerge("m-2 p-2 rounded-lg flex flex-col gap-1.5 border", color.bg, color.border)}>
+                          <div className="px-1 pt-0.5 pb-1 text-[10px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-wider">
+                            Recent
+                          </div>
+                          {recentNotes.map((note) => renderNote(note, true))}
+                        </div>
+                      )
+                    })()}
+                    {groupedRemaining.map(({ label, items }, idx) => {
+                      const color = PALETTE[(idx + 1) % PALETTE.length]
+                      return (
+                        <div key={label} className={twMerge("m-2 p-2 rounded-lg flex flex-col gap-1.5 border", color.bg, color.border)}>
+                          <div className="px-1 pt-0.5 pb-1 text-[10px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-wider">
+                            {label}
+                          </div>
+                          {items.map((note) => renderNote(note, true))}
+                        </div>
+                      )
+                    })}
+                  </>
                 )
-              })}
+              })()}
             </div>
           </>
         )}
