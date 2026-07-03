@@ -77,7 +77,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
     setTitleDraft(internalCard.text ?? '')
     setDescriptionDraft(internalCard.description ?? '')
     setPriorityDraft(initialPriority)
-  }, [cardId])
+  }, [cardId, internalCard])
 
   const canSave = useMemo(() => Boolean(titleDraft.trim()), [titleDraft])
 

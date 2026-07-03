@@ -1,6 +1,7 @@
 import { Extension, RangeSetBuilder } from '@codemirror/state'
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view'
 import { syntaxTree } from '@codemirror/language'
+import type { SyntaxNode } from '@lezer/common'
 
 const hideDecoration = Decoration.replace({})
 const linkTextDecoration = Decoration.mark({ class: 'cm-link-text' })
@@ -50,8 +51,8 @@ export const markdownLivePreview: Extension = [
           return false
         }
 
-        function getChildren(node: any) {
-          const children: any[] = []
+        function getChildren(node: SyntaxNode) {
+          const children: SyntaxNode[] = []
           let child = node.firstChild
           while (child) {
             children.push(child)
@@ -113,17 +114,23 @@ export const markdownLivePreview: Extension = [
                   if (firstMark !== null) {
                     try {
                       builder.add(firstMark.from, firstMark.to, hideDecoration)
-                    } catch (e) {}
+                    } catch (e) {
+                      // ignore range errors
+                    }
                   }
                   if (secondMark !== null) {
                     try {
                       builder.add(secondMark.from, node.to, hideDecoration)
-                    } catch (e) {}
+                    } catch (e) {
+                      // ignore range errors
+                    }
                   }
                   if (firstMark !== null && secondMark !== null && secondMark.from > firstMark.to) {
                     try {
                       builder.add(firstMark.to, secondMark.from, linkTextDecoration)
-                    } catch (e) {}
+                    } catch (e) {
+                      // ignore range errors
+                    }
                   }
                 }
               }
@@ -133,7 +140,9 @@ export const markdownLivePreview: Extension = [
                 if (!isCursorNear(node.from, node.to)) {
                   try {
                     builder.add(node.from, node.to, hideDecoration)
-                  } catch (e) {}
+                  } catch (e) {
+                    // ignore range errors
+                  }
                 }
               }
 
@@ -149,7 +158,9 @@ export const markdownLivePreview: Extension = [
                   const endPos = nextChar === ' ' ? node.to + 1 : node.to
                   try {
                     builder.add(node.from, endPos, hideDecoration)
-                  } catch (e) {}
+                  } catch (e) {
+                    // ignore range errors
+                  }
                 }
               }
 
@@ -162,7 +173,9 @@ export const markdownLivePreview: Extension = [
                       try {
                         const line = state.doc.lineAt(child.from)
                         builder.add(line.from, line.to, hideDecoration)
-                      } catch (e) {}
+                      } catch (e) {
+                        // ignore range errors
+                      }
                     }
                   }
                 }

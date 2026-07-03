@@ -179,7 +179,7 @@ export const MarkdownPreview = memo(
     const containerRef = useRef<HTMLDivElement>(null)
     const [activeId, setActiveId] = useState<string>('')
     const isProgrammaticScrollRef = useRef(false)
-    const programmaticTimerRef = useRef<NodeJS.Timeout | null>(null)
+    const programmaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     // Use IntersectionObserver to reliably detect which heading is in view.
     // We observe each heading element against the scroll container (root).
