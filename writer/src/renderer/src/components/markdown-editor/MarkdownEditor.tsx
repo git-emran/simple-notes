@@ -1,90 +1,90 @@
 'use client'
-import React, { isValidElement, useEffect, useRef, useCallback, useMemo, useState, memo } from 'react'
-import { Compartment, EditorState, Prec } from '@codemirror/state'
-import { EditorView, keymap, drawSelection } from '@codemirror/view'
-import { defaultKeymap, historyKeymap, history } from '@codemirror/commands'
-import { vim } from '@replit/codemirror-vim'
-import { throttle, debounce } from 'lodash'
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { autoCloseTags } from '@codemirror/lang-html'
+import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import {
-  createCanvasAtom,
-  createKanbanTabAtom,
-  createNoteAtom,
-  createTerminalTabAtom,
-  aiApiKeyAtom,
-  fileTreeAtom,
-  fileTreeIndexAtom,
-  lineWrappingEnabledAtom,
-  movePathAtom,
-  noteStatusByPathAtom,
-  noteTagByPathAtom,
-  relativeLineNumbersEnabledAtom,
-  saveNoteAtom,
-  selectedNoteAtom,
-  showToolbarAtom,
-  tabIndentUnitAtom,
-  vimModeEnabledAtom,
-  isDarkModeAtom
+    ensureSyntaxTree,
+    foldGutter,
+    foldKeymap,
+    LanguageDescription,
+    LanguageSupport,
+    syntaxHighlighting,
+    syntaxTree
+} from '@codemirror/language'
+import { lintGutter } from '@codemirror/lint'
+import { Compartment, EditorState, Prec } from '@codemirror/state'
+import { drawSelection, EditorView, keymap } from '@codemirror/view'
+import { NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
+import {
+    aiApiKeyAtom,
+    createCanvasAtom,
+    createKanbanTabAtom,
+    createNoteAtom,
+    createTerminalTabAtom,
+    fileTreeAtom,
+    fileTreeIndexAtom,
+    isDarkModeAtom,
+    lineWrappingEnabledAtom,
+    movePathAtom,
+    noteStatusByPathAtom,
+    noteTagByPathAtom,
+    relativeLineNumbersEnabledAtom,
+    saveNoteAtom,
+    selectedNoteAtom,
+    showToolbarAtom,
+    tabIndentUnitAtom,
+    vimModeEnabledAtom
 } from '@renderer/store'
+import { indentationMarkers } from '@replit/codemirror-indentation-markers'
+import { vim } from '@replit/codemirror-vim'
 import { autoSavingTime } from '@shared/constants'
 import type { FileNode } from '@shared/models'
-import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
-import { markdown } from '@codemirror/lang-markdown'
-import {
-  syntaxHighlighting,
-  syntaxTree,
-  ensureSyntaxTree,
-  LanguageDescription,
-  LanguageSupport,
-  foldGutter,
-  foldKeymap
-} from '@codemirror/language'
-import { markdownLanguage } from '@codemirror/lang-markdown'
-import {
-  gutterTheme,
-  getEditorTheme,
-  markdownHighlightStyle,
-  markdownHighlightStyleDark
-} from './editorTheme'
-import { codeLanguages } from './languageConfig'
-import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
-import { autoCloseTags } from '@codemirror/lang-html'
-import { lintGutter } from '@codemirror/lint'
-import { indentationMarkers } from '@replit/codemirror-indentation-markers'
-import { checkboxExtension } from './checkboxExtension'
-import { statusBarExtension } from './statusbar'
-import { MarkdownToolbar } from './MarkdownToolbar'
-const MarkdownToolbarMemo = memo(MarkdownToolbar)
-import { tabAsSpaces } from './tabAsSpaces'
-import { markdownTableEnhancement } from './extendTableEditing'
-import { codeBlockCopy } from './codeBlockCopy'
-import { codeBlockBackground } from './codeBlockBackground'
-import { createLivePreviewImages } from './livePreviewImages'
-import { tripleBacktickExtension } from './tripleBacktick'
-import { quoteLineStyling } from './quoteLineStyling'
-import { createClipboardExperience } from './clipboardExperience'
-import { headingFoldExtension } from './headingFold'
-import { MdDragIndicator } from 'react-icons/md'
-import { ContextMenu, ContextMenuItem } from '../ContextMenu'
-import * as commands from './editorCommands'
-import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
-import { markdownMarkupColors } from './markdownMarkupColors'
-import {
-  VscError,
-  VscInfo,
-  VscLightbulb,
-  VscProject,
-  VscSymbolRuler,
-  VscTerminal,
-  VscWarning
-} from 'react-icons/vsc'
 import { AiModelInfo } from '@shared/types'
-import { NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
-import { MarkdownPreview } from './MarkdownPreview'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { debounce, throttle } from 'lodash'
+import React, { isValidElement, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { MdDragIndicator } from 'react-icons/md'
+import {
+    VscError,
+    VscInfo,
+    VscLightbulb,
+    VscProject,
+    VscSymbolRuler,
+    VscTerminal,
+    VscWarning
+} from 'react-icons/vsc'
+import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
+import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import { AiModal } from './AiModal'
-import { EditorHeader } from './EditorHeader'
+import { checkboxExtension } from './checkboxExtension'
+import { createClipboardExperience } from './clipboardExperience'
+import { codeBlockBackground } from './codeBlockBackground'
+import { codeBlockCopy } from './codeBlockCopy'
+import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
+import * as commands from './editorCommands'
 import { EditorFAB } from './EditorFAB'
-import { getEditorMenuEntries, EditorMenuEntry } from './editorMenuLogic'
+import { EditorHeader } from './EditorHeader'
+import { EditorMenuEntry, getEditorMenuEntries } from './editorMenuLogic'
+import {
+    getEditorTheme,
+    gutterTheme,
+    markdownHighlightStyle,
+    markdownHighlightStyleDark
+} from './editorTheme'
+import { markdownTableEnhancement } from './extendTableEditing'
+import { headingFoldExtension } from './headingFold'
+import { codeLanguages } from './languageConfig'
+import { createLivePreviewImages } from './livePreviewImages'
+import { markdownMarkupColors } from './markdownMarkupColors'
+import { markdownLivePreview } from './markdownLivePreview' // Refresh import resolution
+import { MarkdownPreview } from './MarkdownPreview'
+import { MarkdownToolbar } from './MarkdownToolbar'
+import { quoteLineStyling } from './quoteLineStyling'
+import { statusBarExtension } from './statusbar'
+import { tabAsSpaces } from './tabAsSpaces'
+import { tripleBacktickExtension } from './tripleBacktick'
+const MarkdownToolbarMemo = memo(MarkdownToolbar)
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
@@ -95,7 +95,7 @@ export const MarkdownEditor = () => {
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
   const createTerminalTab = useSetAtom(createTerminalTabAtom)
   const createCanvas = useSetAtom(createCanvasAtom)
-  const showToolbar = useAtomValue(showToolbarAtom)
+  const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
   const relativeLineNumbersEnabled = useAtomValue(relativeLineNumbersEnabledAtom)
   const lineWrappingEnabled = useAtomValue(lineWrappingEnabledAtom)
   const tabIndentUnit = useAtomValue(tabIndentUnitAtom)
@@ -158,6 +158,15 @@ export const MarkdownEditor = () => {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase()
+      
+      const isToggleToolbar = key === 't' && e.ctrlKey && e.altKey
+      if (isToggleToolbar) {
+        e.preventDefault()
+        e.stopPropagation()
+        setShowToolbar((prev) => !prev)
+        return
+      }
+
       const isModP = key === 'p' && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey
       if (!isModP) return
 
@@ -173,7 +182,7 @@ export const MarkdownEditor = () => {
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [isAiModalOpen, isFullPreview, selectedNote?.path])
+  }, [isAiModalOpen, isFullPreview, selectedNote?.path, setShowToolbar])
 
   useEffect(() => {
     if (!selectedNote?.path) setIsCommandPaletteOpen(false)
@@ -456,6 +465,7 @@ export const MarkdownEditor = () => {
       quoteLineStyling,
       tripleBacktickExtension,
       markdownMarkupColors,
+      markdownLivePreview,
       ...headingFoldExtension,
       EditorView.contentAttributes.of({ spellcheck: 'true' })
     ],
@@ -1413,10 +1423,6 @@ export const MarkdownEditor = () => {
         isExportingPdf={isExportingPdf}
       />
 
-      {!isFullPreview && showToolbar && (
-        <MarkdownToolbarMemo view={viewRef.current} onWriteWithAi={() => void openAiModal()} />
-      )}
-
       <div
         ref={containerRef}
         className="flex-1 flex h-full overflow-hidden relative"
@@ -1426,6 +1432,13 @@ export const MarkdownEditor = () => {
           setContextMenu({ x: e.clientX, y: e.clientY })
         }}
       >
+        {/* Floating Format Toolbar */}
+        {!isFullPreview && showToolbar && (
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto shrink-0">
+            <MarkdownToolbarMemo view={viewRef.current} onWriteWithAi={() => void openAiModal()} />
+          </div>
+        )}
+
         {/* Floating Action Button (FAB) */}
         <EditorFAB
           showFAB={showFAB}

@@ -1,4 +1,4 @@
-import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate } from '@codemirror/view'
+import { EditorView, Decoration, WidgetType, ViewPlugin, ViewUpdate, DecorationSet } from '@codemirror/view'
 import { RangeSetBuilder } from '@codemirror/state'
 
 class CheckboxWidget extends WidgetType {
@@ -38,7 +38,7 @@ class CheckboxWidget extends WidgetType {
 
 export const checkboxExtension = ViewPlugin.fromClass(
   class {
-    decorations: any
+    decorations: DecorationSet
 
     constructor(view: EditorView) {
       this.decorations = this.buildDecorations(view)

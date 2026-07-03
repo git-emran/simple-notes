@@ -46,8 +46,8 @@ import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fi
 /* Heights are per-row to keep dense UI without sacrificing metadata readability. */
 const FILE_TREE_FOLDER_ROW_HEIGHT = 26
 /* Two-line layout (meta + title). Needs a little extra headroom for tag pills on some fonts. */
-const FILE_TREE_FILE_ROW_HEIGHT = 44
-const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 54
+const FILE_TREE_FILE_ROW_HEIGHT = 46
+const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 56
 const WINDOWED_THRESHOLD = 200
 
 type FileExplorerProps = ComponentProps<'aside'> & {
@@ -166,7 +166,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const getAllParentPaths = useCallback((path: string) => {
     const parents: string[] = []
     let current = path
-    while (true) {
+    while (current) {
       const lastSlash = current.lastIndexOf('/')
       const lastBackslash = current.lastIndexOf('\\')
       const idx = Math.max(lastSlash, lastBackslash)
@@ -489,23 +489,24 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
       style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
       {...props}
     >
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
-        <button
-          type="button"
-          onClick={onSearchRequested}
-          disabled={!onSearchRequested}
-          className={twMerge(
-            'min-w-0 truncate text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-colors',
-            'disabled:opacity-60 disabled:hover:text-[var(--obsidian-text-muted)]'
-          )}
-          title="Search files"
-        >
-          <VscSearch className="w-4 h-4" />
-        </button>
-        <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-[var(--obsidian-border-soft)] select-none">
+        <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85">
+          Vault
+        </span>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={onSearchRequested}
+            disabled={!onSearchRequested}
+            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors disabled:opacity-50"
+            title="Search files"
+          >
+            <VscSearch className="w-4 h-4" />
+          </button>
+
           <button
             onClick={() => handleCreateFile()}
-            className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
             title="New File"
           >
             <VscNewFile className="w-4 h-4" />
@@ -513,7 +514,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
           <button
             onClick={() => handleCreateFolder()}
-            className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
             title="New Folder"
           >
             <VscNewFolder className="w-4 h-4" />
@@ -522,7 +523,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           {hasAnyExpanded ? (
             <button
               onClick={handleCollapseAll}
-              className="p-1.5 rounded text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+              className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
               title="Collapse All"
             >
               <VscCollapseAll className="w-4 h-4" />
@@ -530,7 +531,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           ) : (
             <button
               onClick={handleExpandAll}
-              className="p-1.5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+              className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
               title="Expand All"
             >
               <VscExpandAll className="w-4 h-4" />

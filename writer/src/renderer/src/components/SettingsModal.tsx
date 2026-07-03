@@ -47,6 +47,7 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const [aiApiKey, setAiApiKey] = useAtom(aiApiKeyAtom)
   const [accentColor, setAccentColor] = useAtom(accentColorAtom)
 
+
   const [relativeLineNumbers, setRelativeLineNumbers] = useAtom(relativeLineNumbersEnabledAtom)
   const [lineWrapping, setLineWrapping] = useAtom(lineWrappingEnabledAtom)
   const [tabIndentUnit, setTabIndentUnit] = useAtom(tabIndentUnitAtom)
@@ -146,6 +147,18 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                     type="checkbox"
                     checked={showFolderIcons}
                     onChange={(e) => setShowFolderIcons(e.target.checked)}
+                  />
+                </label>
+
+                <label className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className={labelClass}>Formatting toolbar</div>
+                    <div className={helpClass}>Show the floating markdown formatting dock in the editor.</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={showToolbar}
+                    onChange={(e) => setShowToolbar(e.target.checked)}
                   />
                 </label>
 

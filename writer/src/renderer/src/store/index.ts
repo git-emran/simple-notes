@@ -289,7 +289,8 @@ const createFileNodeFromPath = (filePath: string): FileNode => {
     name,
     path: filePath,
     type: 'file',
-    isExpanded: false
+    isExpanded: false,
+    lastEditTime: Date.now()
   }
 }
 
@@ -650,20 +651,19 @@ export const duplicateNoteAtom = atom(null, async (_get, set, path: string) => {
     
     await window.context.writeFileNew(newPath, content)
     set(fileTreeAtom, await loadFileTree())
-    
-	    /* Open the new note */
-	    const newNode = createFileNodeFromPath(newPath)
-	    set(openTabAtom, newNode)
-	  } catch {
-	    return
-	  }
-	})
+    /* Open the new note */
+    const newNode = createFileNodeFromPath(newPath)
+    set(openTabAtom, newNode)
+  } catch {
+    return
+  }
+})
 
 export const createNoteAtom = atom(null, async (get, set, parentDir: string) => {
   const filePath = await window.context.createNoteNew(parentDir)
   if (!filePath) return
 
-  const newNode = createFileNodeFromPath(filePath)
+  const newNode = { ...createFileNodeFromPath(filePath), lastEditTime: Date.now() }
   const currentTree = get(fileTreeAtom) ?? []
 
   const addNodeToTree = (nodes: FileNode[], targetDir: string, node: FileNode): FileNode[] => {

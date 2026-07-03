@@ -4,10 +4,10 @@ import {
   RootLayout,
   Sidebar,
   EditorTabs,
-  ErrorBoundary
+  ErrorBoundary,
+  FileExplorer,
+  SidebarSearch
 } from './components'
-// import { FileExplorer } from './components/FileExplorer'
-import { VirtualFilesList } from './components/VirtualFilesList'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
 import { SettingsModal } from './components/SettingsModal'
@@ -88,7 +88,7 @@ const App = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
-  const [sidebarWidth, setSidebarWidth] = useState(450) // default width increased for VirtualFilesList
+  const [sidebarWidth, setSidebarWidth] = useState(240) // default width for FileExplorer
   const isDragging = useRef(false)
   const previousBodyCursor = useRef('')
   const previousBodyUserSelect = useRef('')
@@ -432,19 +432,21 @@ const App = () => {
             minWidth={MIN_SIDEBAR_WIDTH}
             onClose={() => setCollapsed(true)}
           >
-            <VirtualFilesList 
-                sidebarView={sidebarView}
-                sidebarWidth={sidebarWidth}
-                setSidebarWidth={setSidebarWidth}
+            {sidebarView === 'files' ? (
+              <FileExplorer
                 onSearchRequested={() => {
                   setSidebarView('search')
                   setAppMode('editor')
                 }}
-                onCloseSearch={() => {
+              />
+            ) : (
+              <SidebarSearch
+                onCloseRequested={() => {
                   setSidebarView('files')
                   setAppMode('editor')
                 }}
               />
+            )}
           </Sidebar>
 
           <Content

@@ -16,7 +16,7 @@ export const EditorFAB = ({
   isFullPreview,
   isPreview,
   handleFullPreviewToggle,
-  handleSplitViewToggle
+  handleSplitViewToggle,
 }: EditorFABProps) => {
   return (
     <div className={twMerge(
@@ -27,8 +27,8 @@ export const EditorFAB = ({
         onClick={handleFullPreviewToggle}
         className={twMerge(
           "p-1.5 rounded-lg transition-all",
-          isFullPreview 
-            ? "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-accent)]" 
+          isFullPreview
+            ? "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-accent)]"
             : "text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)]"
         )}
         title="Toggle Preview Mode"
