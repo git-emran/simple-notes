@@ -1,4 +1,3 @@
-import { FileNode } from '@shared/models'
 import {
   activeTabPathAtom,
   createDirectoryAtom,
@@ -14,9 +13,11 @@ import {
   openInNewTabAtom,
   openTabAtom,
   reindexTodoStatsAtom,
-  showFolderIconsAtom,
-  selectedNodeAtom
+  selectedNodeAtom,
+  showFolderIconsAtom
 } from '@renderer/store'
+import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
+import { FileNode } from '@shared/models'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
   ComponentProps,
@@ -27,20 +28,19 @@ import {
   useState,
   type MouseEvent
 } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { FileTreeItem } from './FileTreeItem'
 import {
+  VscCollapseAll,
+  VscEdit,
+  VscExpandAll,
+  VscGoToFile,
   VscNewFile,
   VscNewFolder,
-  VscCollapseAll,
-  VscExpandAll,
-  VscEdit,
-  VscGoToFile,
   VscSearch,
   VscTrash
 } from 'react-icons/vsc'
+import { twMerge } from 'tailwind-merge'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
-import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
+import { FileTreeItem } from './FileTreeItem'
 
 /* Compact row height (Obsidian-like density). Must match FileTreeItem styling. */
 /* Heights are per-row to keep dense UI without sacrificing metadata readability. */
@@ -491,7 +491,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
     >
       <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-[var(--obsidian-border-soft)] select-none">
         <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85">
-          Vault
+          Notes
         </span>
         <div className="flex items-center gap-0.5 shrink-0">
           <button

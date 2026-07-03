@@ -1,5 +1,5 @@
 'use client'
-import { Children, memo, useState, useMemo } from 'react'
+import { Children, memo, useState, useMemo, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import SyntaxHighlighter from 'react-syntax-highlighter'
 import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
@@ -18,6 +18,7 @@ interface MarkdownPreviewProps {
   getReactNodeText: (node: any) => string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getCalloutMeta: (type: string) => any
+  isFullPreview?: boolean
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,7 +72,8 @@ export const MarkdownPreview = memo(
     isDarkMode,
     previewReadableWidthClass,
     getReactNodeText,
-    getCalloutMeta
+    getCalloutMeta,
+    isFullPreview
   }: MarkdownPreviewProps) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SectionWrapper = ({ children, node }: any) => {
@@ -174,15 +176,133 @@ export const MarkdownPreview = memo(
       return result
     }, [previewMarkdown])
 
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [activeId, setActiveId] = useState<string>('')
+    const isProgrammaticScrollRef = useRef(false)
+    const programmaticTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+    // Use IntersectionObserver to reliably detect which heading is in view.
+    // We observe each heading element against the scroll container (root).
+    useEffect(() => {
+      if (toc.length === 0) {
+        setActiveId('')
+        return
+      }
+
+      // Wait a tick for the DOM to settle after markdown renders
+      const setupTimer = setTimeout(() => {
+        const scrollContainer =
+          containerRef.current?.closest<HTMLElement>('.writr-markdown-preview') ??
+          document.querySelector<HTMLElement>('.writr-markdown-preview')
+
+        if (!scrollContainer) return
+
+        // Collect all heading elements in document order
+        const ids = toc.map((t) => t.id)
+        const headingEls = ids
+          .map((id) => document.getElementById(id))
+          .filter((el): el is HTMLElement => el !== null)
+
+        if (headingEls.length === 0) return
+
+        // Track which headings are currently intersecting
+        const intersectingSet = new Set<string>()
+
+        const pickActive = () => {
+          if (isProgrammaticScrollRef.current) return
+
+          // Find the first heading (in document order) that is intersecting
+          for (const id of ids) {
+            if (intersectingSet.has(id)) {
+              setActiveId(id)
+              return
+            }
+          }
+
+          // No heading intersecting — find which section we're inside:
+          // The active heading is the last one whose top is above the midpoint
+          // of the scroll container.
+          const containerMid = scrollContainer.getBoundingClientRect().top +
+            scrollContainer.clientHeight * 0.3
+
+          let best = ''
+          for (const el of headingEls) {
+            const rect = el.getBoundingClientRect()
+            if (rect.top <= containerMid) {
+              best = el.id
+            } else {
+              break
+            }
+          }
+          setActiveId(best)
+        }
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              const id = entry.target.id
+              if (entry.isIntersecting) {
+                intersectingSet.add(id)
+              } else {
+                intersectingSet.delete(id)
+              }
+            }
+            pickActive()
+          },
+          {
+            root: scrollContainer,
+            // Fire when heading enters the top 30% of the container
+            rootMargin: '0px 0px -70% 0px',
+            threshold: 0,
+          }
+        )
+
+        for (const el of headingEls) {
+          observer.observe(el)
+        }
+
+        // Initial call to set active on mount
+        pickActive()
+
+        return () => {
+          observer.disconnect()
+        }
+      }, 150)
+
+      return () => {
+        clearTimeout(setupTimer)
+        if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current)
+      }
+    }, [toc])
+
     const scrollToHeader = (id: string) => {
+      const scrollContainer =
+        containerRef.current?.closest<HTMLElement>('.writr-markdown-preview') ??
+        document.querySelector<HTMLElement>('.writr-markdown-preview')
       const el = document.getElementById(id)
-      if (el) {
+      if (!el) return
+
+      isProgrammaticScrollRef.current = true
+      setActiveId(id)
+
+      if (scrollContainer) {
+        // Scroll the container element directly for precision
+        const containerRect = scrollContainer.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        const offset = elRect.top - containerRect.top + scrollContainer.scrollTop - 20
+        scrollContainer.scrollTo({ top: offset, behavior: 'smooth' })
+      } else {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
+
+      if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current)
+      programmaticTimerRef.current = setTimeout(() => {
+        isProgrammaticScrollRef.current = false
+      }, 1000)
     }
 
     return (
-      <div className="flex flex-row w-full gap-8 relative items-start">
+      <div ref={containerRef} className="flex flex-row w-full gap-8 relative items-start">
         <div className="flex-1 min-w-0">
           <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -455,7 +575,7 @@ export const MarkdownPreview = memo(
       </ReactMarkdown>
       </div>
 
-      {toc.length > 0 && (
+      {toc.length > 0 && isFullPreview && (
         <div className="w-48 flex-shrink-0 hidden xl:block sticky top-2 max-h-[calc(100vh-8rem)] overflow-y-auto">
           <div className="font-semibold mb-3 uppercase tracking-wider text-[10px] text-[var(--obsidian-text-muted)]">On this page</div>
           <ul className="space-y-0.5">
@@ -481,10 +601,12 @@ export const MarkdownPreview = memo(
                     onClick={() => scrollToHeader(item.id)}
                     title={item.text}
                     className={twMerge(
-                      'flex-1 text-left py-0.5 px-1 rounded text-[11px] leading-snug truncate transition-colors hover:text-[var(--obsidian-text)]',
-                      isNested
-                        ? 'text-[var(--obsidian-text-muted)] opacity-70'
-                        : 'font-medium text-[var(--obsidian-text-muted)]'
+                      'flex-1 text-left py-0.5 px-1.5 rounded text-[11px] leading-snug truncate transition-colors',
+                      item.id === activeId
+                        ? 'text-[var(--obsidian-accent)] font-semibold bg-[var(--obsidian-accent-dim)]'
+                        : isNested
+                          ? 'text-[var(--obsidian-text-muted)] opacity-70 hover:text-[var(--obsidian-text)]'
+                          : 'font-medium text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]'
                     )}
                   >
                     {item.text}

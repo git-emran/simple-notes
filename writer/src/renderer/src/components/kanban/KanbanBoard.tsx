@@ -545,6 +545,7 @@ const Card = ({ text, id, column, priority, description, handleDragStart, onClic
         onDragStart={(e) => handleDragStart(e, { text, id, column })}
         onClick={onClick}
         className="cursor-grab rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-3 active:cursor-grabbing transition-all hover:border-[var(--obsidian-accent)]/50"
+        style={color ? { backgroundColor: `color-mix(in srgb, var(--obsidian-pane) 93%, ${color} 7%)` } : {}}
       >
         <div className="flex items-start gap-2">
           {prefix && (

@@ -1486,6 +1486,7 @@ export const MarkdownEditor = () => {
                 previewReadableWidthClass={previewReadableWidthClass}
                 getReactNodeText={getReactNodeText}
                 getCalloutMeta={getCalloutMeta}
+                isFullPreview={isFullPreview}
               />
             </div>
           </div>
