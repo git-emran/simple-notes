@@ -1,5 +1,5 @@
 'use client'
-import { Children, memo, useState, useMemo, useEffect, useRef } from 'react'
+import { Children, memo, useState, useMemo, useEffect, useRef, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import SyntaxHighlighter from 'react-syntax-highlighter'
 import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
@@ -55,6 +55,43 @@ function groupSections(nodes: any[]) {
   return root.children
 }
 
+const slugify = (text: string) =>
+  text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+// Walk the hast tree and collect text content from a node.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function hastNodeText(node: any): string {
+  if (!node) return ''
+  if (node.type === 'text') return node.value ?? ''
+  if (Array.isArray(node.children)) return node.children.map(hastNodeText).join('')
+  return ''
+}
+
+// Rehype plugin: stamp deduplicated `id` attributes onto every heading node
+// (h1-h6) BEFORE the AST is handed to React. This is the only safe place to
+// assign IDs — doing it in render() is wrong because React 18 may invoke
+// render functions speculatively more than once per commit.
+const rehypeSlugIds = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (tree: any) => {
+    if (!tree?.children) return
+    const slugCounts: Record<string, number> = {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walk = (node: any) => {
+      if (node.type === 'element' && /^h[1-6]$/i.test(node.tagName)) {
+        const text = hastNodeText(node)
+        const base = slugify(text)
+        slugCounts[base] = (slugCounts[base] ?? 0) + 1
+        const count = slugCounts[base]
+        node.properties = node.properties ?? {}
+        node.properties.id = count === 1 ? base : `${base}-${count}`
+      }
+      if (Array.isArray(node.children)) node.children.forEach(walk)
+    }
+    tree.children.forEach(walk)
+  }
+}
+
 const rehypeHeaderSections = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (tree: any) => {
@@ -62,6 +99,87 @@ const rehypeHeaderSections = () => {
       tree.children = groupSections(tree.children)
     }
   }
+}
+
+// Lifted outside MarkdownPreview so React sees a stable component identity
+// across renders and doesn't remount (and reset collapse state) on every
+// debounced preview update.
+interface SectionWrapperProps {
+  children?: ReactNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  node?: any
+  previewReadableWidthClass: string
+}
+
+const SectionWrapper = ({ children, node, previewReadableWidthClass }: SectionWrapperProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const childrenArray = Children.toArray(children)
+  const header = childrenArray[0]
+  const rest = childrenArray.slice(1)
+
+  const levelVal = node?.properties?.dataLevel ?? node?.properties?.['data-level'] ?? 1
+  const level = parseInt(String(levelVal), 10) || 1
+
+  let containerClass = ''
+  switch (level) {
+    case 1:
+      containerClass = 'mt-8 mb-4 border-b border-[var(--obsidian-border)] pb-2'
+      break
+    case 2:
+      containerClass = 'mt-6 mb-3'
+      break
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+      containerClass = 'mt-5 mb-2'
+      break
+    default:
+      break
+  }
+
+  return (
+    <section className={twMerge(previewReadableWidthClass, 'group/section w-full')}>
+      {/* Header container */}
+      <div
+        className={twMerge(
+          'flex items-center gap-1 group/hdr cursor-pointer select-none rounded hover:bg-[var(--obsidian-hover-soft)] transition-colors py-0.5 px-1 ml-1',
+          containerClass
+        )}
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        {/* Collapse Indicator Chevron */}
+        <span
+          className={twMerge(
+            'self-center flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-all duration-200 opacity-30 group-hover/hdr:opacity-100',
+            isCollapsed ? '-rotate-90' : 'rotate-0'
+          )}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.5"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </span>
+
+        {/* Header itself */}
+        <div className="flex-1 min-w-0 flex items-center [&>*]:!my-0 [&>*]:!leading-tight">{header}</div>
+      </div>
+
+      {/* Collapsible content area */}
+      <div
+        className={twMerge(
+          'pl-5 transition-all duration-200 origin-top',
+          isCollapsed ? 'hidden' : 'block'
+        )}
+      >
+        {rest}
+      </div>
+    </section>
+  )
 }
 
 export const MarkdownPreview = memo(
@@ -75,86 +193,10 @@ export const MarkdownPreview = memo(
     getCalloutMeta,
     isFullPreview
   }: MarkdownPreviewProps) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SectionWrapper = ({ children, node }: any) => {
-      const [isCollapsed, setIsCollapsed] = useState(false)
-      const childrenArray = Children.toArray(children)
-      const header = childrenArray[0]
-      const rest = childrenArray.slice(1)
-
-      const levelVal = node?.properties?.dataLevel ?? node?.properties?.['data-level'] ?? 1
-      const level = parseInt(String(levelVal), 10) || 1
-
-      let containerClass = ''
-      switch (level) {
-        case 1:
-          containerClass = 'mt-8 mb-4 border-b border-[var(--obsidian-border)] pb-2'
-          break
-        case 2:
-          containerClass = 'mt-6 mb-3'
-          break
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-          containerClass = 'mt-5 mb-2'
-          break
-        default:
-          break
-      }
-
-      return (
-        <section className={twMerge(previewReadableWidthClass, 'group/section w-full')}>
-          {/* Header container */}
-          <div
-            className={twMerge(
-              'flex items-center gap-1 group/hdr cursor-pointer select-none rounded hover:bg-[var(--obsidian-hover-soft)] transition-colors py-0.5 px-1 ml-1',
-              containerClass
-            )}
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            {/* Collapse Indicator Chevron */}
-            <span
-              className={twMerge(
-                'self-center flex-shrink-0 flex items-center justify-center w-5 h-5 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-all duration-200 opacity-30 group-hover/hdr:opacity-100',
-                isCollapsed ? '-rotate-90' : 'rotate-0'
-              )}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.5"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </span>
-
-            {/* Header itself */}
-            <div className="flex-1 min-w-0 flex items-center [&>*]:!my-0 [&>*]:!leading-tight">{header}</div>
-          </div>
-
-          {/* Collapsible content area */}
-          <div
-            className={twMerge(
-              'pl-5 transition-all duration-200 origin-top',
-              isCollapsed ? 'hidden' : 'block'
-            )}
-          >
-            {rest}
-          </div>
-        </section>
-      )
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const generateId = (node: any) => {
-      const text = getReactNodeText(node)
-      return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    }
-
     const toc = useMemo(() => {
       const result: { level: number; text: string; id: string }[] = []
+      // Track how many times each base slug appears so we can deduplicate.
+      const slugCounts: Record<string, number> = {}
       let inCodeBlock = false
       const lines = previewMarkdown.split('\n')
       for (const line of lines) {
@@ -168,7 +210,10 @@ export const MarkdownPreview = memo(
             const level = match[1].length
             const rawText = match[2].trim()
             const text = rawText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_~`]/g, '')
-            const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+            const baseSlug = slugify(text)
+            slugCounts[baseSlug] = (slugCounts[baseSlug] ?? 0) + 1
+            const count = slugCounts[baseSlug]
+            const id = count === 1 ? baseSlug : `${baseSlug}-${count}`
             result.push({ level, text, id })
           }
         }
@@ -306,41 +351,41 @@ export const MarkdownPreview = memo(
         <div className="flex-1 min-w-0">
           <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHeaderSections]}
+        rehypePlugins={[rehypeSlugIds, rehypeHeaderSections]}
         components={{
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          section: ({ children, node, ...props }: any) => (
-            <SectionWrapper node={node} {...props}>
+          section: ({ children, node }: any) => (
+            <SectionWrapper node={node} previewReadableWidthClass={previewReadableWidthClass}>
               {children}
             </SectionWrapper>
           ),
-          h1: ({ children }) => (
-            <h1 id={generateId(children)} className="font-sans text-2xl font-semibold text-[var(--obsidian-text)]">
+          h1: ({ children, id }) => (
+            <h1 id={id} className="font-sans text-2xl font-semibold text-[var(--obsidian-text)]">
               {children}
             </h1>
           ),
-          h2: ({ children }) => (
-            <h2 id={generateId(children)} className="text-xl font-sans text-[var(--obsidian-text)] font-semibold">
+          h2: ({ children, id }) => (
+            <h2 id={id} className="text-xl font-sans text-[var(--obsidian-text)] font-semibold">
               {children}
             </h2>
           ),
-          h3: ({ children }) => (
-            <h3 id={generateId(children)} className="text-lg font-sans font-medium text-[var(--obsidian-text)]">
+          h3: ({ children, id }) => (
+            <h3 id={id} className="text-lg font-sans font-medium text-[var(--obsidian-text)]">
               {children}
             </h3>
           ),
-          h4: ({ children }) => (
-            <h4 id={generateId(children)} className="text-md font-sans font-medium text-[var(--obsidian-text)]">
+          h4: ({ children, id }) => (
+            <h4 id={id} className="text-md font-sans font-medium text-[var(--obsidian-text)]">
               {children}
             </h4>
           ),
-          h5: ({ children }) => (
-            <h5 id={generateId(children)} className="text-md font-sans font-medium text-[var(--obsidian-text)]">
+          h5: ({ children, id }) => (
+            <h5 id={id} className="text-md font-sans font-medium text-[var(--obsidian-text)]">
               {children}
             </h5>
           ),
-          h6: ({ children }) => (
-            <h6 id={generateId(children)} className="text-sm font-sans font-medium text-[var(--obsidian-text)]">
+          h6: ({ children, id }) => (
+            <h6 id={id} className="text-sm font-sans font-medium text-[var(--obsidian-text)]">
               {children}
             </h6>
           ),
