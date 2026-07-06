@@ -1,5 +1,5 @@
 import { NoteContent, FileNode } from '@shared/models'
-import { atom } from 'jotai'
+import { atom, type Getter } from 'jotai'
 import { atomWithStorage, unwrap } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
 export * from './settingsStore'
@@ -13,23 +13,26 @@ const loadFileTree = async () => {
   return await window.context.getFileTree()
 }
 
-export const saveCanvasAtom = atom(null, async (get, set, payload: { path: string; jsonContent: string }) => {
-  const { path, jsonContent } = payload
-  if (!path || !path.endsWith('.canvas')) return
+export const saveCanvasAtom = atom(
+  null,
+  async (get, set, payload: { path: string; jsonContent: string }) => {
+    const { path, jsonContent } = payload
+    if (!path || !path.endsWith('.canvas')) return
 
-  await window.context.writeFileNew(path, jsonContent)
-  const currentTree = get(fileTreeAtom) ?? []
-  if (currentTree.length > 0) {
-    set(
-      fileTreeAtom,
-      updateFileNodeInTree(currentTree, path, {
-        lastEditTime: Date.now()
-      })
-    )
-    return
+    await window.context.writeFileNew(path, jsonContent)
+    const currentTree = get(fileTreeAtom) ?? []
+    if (currentTree.length > 0) {
+      set(
+        fileTreeAtom,
+        updateFileNodeInTree(currentTree, path, {
+          lastEditTime: Date.now()
+        })
+      )
+      return
+    }
+    set(fileTreeAtom, await loadFileTree())
   }
-  set(fileTreeAtom, await loadFileTree())
-})
+)
 
 const fileTreeAtomAsync = atom<FileNode[] | Promise<FileNode[]>>(loadFileTree())
 export const fileTreeAtom = unwrap(fileTreeAtomAsync, (prev) => prev)
@@ -44,7 +47,9 @@ const inferRootDirFromTree = (nodes: FileNode[]) => {
   return firstPath.substring(0, maxIndex)
 }
 
-export const notesRootDirAtom = atom<string | null>((get) => inferRootDirFromTree(get(fileTreeAtom) ?? []))
+export const notesRootDirAtom = atom<string | null>((get) =>
+  inferRootDirFromTree(get(fileTreeAtom) ?? [])
+)
 
 export const fileTreeIndexAtom = atom<Map<string, FileNode>>((get) => {
   const tree = get(fileTreeAtom) ?? []
@@ -80,10 +85,12 @@ const createEmptyTab = (): EditorTab => ({
   id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   kind: 'empty',
   path: null,
-  name: 'New Tab',
+  name: 'New Tab'
 })
 
-export const tabsAtom = atomWithStorage<EditorTab[]>('writr-open-tabs', [{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
+export const tabsAtom = atomWithStorage<EditorTab[]>('writr-open-tabs', [
+  { id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }
+])
 export const closedTabsHistoryAtom = atom<EditorTab[]>([])
 export const activeTabIdAtom = atomWithStorage<string>('writr-active-tab-id', 'tab-1')
 
@@ -107,7 +114,28 @@ export const activeTabAtom = atom<EditorTab | null>((get) => {
   return tabs.find((t) => t.id === activeId) ?? tabs[0] ?? null
 })
 
+export type EditorSaveState = {
+  hasUnsavedChanges: boolean
+  hasSaveError: boolean
+}
+
+export const editorSaveStateByPathAtom = atom<Record<string, EditorSaveState>>({})
+
+const canLeaveActiveFileTab = (get: Getter) => {
+  const activePath = get(activeTabPathAtom)
+  if (!activePath) return true
+
+  const state = get(editorSaveStateByPathAtom)[activePath]
+  if (!state?.hasUnsavedChanges && !state?.hasSaveError) return true
+
+  return window.confirm(
+    'This note has unsaved changes or a failed save. Leave it anyway? Your latest edits may not be on disk.'
+  )
+}
+
 export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
+  if (get(activeTabIdAtom) === tabId) return
+  if (!canLeaveActiveFileTab(get)) return
   set(activeTabIdAtom, tabId)
   const tabs = get(tabsAtom)
   const next = tabs.find((t) => t.id === tabId) ?? tabs[0]
@@ -126,6 +154,7 @@ export const switchTabByIndexAtom = atom(null, (get, set, index: number) => {
 })
 
 export const createNewTabAtom = atom(null, (get, set) => {
+  if (!canLeaveActiveFileTab(get)) return
   const tabs = get(tabsAtom)
   const nextTab = createEmptyTab()
   set(tabsAtom, [...tabs, nextTab])
@@ -135,7 +164,11 @@ export const createNewTabAtom = atom(null, (get, set) => {
 
 export const reorderTabsAtom = atom(
   null,
-  (get, set, payload: { sourceTabId: string; targetTabId: string; position: 'before' | 'after' }) => {
+  (
+    get,
+    set,
+    payload: { sourceTabId: string; targetTabId: string; position: 'before' | 'after' }
+  ) => {
     const { sourceTabId, targetTabId, position } = payload
     if (sourceTabId === targetTabId) return
 
@@ -167,7 +200,7 @@ export const createKanbanTabAtom = atom(null, (get, set) => {
     id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     kind: 'kanban',
     path: null,
-    name: 'Kanban',
+    name: 'Kanban'
   }
   set(tabsAtom, [...tabs, nextTab])
   set(activeTabIdAtom, nextTab.id)
@@ -188,7 +221,7 @@ export const createTerminalTabAtom = atom(null, (get, set) => {
     kind: 'terminal',
     path: null,
     name: 'Terminal',
-    terminalSessionId: null,
+    terminalSessionId: null
   }
 
   set(tabsAtom, [...tabs, nextTab])
@@ -211,6 +244,7 @@ export const setTerminalSessionIdAtom = atom(
 
 export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   if (node.type !== 'file') return
+  if (get(activeTabPathAtom) !== node.path && !canLeaveActiveFileTab(get)) return
 
   const tabs = get(tabsAtom)
   const activeId = get(activeTabIdAtom)
@@ -234,7 +268,7 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
         id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         kind: 'file',
         path: node.path,
-        name,
+        name
       }
       set(tabsAtom, [...tabs, nextTab])
       set(activeTabIdAtom, nextTab.id)
@@ -266,6 +300,7 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
 
 export const openInNewTabAtom = atom(null, (get, set, node: FileNode) => {
   if (node.type !== 'file') return
+  if (!canLeaveActiveFileTab(get)) return
 
   const tabs = get(tabsAtom)
   const name = getNameFromPath(node.path)
@@ -325,12 +360,11 @@ export const closeTabAtom = atom(null, (get, set, tabId: string) => {
   const activeId = get(activeTabIdAtom)
   const closingTab = tabs.find((t) => t.id === tabId)
   if (!closingTab) return
+  if (closingTab.id === activeId && !canLeaveActiveFileTab(get)) return
 
   const history = get(closedTabsHistoryAtom)
   const historyEntry =
-    closingTab.kind === 'terminal'
-      ? { ...closingTab, terminalSessionId: null }
-      : closingTab
+    closingTab.kind === 'terminal' ? { ...closingTab, terminalSessionId: null } : closingTab
   set(closedTabsHistoryAtom, [...history, historyEntry])
 
   if (closingTab.kind === 'terminal' && closingTab.terminalSessionId) {
@@ -359,7 +393,7 @@ export const restoreClosedTabAtom = atom(null, (get, set) => {
     const tabToRestore = history[history.length - 1]
     const newHistory = history.slice(0, -1)
     set(closedTabsHistoryAtom, newHistory)
-    
+
     const currentTabs = get(tabsAtom)
     set(tabsAtom, [...currentTabs, tabToRestore])
     set(activeTabIdAtom, tabToRestore.id)
@@ -393,10 +427,7 @@ export const todoStatsByPathAtom = atomWithStorage<Record<string, TodoStatsCache
   {}
 )
 
-export const pinnedNotePathsAtom = atomWithStorage<string[]>(
-  'writr-pinned-note-paths',
-  []
-)
+export const pinnedNotePathsAtom = atomWithStorage<string[]>('writr-pinned-note-paths', [])
 
 type FileTreeUiState = {
   expanded: string[]
@@ -441,7 +472,10 @@ const buildNormalizedPathLookup = (nodes: FileNode[]) => {
   return lookup
 }
 
-const patchFileNodesInTree = (nodes: FileNode[], patchByPath: Map<string, Partial<FileNode>>): FileNode[] => {
+const patchFileNodesInTree = (
+  nodes: FileNode[],
+  patchByPath: Map<string, Partial<FileNode>>
+): FileNode[] => {
   let mutated = false
   const next = nodes.map((node) => {
     const patch = patchByPath.get(node.path)
@@ -574,26 +608,28 @@ export const selectedNoteAtomAsync = atom(async (get) => {
   }
 
   let content = ''
+  let readError: string | null = null
   try {
     const text = await window.context.readFileNew(activeTabPath)
     if (text === undefined) {
       throw new Error('Not found')
     }
     content = text
-  } catch {
-    content = ''
+  } catch (error) {
+    readError = error instanceof Error ? error.message : 'Unable to read this note.'
   }
-  
+
   if (get(activeTabPathAtom) !== activeTabPath) return null
-  
+
   /* Extract name for title */
   const name = activeTabPath.split('/').pop()?.split('\\').pop() || 'Untitled'
-  
+
   return {
     title: name.replace(/\.(md|canvas)$/, ''),
     lastEditTime: Date.now(),
     content: content,
-    path: activeTabPath
+    path: activeTabPath,
+    readError
   }
 })
 
@@ -608,47 +644,52 @@ export const selectedNoteAtom = unwrap(
     }
 )
 
-export const saveNoteAtom = atom(null, async (get, set, payload: { path: string; newContent: NoteContent }) => {
-  const { path, newContent } = payload
+export const saveNoteAtom = atom(
+  null,
+  async (get, set, payload: { path: string; newContent: NoteContent }) => {
+    const { path, newContent } = payload
 
-  if (!path) return
+    if (!path) return
 
-  await window.context.writeFileNew(path, newContent)
-  const currentTree = get(fileTreeAtom) ?? []
-  if (currentTree.length > 0) {
-    const todoStats = getTodoStats(newContent)
-    const nextCache = {
-      ...get(todoStatsByPathAtom),
-      [path]: {
-        mtimeMs: Date.now(),
-        todoTotal: todoStats.todoTotal,
-        todoCompleted: todoStats.todoCompleted
+    await window.context.writeFileNew(path, newContent)
+    const currentTree = get(fileTreeAtom) ?? []
+    if (currentTree.length > 0) {
+      const todoStats = getTodoStats(newContent)
+      const nextCache = {
+        ...get(todoStatsByPathAtom),
+        [path]: {
+          mtimeMs: Date.now(),
+          todoTotal: todoStats.todoTotal,
+          todoCompleted: todoStats.todoCompleted
+        }
       }
+      set(
+        fileTreeAtom,
+        updateFileNodeInTree(currentTree, path, {
+          lastEditTime: Date.now(),
+          todoTotal: todoStats.todoTotal,
+          todoCompleted: todoStats.todoCompleted
+        })
+      )
+      set(todoStatsByPathAtom, nextCache)
+      return
     }
-    set(
-      fileTreeAtom,
-      updateFileNodeInTree(currentTree, path, {
-        lastEditTime: Date.now(),
-        todoTotal: todoStats.todoTotal,
-        todoCompleted: todoStats.todoCompleted
-      })
-    )
-    set(todoStatsByPathAtom, nextCache)
-    return
+
+    set(fileTreeAtom, await loadFileTree())
   }
-
-  set(fileTreeAtom, await loadFileTree())
-
-})
+)
 
 export const duplicateNoteAtom = atom(null, async (_get, set, path: string) => {
   if (!window.context) return
-  
+
   try {
     const content = await window.context.readFileNew(path)
     const lastDot = path.lastIndexOf('.')
-    const newPath = lastDot === -1 ? `${path}_copy` : `${path.substring(0, lastDot)}_copy${path.substring(lastDot)}`
-    
+    const newPath =
+      lastDot === -1
+        ? `${path}_copy`
+        : `${path.substring(0, lastDot)}_copy${path.substring(lastDot)}`
+
     await window.context.writeFileNew(newPath, content)
     set(fileTreeAtom, await loadFileTree())
     /* Open the new note */
@@ -667,16 +708,17 @@ export const createNoteAtom = atom(null, async (get, set, parentDir: string) => 
   const currentTree = get(fileTreeAtom) ?? []
 
   const addNodeToTree = (nodes: FileNode[], targetDir: string, node: FileNode): FileNode[] => {
-    if (!targetDir) return [...nodes, node].sort((a, b) => {
+    if (!targetDir)
+      return [...nodes, node].sort((a, b) => {
         if (a.type === b.type) return a.name.localeCompare(b.name)
         return a.type === 'folder' ? -1 : 1
-    })
+      })
 
-    return nodes.map(n => {
+    return nodes.map((n) => {
       if (n.path === targetDir && n.type === 'folder') {
         const children = [...(n.children ?? []), node].sort((a, b) => {
-            if (a.type === b.type) return a.name.localeCompare(b.name)
-            return a.type === 'folder' ? -1 : 1
+          if (a.type === b.type) return a.name.localeCompare(b.name)
+          return a.type === 'folder' ? -1 : 1
         })
         return { ...n, children }
       }
@@ -713,16 +755,17 @@ export const createCanvasAtom = atom(null, async (get, set, parentDir: string) =
   const currentTree = get(fileTreeAtom) ?? []
 
   const addNodeToTree = (nodes: FileNode[], targetDir: string, node: FileNode): FileNode[] => {
-    if (!targetDir) return [...nodes, node].sort((a, b) => {
+    if (!targetDir)
+      return [...nodes, node].sort((a, b) => {
         if (a.type === b.type) return a.name.localeCompare(b.name)
         return a.type === 'folder' ? -1 : 1
-    })
+      })
 
-    return nodes.map(n => {
+    return nodes.map((n) => {
       if (n.path === targetDir && n.type === 'folder') {
         const children = [...(n.children ?? []), node].sort((a, b) => {
-            if (a.type === b.type) return a.name.localeCompare(b.name)
-            return a.type === 'folder' ? -1 : 1
+          if (a.type === b.type) return a.name.localeCompare(b.name)
+          return a.type === 'folder' ? -1 : 1
         })
         return { ...n, children }
       }
@@ -762,19 +805,21 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   if (!isDeleted) return
 
   const currentTree = get(fileTreeAtom) ?? []
-  
+
   const removeNodeFromTree = (nodes: FileNode[], targetPath: string): FileNode[] => {
-    return nodes.filter(node => node.path !== targetPath).map(node => {
-      if (node.children) {
-        return { ...node, children: removeNodeFromTree(node.children, targetPath) }
-      }
-      return node
-    })
+    return nodes
+      .filter((node) => node.path !== targetPath)
+      .map((node) => {
+        if (node.children) {
+          return { ...node, children: removeNodeFromTree(node.children, targetPath) }
+        }
+        return node
+      })
   }
 
   set(fileTreeAtom, removeNodeFromTree([...currentTree], path))
   set(selectedNodeAtom, null)
-  
+
   /* Close tab if it was open */
   const tabs = get(tabsAtom)
   const idsToClose = tabs.filter((t) => t.path === path).map((t) => t.id)
@@ -783,122 +828,132 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   }
 })
 
-export const movePathAtom = atom(null, async (get, set, { src, dest }: { src: string; dest: string }) => {
-  const success = await window.context.movePath(src, dest)
-  if (success) {
-    /* Load tree first so we can remap cache keys to the exact path formatting returned by the backend. */
-    const loadedTree = await loadFileTree()
-    const normalizedLookup = buildNormalizedPathLookup(loadedTree)
+export const movePathAtom = atom(
+  null,
+  async (get, set, { src, dest }: { src: string; dest: string }) => {
+    const success = await window.context.movePath(src, dest)
+    if (success) {
+      /* Load tree first so we can remap cache keys to the exact path formatting returned by the backend. */
+      const loadedTree = await loadFileTree()
+      const normalizedLookup = buildNormalizedPathLookup(loadedTree)
 
-    const canonicalize = (path: string) => normalizedLookup.get(normalizePath(path)) ?? path
+      const canonicalize = (path: string) => normalizedLookup.get(normalizePath(path)) ?? path
 
-    /* Move any per-path metadata (status/tag/todos/pins) so it persists after move. */
-    const todoCache = get(todoStatsByPathAtom)
-    const statusByPath = get(noteStatusByPathAtom)
-    const tagByPath = get(noteTagByPathAtom)
-    const pinnedPaths = get(pinnedNotePathsAtom)
+      /* Move any per-path metadata (status/tag/todos/pins) so it persists after move. */
+      const todoCache = get(todoStatsByPathAtom)
+      const statusByPath = get(noteStatusByPathAtom)
+      const tagByPath = get(noteTagByPathAtom)
+      const pinnedPaths = get(pinnedNotePathsAtom)
 
-    const todoMoves = new Map<string, TodoStatsCacheEntry>()
-    const statusMoves = new Map<string, NoteStatus>()
-    const tagMoves = new Map<string, string>()
+      const todoMoves = new Map<string, TodoStatsCacheEntry>()
+      const statusMoves = new Map<string, NoteStatus>()
+      const tagMoves = new Map<string, string>()
 
-    for (const [path, entry] of Object.entries(todoCache)) {
-      const nextPath = remapPathPrefix(path, src, dest)
-      if (!nextPath) continue
-      todoMoves.set(canonicalize(nextPath), entry)
-    }
-    for (const [path, entry] of Object.entries(statusByPath)) {
-      const nextPath = remapPathPrefix(path, src, dest)
-      if (!nextPath) continue
-      statusMoves.set(canonicalize(nextPath), entry)
-    }
-    for (const [path, entry] of Object.entries(tagByPath)) {
-      const nextPath = remapPathPrefix(path, src, dest)
-      if (!nextPath) continue
-      tagMoves.set(canonicalize(nextPath), entry)
-    }
-
-    if (todoMoves.size > 0) {
-      const next = { ...todoCache }
-      for (const key of Object.keys(next)) {
-        if (isSameOrChildPath(key, src)) delete next[key]
+      for (const [path, entry] of Object.entries(todoCache)) {
+        const nextPath = remapPathPrefix(path, src, dest)
+        if (!nextPath) continue
+        todoMoves.set(canonicalize(nextPath), entry)
       }
-      for (const [nextPath, entry] of todoMoves) next[nextPath] = entry
-      set(todoStatsByPathAtom, next)
-    }
-
-    if (statusMoves.size > 0) {
-      const next = { ...statusByPath }
-      for (const key of Object.keys(next)) {
-        if (isSameOrChildPath(key, src)) delete next[key]
+      for (const [path, entry] of Object.entries(statusByPath)) {
+        const nextPath = remapPathPrefix(path, src, dest)
+        if (!nextPath) continue
+        statusMoves.set(canonicalize(nextPath), entry)
       }
-      for (const [nextPath, entry] of statusMoves) next[nextPath] = entry
-      set(noteStatusByPathAtom, next)
-    }
-
-    if (tagMoves.size > 0) {
-      const next = { ...tagByPath }
-      for (const key of Object.keys(next)) {
-        if (isSameOrChildPath(key, src)) delete next[key]
+      for (const [path, entry] of Object.entries(tagByPath)) {
+        const nextPath = remapPathPrefix(path, src, dest)
+        if (!nextPath) continue
+        tagMoves.set(canonicalize(nextPath), entry)
       }
-      for (const [nextPath, entry] of tagMoves) next[nextPath] = entry
-      set(noteTagByPathAtom, next)
-    }
 
-    const nextPinned = pinnedPaths
-      .map((p) => {
-        const nextPath = remapPathPrefix(p, src, dest)
-        return nextPath ? canonicalize(nextPath) : p
-      })
-      /* Remove any duplicates created by renames/moves. */
-      .filter((p, i, arr) => arr.indexOf(p) === i)
-    if (nextPinned.length !== pinnedPaths.length || nextPinned.some((p, i) => p !== pinnedPaths[i])) {
-      set(pinnedNotePathsAtom, nextPinned)
-    }
-
-    let nextTree = loadedTree
-
-    /* Re-apply todo stats for moved nodes immediately so progress bars don't disappear. */
-    if (todoMoves.size > 0) {
-      const patchMap = new Map<string, Partial<FileNode>>()
-      for (const [path, entry] of todoMoves.entries()) {
-        patchMap.set(path, { todoTotal: entry.todoTotal, todoCompleted: entry.todoCompleted })
+      if (todoMoves.size > 0) {
+        const next = { ...todoCache }
+        for (const key of Object.keys(next)) {
+          if (isSameOrChildPath(key, src)) delete next[key]
+        }
+        for (const [nextPath, entry] of todoMoves) next[nextPath] = entry
+        set(todoStatsByPathAtom, next)
       }
-      nextTree = patchFileNodesInTree(nextTree, patchMap)
-    }
 
-    set(fileTreeAtom, nextTree)
+      if (statusMoves.size > 0) {
+        const next = { ...statusByPath }
+        for (const key of Object.keys(next)) {
+          if (isSameOrChildPath(key, src)) delete next[key]
+        }
+        for (const [nextPath, entry] of statusMoves) next[nextPath] = entry
+        set(noteStatusByPathAtom, next)
+      }
 
-    /* Update tabs if any tab matches the moved path */
-    const tabs = get(tabsAtom)
-    
-    let tabMatched = false
-    const newTabs = tabs.map((tab) => {
-      if (!tab.path) return tab
-      const nextPath = remapPathPrefix(tab.path, src, dest)
-      if (!nextPath) return tab
-      tabMatched = true
-      const canonicalNext = canonicalize(nextPath)
-      const name = canonicalNext.substring(Math.max(canonicalNext.lastIndexOf('/'), canonicalNext.lastIndexOf('\\')) + 1)
-      return { ...tab, path: canonicalNext, name }
-    })
-    
-    if (tabMatched) {
-      set(tabsAtom, newTabs)
-    }
+      if (tagMoves.size > 0) {
+        const next = { ...tagByPath }
+        for (const key of Object.keys(next)) {
+          if (isSameOrChildPath(key, src)) delete next[key]
+        }
+        for (const [nextPath, entry] of tagMoves) next[nextPath] = entry
+        set(noteTagByPathAtom, next)
+      }
 
-    /* Update selected node if it was the one moved/renamed */
-    const selectedNode = get(selectedNodeAtom)
-    if (selectedNode?.path) {
-      const nextPath = remapPathPrefix(selectedNode.path, src, dest)
-      if (nextPath) {
+      const nextPinned = pinnedPaths
+        .map((p) => {
+          const nextPath = remapPathPrefix(p, src, dest)
+          return nextPath ? canonicalize(nextPath) : p
+        })
+        /* Remove any duplicates created by renames/moves. */
+        .filter((p, i, arr) => arr.indexOf(p) === i)
+      if (
+        nextPinned.length !== pinnedPaths.length ||
+        nextPinned.some((p, i) => p !== pinnedPaths[i])
+      ) {
+        set(pinnedNotePathsAtom, nextPinned)
+      }
+
+      let nextTree = loadedTree
+
+      /* Re-apply todo stats for moved nodes immediately so progress bars don't disappear. */
+      if (todoMoves.size > 0) {
+        const patchMap = new Map<string, Partial<FileNode>>()
+        for (const [path, entry] of todoMoves.entries()) {
+          patchMap.set(path, { todoTotal: entry.todoTotal, todoCompleted: entry.todoCompleted })
+        }
+        nextTree = patchFileNodesInTree(nextTree, patchMap)
+      }
+
+      set(fileTreeAtom, nextTree)
+
+      /* Update tabs if any tab matches the moved path */
+      const tabs = get(tabsAtom)
+
+      let tabMatched = false
+      const newTabs = tabs.map((tab) => {
+        if (!tab.path) return tab
+        const nextPath = remapPathPrefix(tab.path, src, dest)
+        if (!nextPath) return tab
+        tabMatched = true
         const canonicalNext = canonicalize(nextPath)
-        const name = canonicalNext.substring(Math.max(canonicalNext.lastIndexOf('/'), canonicalNext.lastIndexOf('\\')) + 1)
-        set(selectedNodeAtom, { ...selectedNode, path: canonicalNext, name })
+        const name = canonicalNext.substring(
+          Math.max(canonicalNext.lastIndexOf('/'), canonicalNext.lastIndexOf('\\')) + 1
+        )
+        return { ...tab, path: canonicalNext, name }
+      })
+
+      if (tabMatched) {
+        set(tabsAtom, newTabs)
+      }
+
+      /* Update selected node if it was the one moved/renamed */
+      const selectedNode = get(selectedNodeAtom)
+      if (selectedNode?.path) {
+        const nextPath = remapPathPrefix(selectedNode.path, src, dest)
+        if (nextPath) {
+          const canonicalNext = canonicalize(nextPath)
+          const name = canonicalNext.substring(
+            Math.max(canonicalNext.lastIndexOf('/'), canonicalNext.lastIndexOf('\\')) + 1
+          )
+          set(selectedNodeAtom, { ...selectedNode, path: canonicalNext, name })
+        }
       }
     }
   }
-})
+)
 
 const toLocalDateFileName = () => {
   const now = new Date()
@@ -947,7 +1002,7 @@ export const createDailyNoteAtom = atom(null, async (get, set) => {
     const filePath = `${dailyDir}${separator}${fileName}`
 
     try {
-      if (await window.context.readFileNew(filePath) === undefined) {
+      if ((await window.context.readFileNew(filePath)) === undefined) {
         throw new Error('Not found')
       }
     } catch {

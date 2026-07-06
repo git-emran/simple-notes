@@ -6,6 +6,14 @@ import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import remarkGfm from 'remark-gfm'
 import { twMerge } from 'tailwind-merge'
 import { MermaidDiagram } from './MermaidDiagram'
+import {
+  buildMarkdownToc,
+  findScopedHeadingById,
+  getHastNodeText,
+  getScopedHeadingElementsByIds,
+  groupMarkdownSections,
+  slugifyMarkdownHeading
+} from './MarkdownPreview.helpers'
 import { toLocalFileUrl } from './localFileUrl'
 
 interface MarkdownPreviewProps {
@@ -21,52 +29,6 @@ interface MarkdownPreviewProps {
   isFullPreview?: boolean
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function groupSections(nodes: any[]) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const root: { level: number; children: any[] } = { level: 0, children: [] }
-  const stack = [root]
-
-  for (const node of nodes) {
-    const level =
-      node.type === 'element' && /^h[1-6]$/i.test(node.tagName) ? parseInt(node.tagName[1], 10) : 0
-
-    if (level > 0) {
-      while (stack.length > 1 && stack[stack.length - 1].level >= level) {
-        stack.pop()
-      }
-
-      const section = {
-        type: 'element',
-        tagName: 'section',
-        properties: {
-          dataLevel: level
-        },
-        children: [node]
-      }
-
-      stack[stack.length - 1].children.push(section)
-      stack.push({ level, children: section.children })
-    } else {
-      stack[stack.length - 1].children.push(node)
-    }
-  }
-
-  return root.children
-}
-
-const slugify = (text: string) =>
-  text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-
-// Walk the hast tree and collect text content from a node.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function hastNodeText(node: any): string {
-  if (!node) return ''
-  if (node.type === 'text') return node.value ?? ''
-  if (Array.isArray(node.children)) return node.children.map(hastNodeText).join('')
-  return ''
-}
-
 // Rehype plugin: stamp deduplicated `id` attributes onto every heading node
 // (h1-h6) BEFORE the AST is handed to React. This is the only safe place to
 // assign IDs — doing it in render() is wrong because React 18 may invoke
@@ -79,8 +41,8 @@ const rehypeSlugIds = () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const walk = (node: any) => {
       if (node.type === 'element' && /^h[1-6]$/i.test(node.tagName)) {
-        const text = hastNodeText(node)
-        const base = slugify(text)
+        const text = getHastNodeText(node)
+        const base = slugifyMarkdownHeading(text)
         slugCounts[base] = (slugCounts[base] ?? 0) + 1
         const count = slugCounts[base]
         node.properties = node.properties ?? {}
@@ -96,7 +58,7 @@ const rehypeHeaderSections = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (tree: any) => {
     if (tree && tree.children) {
-      tree.children = groupSections(tree.children)
+      tree.children = groupMarkdownSections(tree.children)
     }
   }
 }
@@ -193,33 +155,7 @@ export const MarkdownPreview = memo(
     getCalloutMeta,
     isFullPreview
   }: MarkdownPreviewProps) => {
-    const toc = useMemo(() => {
-      const result: { level: number; text: string; id: string }[] = []
-      // Track how many times each base slug appears so we can deduplicate.
-      const slugCounts: Record<string, number> = {}
-      let inCodeBlock = false
-      const lines = previewMarkdown.split('\n')
-      for (const line of lines) {
-        if (line.startsWith('```')) {
-          inCodeBlock = !inCodeBlock
-          continue
-        }
-        if (!inCodeBlock) {
-          const match = line.match(/^\s*(#{1,6})\s+(.*)$/)
-          if (match) {
-            const level = match[1].length
-            const rawText = match[2].trim()
-            const text = rawText.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_~`]/g, '')
-            const baseSlug = slugify(text)
-            slugCounts[baseSlug] = (slugCounts[baseSlug] ?? 0) + 1
-            const count = slugCounts[baseSlug]
-            const id = count === 1 ? baseSlug : `${baseSlug}-${count}`
-            result.push({ level, text, id })
-          }
-        }
-      }
-      return result
-    }, [previewMarkdown])
+    const toc = useMemo(() => buildMarkdownToc(previewMarkdown), [previewMarkdown])
 
     const containerRef = useRef<HTMLDivElement>(null)
     const [activeId, setActiveId] = useState<string>('')
@@ -235,18 +171,16 @@ export const MarkdownPreview = memo(
       }
 
       // Wait a tick for the DOM to settle after markdown renders
+      let observer: IntersectionObserver | null = null
       const setupTimer = setTimeout(() => {
-        const scrollContainer =
-          containerRef.current?.closest<HTMLElement>('.writr-markdown-preview') ??
-          document.querySelector<HTMLElement>('.writr-markdown-preview')
+        const previewRoot = containerRef.current
+        const scrollContainer = previewRoot?.closest<HTMLElement>('.writr-markdown-preview')
 
-        if (!scrollContainer) return
+        if (!previewRoot || !scrollContainer) return
 
         // Collect all heading elements in document order
         const ids = toc.map((t) => t.id)
-        const headingEls = ids
-          .map((id) => document.getElementById(id))
-          .filter((el): el is HTMLElement => el !== null)
+        const headingEls = getScopedHeadingElementsByIds(previewRoot, ids)
 
         if (headingEls.length === 0) return
 
@@ -282,7 +216,7 @@ export const MarkdownPreview = memo(
           setActiveId(best)
         }
 
-        const observer = new IntersectionObserver(
+        observer = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {
               const id = entry.target.id
@@ -309,22 +243,21 @@ export const MarkdownPreview = memo(
         // Initial call to set active on mount
         pickActive()
 
-        return () => {
-          observer.disconnect()
-        }
       }, 150)
 
       return () => {
         clearTimeout(setupTimer)
+        observer?.disconnect()
         if (programmaticTimerRef.current) clearTimeout(programmaticTimerRef.current)
       }
     }, [toc])
 
     const scrollToHeader = (id: string) => {
-      const scrollContainer =
-        containerRef.current?.closest<HTMLElement>('.writr-markdown-preview') ??
-        document.querySelector<HTMLElement>('.writr-markdown-preview')
-      const el = document.getElementById(id)
+      const previewRoot = containerRef.current
+      const scrollContainer = previewRoot?.closest<HTMLElement>('.writr-markdown-preview')
+      if (!previewRoot) return
+
+      const el = findScopedHeadingById(previewRoot, id)
       if (!el) return
 
       isProgrammaticScrollRef.current = true

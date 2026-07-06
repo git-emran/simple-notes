@@ -7,22 +7,30 @@ import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
 import { MoreActionsMenu } from './MoreActionsMenu'
 
 interface EditorHeaderProps {
-  title: string;
-  path: string;
-  currentStatus?: string;
-  currentTag?: string;
-  tagInput: string;
-  setTagInput: (val: string) => void;
-  handleStatusChange: (status: string) => void;
-  handleTagChange: (tag: string) => void;
-  handleExportPdf: () => void;
-  onRename?: (newName: string) => void;
-  isExportingPdf: boolean;
+  title: string
+  path: string
+  saveStatus?: 'idle' | 'saving' | 'saved' | 'error'
+  saveError?: string | null
+  hasUnsavedChanges?: boolean
+  onRetrySave?: () => void
+  currentStatus?: string
+  currentTag?: string
+  tagInput: string
+  setTagInput: (val: string) => void
+  handleStatusChange: (status: string) => void
+  handleTagChange: (tag: string) => void
+  handleExportPdf: () => void
+  onRename?: (newName: string) => void
+  isExportingPdf: boolean
 }
 
 export const EditorHeader = ({
   title,
   path,
+  saveStatus = 'idle',
+  saveError,
+  hasUnsavedChanges = false,
+  onRetrySave,
   currentStatus,
   currentTag,
   tagInput,
@@ -55,6 +63,15 @@ export const EditorHeader = ({
     }
   }
 
+  const saveLabel =
+    saveStatus === 'error'
+      ? 'Save failed'
+      : hasUnsavedChanges || saveStatus === 'saving'
+        ? 'Saving...'
+        : saveStatus === 'saved'
+          ? 'Saved'
+          : ''
+
   return (
     <div className="flex flex-col px-6 py-4 bg-[var(--obsidian-workspace)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
       <div className="flex items-start justify-between mb-2">
@@ -72,7 +89,7 @@ export const EditorHeader = ({
             }}
           />
         ) : (
-          <h1 
+          <h1
             className="text-2xl font-semibold text-[var(--obsidian-text)] truncate flex-1 cursor-text"
             onDoubleClick={() => setIsEditing(true)}
           >
@@ -80,29 +97,58 @@ export const EditorHeader = ({
           </h1>
         )}
         <div className="flex items-center gap-1">
-          <MoreActionsMenu 
-            notePath={path} 
-            onExportPdf={handleExportPdf} 
+          <MoreActionsMenu
+            notePath={path}
+            onExportPdf={handleExportPdf}
             isExportingPdf={isExportingPdf}
           />
         </div>
       </div>
 
-      <div className='flex items-center flex-wrap gap-3 ml-1 text-[12px]'>
+      <div className="flex items-center flex-wrap gap-3 ml-1 text-[12px]">
+        {saveLabel ? (
+          <>
+            <div
+              className={twMerge(
+                'rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                saveStatus === 'error'
+                  ? 'border-red-500/40 bg-red-500/10 text-red-500'
+                  : 'border-[var(--obsidian-border)] text-[var(--obsidian-text-muted)]'
+              )}
+              title={
+                saveStatus === 'error' ? (saveError ?? 'Unable to save this note.') : saveLabel
+              }
+            >
+              <span>{saveLabel}</span>
+              {saveStatus === 'error' && onRetrySave ? (
+                <button
+                  type="button"
+                  onClick={onRetrySave}
+                  className="ml-2 underline underline-offset-2 hover:opacity-80"
+                >
+                  Retry
+                </button>
+              ) : null}
+            </div>
+            <div className="w-px h-3 bg-[var(--obsidian-border)]" />
+          </>
+        ) : null}
 
         <div className="relative group">
           <div className="flex items-center gap-1 cursor-pointer text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]">
-             {currentStatus ? (
-               <span className={twMerge(
-                 "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase",
-                 NOTE_STATUS_META[currentStatus as keyof typeof NOTE_STATUS_META]?.className
-               )}>
-                 {NOTE_STATUS_META[currentStatus as keyof typeof NOTE_STATUS_META]?.label}
-               </span>
-             ) : (
-               <span>Status</span>
-             )}
-             <VscChevronDown className="w-3 h-3" />
+            {currentStatus ? (
+              <span
+                className={twMerge(
+                  'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase',
+                  NOTE_STATUS_META[currentStatus as keyof typeof NOTE_STATUS_META]?.className
+                )}
+              >
+                {NOTE_STATUS_META[currentStatus as keyof typeof NOTE_STATUS_META]?.label}
+              </span>
+            ) : (
+              <span>Status</span>
+            )}
+            <VscChevronDown className="w-3 h-3" />
           </div>
           <select
             value={currentStatus ?? ''}
@@ -123,7 +169,7 @@ export const EditorHeader = ({
 
         <div className="flex items-center gap-2">
           {currentTag ? (
-            <div 
+            <div
               className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-colors ${CUSTOM_TAG_STYLE}`}
             >
               <span>{currentTag}</span>

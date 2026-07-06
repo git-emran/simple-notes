@@ -1,212 +1,75 @@
 'use client'
-import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { autoCloseTags } from '@codemirror/lang-html'
-import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
-import {
-    ensureSyntaxTree,
-    foldGutter,
-    foldKeymap,
-    LanguageDescription,
-    LanguageSupport,
-    syntaxHighlighting,
-    syntaxTree
-} from '@codemirror/language'
-import { lintGutter } from '@codemirror/lint'
-import { Compartment, EditorState, Prec } from '@codemirror/state'
-import { drawSelection, EditorView, keymap } from '@codemirror/view'
-import { NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
-import {
-    aiApiKeyAtom,
-    createCanvasAtom,
-    createKanbanTabAtom,
-    createNoteAtom,
-    createTerminalTabAtom,
-    fileTreeAtom,
-    fileTreeIndexAtom,
-    isDarkModeAtom,
-    lineWrappingEnabledAtom,
-    movePathAtom,
-    noteStatusByPathAtom,
-    noteTagByPathAtom,
-    relativeLineNumbersEnabledAtom,
-    saveNoteAtom,
-    selectedNoteAtom,
-    showToolbarAtom,
-    tabIndentUnitAtom,
-    vimModeEnabledAtom
-} from '@renderer/store'
-import { indentationMarkers } from '@replit/codemirror-indentation-markers'
-import { vim } from '@replit/codemirror-vim'
-import { autoSavingTime } from '@shared/constants'
-import type { FileNode } from '@shared/models'
-import { AiModelInfo } from '@shared/types'
-import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { debounce, throttle } from 'lodash'
-import React, { isValidElement, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createNoteAtom, fileTreeAtom, isDarkModeAtom, selectedNoteAtom } from '@renderer/store'
+import { useAtomValue, useSetAtom } from 'jotai'
+import { isValidElement, memo, useCallback, useEffect, useRef, useState } from 'react'
+import React from 'react'
 import { MdDragIndicator } from 'react-icons/md'
-import {
-    VscError,
-    VscInfo,
-    VscLightbulb,
-    VscProject,
-    VscSymbolRuler,
-    VscTerminal,
-    VscWarning
-} from 'react-icons/vsc'
-import { relativeLineNumbers } from '../code-mirror-ui/relativeLineNumbers'
+import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import { AiModal } from './AiModal'
-import { checkboxExtension } from './checkboxExtension'
-import { createClipboardExperience } from './clipboardExperience'
-import { codeBlockBackground } from './codeBlockBackground'
-import { codeBlockCopy } from './codeBlockCopy'
-import { CommandPaletteModal, type CommandPaletteItem } from './CommandPaletteModal'
-import * as commands from './editorCommands'
+import { CommandPaletteModal } from './CommandPaletteModal'
 import { EditorFAB } from './EditorFAB'
 import { EditorHeader } from './EditorHeader'
-import { EditorMenuEntry, getEditorMenuEntries } from './editorMenuLogic'
-import {
-    getEditorTheme,
-    gutterTheme,
-    markdownHighlightStyle,
-    markdownHighlightStyleDark
-} from './editorTheme'
-import { markdownTableEnhancement } from './extendTableEditing'
-import { headingFoldExtension } from './headingFold'
-import { codeLanguages } from './languageConfig'
-import { createLivePreviewImages } from './livePreviewImages'
-import { markdownMarkupColors } from './markdownMarkupColors'
-import { markdownLivePreview } from './markdownLivePreview' // Refresh import resolution
 import { MarkdownPreview } from './MarkdownPreview'
 import { MarkdownToolbar } from './MarkdownToolbar'
-import { quoteLineStyling } from './quoteLineStyling'
-import { statusBarExtension } from './statusbar'
-import { tabAsSpaces } from './tabAsSpaces'
-import { tripleBacktickExtension } from './tripleBacktick'
+import { useAiGeneration } from './hooks/useAiGeneration'
+import { useCommandPalette } from './hooks/useCommandPalette'
+import { useEditorCompartments } from './hooks/useEditorCompartments'
+import { useEditorLifecycle } from './hooks/useEditorLifecycle'
+import { useNoteMetadata } from './hooks/useNoteMetadata'
+import { useSplitViewSync } from './hooks/useSplitViewSync'
+import type { SelectedNote } from './hooks/types'
+import type { EditorView } from '@codemirror/view'
+
 const MarkdownToolbarMemo = memo(MarkdownToolbar)
 
 export const MarkdownEditor = () => {
   const selectedNote = useAtomValue(selectedNoteAtom)
-  const [noteStatuses, setNoteStatuses] = useAtom(noteStatusByPathAtom)
-  const [noteTags, setNoteTags] = useAtom(noteTagByPathAtom)
-  const saveNote = useSetAtom(saveNoteAtom)
   const createNote = useSetAtom(createNoteAtom)
-  const createKanbanTab = useSetAtom(createKanbanTabAtom)
-  const createTerminalTab = useSetAtom(createTerminalTabAtom)
-  const createCanvas = useSetAtom(createCanvasAtom)
-  const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
-  const relativeLineNumbersEnabled = useAtomValue(relativeLineNumbersEnabledAtom)
-  const lineWrappingEnabled = useAtomValue(lineWrappingEnabledAtom)
-  const tabIndentUnit = useAtomValue(tabIndentUnitAtom)
-  const vimModeEnabled = useAtomValue(vimModeEnabledAtom)
+  const fileTree = useAtomValue(fileTreeAtom)
+  const isDarkMode = useAtomValue(isDarkModeAtom)
+
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
-  const currentNotePathRef = useRef<string>('')
-
-  const containerRef = useRef<HTMLDivElement>(null)
-  const editorContainerRef = useRef<HTMLDivElement>(null)
-  const previewContainerRef = useRef<HTMLDivElement>(null)
-  const dragBarRef = useRef<HTMLDivElement>(null)
-
-  const currentNoteTitleRef = useRef<string>('')
-  const isSwitchingRef = useRef(false)
-  const lastLanguageRef = useRef<string | null>(null)
-  const lastScrollPercentageRef = useRef<number>(0)
-  const [isPreview, setIsPreview] = useState(false)
-  const [isFullPreview, setIsFullPreview] = useState(false) // New state for full preview
-  const [debouncedContent, setDebouncedContent] = useState('')
-  const isDarkMode = useAtomValue(isDarkModeAtom)
-  const [rootDir, setRootDir] = useState<string>('')
-  const [isExportingPdf, setIsExportingPdf] = useState(false)
-  const [exportNotice, setExportNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
-  const [aiPrompt, setAiPrompt] = useState('')
-  const [aiModels, setAiModels] = useState<AiModelInfo[]>([])
-  const [selectedAiModel, setSelectedAiModel] = useState('')
-  const aiApiKey = useAtomValue(aiApiKeyAtom)
-  const [isLoadingAiModels, setIsLoadingAiModels] = useState(false)
-  const [isGeneratingWithAi, setIsGeneratingWithAi] = useState(false)
-  const [aiProgress, setAiProgress] = useState(0)
-  const [aiError, setAiError] = useState<string | null>(null)
-  const [showFAB, setShowFAB] = useState(false)
-  const movePath = useSetAtom(movePathAtom)
+  const [rootDir, setRootDir] = useState<string>('')
 
   const previewReadableWidthClass = 'w-full min-w-0 max-w-[860px]'
 
-  const suppressNativeFormatUntilRef = useRef({ bold: 0, italic: 0 })
-
-  const previewMarkdown = useMemo(() => {
-    const lines = debouncedContent.split('\n')
-    let inFence = false
-    const replaced = lines
-      .map((line) => {
-        if (/^\s*```/.test(line)) {
-          inFence = !inFence
-          return line
-        }
-        if (inFence) return line
-        return line.replace(/<kbd>(.*?)<\/kbd>/gi, (_, inner: string) => `\`kbd:${inner}\``)
+  // Resolve the vault root directory once on mount
+  useEffect(() => {
+    let cancelled = false
+    void window.context
+      .getRootDir()
+      .then((dir) => {
+        if (!cancelled) setRootDir(dir)
       })
-      .join('\n')
-
-    return replaced.replace(/!\[\[(.*?)\]\]/g, '![$1]($1)')
-  }, [debouncedContent])
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase()
-      
-      const isToggleToolbar = key === 't' && e.ctrlKey && e.altKey
-      if (isToggleToolbar) {
-        e.preventDefault()
-        e.stopPropagation()
-        setShowToolbar((prev) => !prev)
-        return
-      }
-
-      const isModP = key === 'p' && (e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey
-      if (!isModP) return
-
-      if (isFullPreview) return
-      if (isAiModalOpen) return
-      if (!selectedNote?.path) return
-
-      e.preventDefault()
-      e.stopPropagation()
-      setContextMenu(null)
-      setIsCommandPaletteOpen(true)
+      .catch(() => {})
+    return () => {
+      cancelled = true
     }
+  }, [])
 
-    window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [isAiModalOpen, isFullPreview, selectedNote?.path, setShowToolbar])
-
-  useEffect(() => {
-    if (!selectedNote?.path) setIsCommandPaletteOpen(false)
-  }, [selectedNote?.path])
-
+  // ── Callout / react-node helpers (passed to MarkdownPreview) ──────────────
   const getReactNodeText = useCallback((node: unknown): string => {
     if (node == null) return ''
     if (typeof node === 'string' || typeof node === 'number') return String(node)
     if (Array.isArray(node)) return node.map(getReactNodeText).join('')
-    if (isValidElement(node)) return getReactNodeText((node.props as { children?: unknown })?.children)
+    if (isValidElement(node))
+      return getReactNodeText((node.props as { children?: unknown })?.children)
     return ''
   }, [])
 
   const getCalloutMeta = useCallback(
     (type: string) => {
       const upper = type.toUpperCase()
-      const isDark = isDarkMode
 
       const make = (
         label: string,
         Icon: React.ComponentType<{ className?: string }>,
         colors: { light: { border: string; fg: string }; dark: { border: string; fg: string } }
       ) => {
-        const c = isDark ? colors.dark : colors.light
+        const c = isDarkMode ? colors.dark : colors.light
         return { label, Icon, ...c }
       }
 
@@ -243,1143 +106,54 @@ export const MarkdownEditor = () => {
     [isDarkMode]
   )
 
-  const vimCompartment = useMemo(() => new Compartment(), [])
-  const themeCompartment = useMemo(() => new Compartment(), [])
-  const highlightCompartment = useMemo(() => new Compartment(), [])
-  const relativeLineNumbersCompartment = useMemo(() => new Compartment(), [])
-  const lineWrappingCompartment = useMemo(() => new Compartment(), [])
-  const tabIndentCompartment = useMemo(() => new Compartment(), [])
-  const livePreviewImagesCompartment = useMemo(() => new Compartment(), [])
-  const languageSupportCompartment = useMemo(() => new Compartment(), [])
-
-  const reconfigureLanguage = useMemo(
-    () =>
-      debounce((view: EditorView, support: LanguageSupport | []) => {
-        if (!view.state) return
-        view.dispatch({
-          effects: languageSupportCompartment.reconfigure(support)
-        })
-      }, 100),
-    [languageSupportCompartment]
-  )
-
-  const applyEditorSettings = useCallback(() => {
-    const view = viewRef.current
-    if (!view) return
-
-    view.dispatch({
-      effects: [
-        vimCompartment.reconfigure(vimModeEnabled ? vim() : []),
-        themeCompartment.reconfigure(getEditorTheme(isDarkMode)),
-        highlightCompartment.reconfigure(
-          syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
-        ),
-        relativeLineNumbersCompartment.reconfigure(
-          relativeLineNumbersEnabled ? relativeLineNumbers() : []
-        ),
-        lineWrappingCompartment.reconfigure(lineWrappingEnabled ? EditorView.lineWrapping : []),
-        tabIndentCompartment.reconfigure(tabAsSpaces(tabIndentUnit)),
-        livePreviewImagesCompartment.reconfigure(
-          createLivePreviewImages(selectedNote?.path, rootDir || undefined)
-        ),
-        languageSupportCompartment.reconfigure([])
-      ]
-    })
-  }, [
-    highlightCompartment,
-    isDarkMode,
-    lineWrappingCompartment,
-    lineWrappingEnabled,
-    livePreviewImagesCompartment,
-    relativeLineNumbersCompartment,
-    relativeLineNumbersEnabled,
-    selectedNote?.path,
-    tabIndentCompartment,
-    tabIndentUnit,
-    themeCompartment,
-    vimCompartment,
-    vimModeEnabled,
-    rootDir,
-    languageSupportCompartment
-  ])
-
-  useEffect(() => {
-    let cancelled = false
-    void window.context
-      .getRootDir()
-      .then((dir) => {
-        if (!cancelled) setRootDir(dir)
-      })
-      .catch(() => {})
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  /* Save queue management */
-  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
-  const isSavingRef = useRef(false)
-
-  const currentNoteStatus = selectedNote?.path ? noteStatuses[selectedNote.path] : undefined
-  const currentNoteTag = selectedNote?.path ? noteTags[selectedNote.path] : undefined
-  const [tagInput, setTagInput] = useState('')
-
-  useEffect(() => {
-    setTagInput('')
-  }, [selectedNote?.path])
-
-  const debouncedSetContent = useMemo(
-    () => debounce((content: string) => setDebouncedContent(content), 300),
-    []
-  )
-
-  const insertTextAtCursor = useCallback((view: EditorView, text: string) => {
-    const selection = view.state.selection.main
-    view.dispatch({
-      changes: { from: selection.from, to: selection.to, insert: text },
-      selection: { anchor: selection.from + text.length }
-    })
-    view.focus()
-  }, [])
-
-  const extensionFromMimeType = useCallback((mimeType: string) => {
-    switch (mimeType.toLowerCase()) {
-      case 'image/png':
-        return '.png'
-      case 'image/jpeg':
-        return '.jpg'
-      case 'image/gif':
-        return '.gif'
-      case 'image/webp':
-        return '.webp'
-      case 'image/svg+xml':
-        return '.svg'
-      case 'image/bmp':
-        return '.bmp'
-      default:
-        return ''
-    }
-  }, [])
-
-  const importImageFilesAsMarkdownLinks = useCallback(
-    async (files: File[]) => {
-      if (!selectedNote?.path || files.length === 0) return []
-
-      const insertedLinks: string[] = []
-
-      for (const file of files) {
-        const sourcePath = (file as File & { path?: string }).path
-        const result = sourcePath
-          ? await window.context.importImageToRootImageFolder({ sourcePath })
-          : await (async () => {
-              const buffer = new Uint8Array(await file.arrayBuffer())
-              const originalName = file.name?.trim() || 'image'
-              const hasExtension = /\.[a-z0-9]+$/i.test(originalName)
-              const effectiveName = hasExtension
-                ? originalName
-                : `${originalName}${extensionFromMimeType(file.type)}`
-              return window.context.importImageToRootImageFolder({
-                fileName: effectiveName,
-                data: buffer
-              })
-            })()
-
-        if (result?.markdownPath) insertedLinks.push(`![[${result.markdownPath}]]`)
-      }
-
-      return insertedLinks
-    },
-    [extensionFromMimeType, selectedNote?.path]
-  )
-
-  const handleClipboardImagePaste = useCallback(
-    async (clipboardData: DataTransfer) => {
-      const itemFiles = Array.from(clipboardData.items ?? [])
-        .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
-        .map((item) => item.getAsFile())
-        .filter((file): file is File => file !== null)
-      const imageFiles = itemFiles.length
-        ? itemFiles
-        : Array.from(clipboardData.files ?? []).filter((file) => file.type.startsWith('image/'))
-
-      return importImageFilesAsMarkdownLinks(imageFiles)
-    },
-    [importImageFilesAsMarkdownLinks]
-  )
-
-  const baseExtensions = useMemo(
-    () => [
-      history(),
-      Prec.highest(
-        keymap.of([
-          {
-            key: 'Mod-b',
-            preventDefault: true,
-            stopPropagation: true,
-            run: (view) => {
-              suppressNativeFormatUntilRef.current.bold = Date.now() + 150
-              commands.applyFormat(view, '**', '**')
-              return true
-            }
-          },
-          {
-            key: 'Mod-i',
-            preventDefault: true,
-            stopPropagation: true,
-            run: (view) => {
-              suppressNativeFormatUntilRef.current.italic = Date.now() + 150
-              commands.applyFormat(view, '*', '*')
-              return true
-            }
-          }
-        ])
-      ),
-      keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
-      drawSelection(),
-      closeBrackets(),
-      autoCloseTags,
-      gutterTheme,
-      foldGutter(),
-      markdown({ base: markdownLanguage, codeLanguages, addKeymap: true, completeHTMLTags: false }),
-      lintGutter(),
-      indentationMarkers({
-        highlightActiveBlock: false,
-        hideFirstIndent: true,
-        markerType: 'codeOnly',
-        thickness: 1,
-        colors: {
-          light: 'rgba(0, 0, 0, 0.05)',
-          dark: 'rgba(255, 255, 255, 0.05)',
-          activeLight: 'rgba(0, 0, 0, 0.1)',
-          activeDark: 'rgba(255, 255, 255, 0.1)'
-        }
-      }),
-      autocompletion({ activateOnTyping: true, icons: true }),
-      markdownTableEnhancement,
-      checkboxExtension,
-      createClipboardExperience({ importImages: handleClipboardImagePaste }),
-      statusBarExtension,
-      codeBlockCopy,
-      codeBlockBackground,
-      quoteLineStyling,
-      tripleBacktickExtension,
-      markdownMarkupColors,
-      markdownLivePreview,
-      ...headingFoldExtension,
-      EditorView.contentAttributes.of({ spellcheck: 'true' })
-    ],
-    [
-      handleClipboardImagePaste
-    ]
-  )
-
-  /* Optimized save function with queue */
-  const executeSave = useCallback(
-    async (content: string, notePath: string) => {
-      /* Don't bail out if currentNoteTitleRef doesn't match; we might be flushing a save for a previous note! */
-      isSavingRef.current = true
-      try {
-        await saveNote({ newContent: content, path: notePath })
-      } catch {
-        /* Silently ignore save errors — the next autosave will retry */
-      } finally {
-        isSavingRef.current = false
-      }
-    },
-    [saveNote]
-  )
-
-  const queueSave = useCallback(
-    (content: string, notePath: string) => {
-      saveQueueRef.current = saveQueueRef.current.then(() => executeSave(content, notePath))
-      return saveQueueRef.current
-    },
-    [executeSave]
-  )
-
-  const debouncedSave = useMemo(
-    () =>
-      throttle(
-        (content: string, notePath: string) => queueSave(content, notePath),
-        autoSavingTime,
-        { leading: false, trailing: true }
-      ),
-    [queueSave]
-  )
-
-  const handleBlurSave = useCallback(async () => {
-    /* When focus is lost, we save the content of whatever is currently loaded in the CodeMirror view. */
-    if (!currentNotePathRef.current || !viewRef.current || isSwitchingRef.current) return
-    debouncedSave.flush()
-  }, [debouncedSave])
-
-  const handleEditorImageDrop = useCallback(
-    async (event: DragEvent, view: EditorView) => {
-      if (!selectedNote?.path) return false
-      if (!event.dataTransfer?.files?.length) return false
-
-      const imageFiles = Array.from(event.dataTransfer.files).filter((file) => {
-        const lowerName = file.name.toLowerCase()
-        return /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(lowerName)
-      })
-
-      if (imageFiles.length === 0) return false
-
-      event.preventDefault()
-      const insertedLinks = await importImageFilesAsMarkdownLinks(imageFiles)
-
-      if (insertedLinks.length > 0) {
-        insertTextAtCursor(view, `${insertedLinks.join('\n')}\n`)
-      }
-
-      return insertedLinks.length > 0
-    },
-    [importImageFilesAsMarkdownLinks, insertTextAtCursor, selectedNote?.path]
-  )
-
-  const handleExportPdf = useCallback(async () => {
-    if (!selectedNote?.path) return
-    setIsExportingPdf(true)
-    try {
-      const latestContent = viewRef.current?.state.doc.toString() ?? selectedNote?.content ?? ''
-      const success = await window.context.exportNoteToPdf(
-        selectedNote.path,
-        selectedNote.title,
-        latestContent
-      )
-      if (success) {
-        setExportNotice('PDF exported successfully')
-      }
-    } finally {
-      setIsExportingPdf(false)
-    }
-  }, [selectedNote?.content, selectedNote?.path, selectedNote?.title])
-
-  const handleHeaderRename = useCallback(
-    (newName: string) => {
-      if (!selectedNote?.path) return
-      const currentName = selectedNote.path.substring(
-        Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\')) + 1
-      )
-      const ext = currentName.includes('.')
-        ? currentName.substring(currentName.lastIndexOf('.'))
-        : ''
-      const newFileName = newName.endsWith(ext) ? newName : `${newName}${ext}`
-
-      const parentPath = selectedNote.path.substring(
-        0,
-        Math.max(selectedNote.path.lastIndexOf('/'), selectedNote.path.lastIndexOf('\\'))
-      )
-      const separator = selectedNote.path.includes('\\') ? '\\' : '/'
-      const newPath = parentPath ? `${parentPath}${separator}${newFileName}` : newFileName
-
-      if (newPath !== selectedNote.path) {
-        void movePath({ src: selectedNote.path, dest: newPath })
-      }
-    },
-    [selectedNote?.path, movePath]
-  )
-
-  useEffect(() => {
-    if (!exportNotice) return
-    const timer = window.setTimeout(() => setExportNotice(null), 2200)
-    return () => window.clearTimeout(timer)
-  }, [exportNotice])
-
-  const openAiModal = useCallback(async () => {
-    setContextMenu(null)
-    setIsAiModalOpen(true)
-    setAiError(null)
-    setIsLoadingAiModels(true)
-
-    try {
-      const models = await window.context.listFreeAiModels(aiApiKey.trim() || undefined)
-      setAiModels(models)
-      setSelectedAiModel((prev) => prev || models[0]?.id || '')
-    } catch (error) {
-      setAiError('Failed to load models.')
-    } finally {
-      setIsLoadingAiModels(false)
-    }
-  }, [aiApiKey])
-
-  /* EditorMenuEntry type is now imported from editorMenuLogic */
-
-  const editorMenuEntries: EditorMenuEntry[] = useMemo(
-    () => getEditorMenuEntries(openAiModal),
-    [openAiModal]
-  )
-
-  const panelCommandItems: CommandPaletteItem[] = useMemo(() => {
-    const getSelectedNoteDir = () => {
-      const path = selectedNote?.path ?? ''
-      if (!path) return ''
-      const lastSlash = path.lastIndexOf('/')
-      const lastBackslash = path.lastIndexOf('\\')
-      const maxIndex = Math.max(lastSlash, lastBackslash)
-      return maxIndex === -1 ? '' : path.substring(0, maxIndex)
-    }
-
-    return [
-      {
-        id: 'panel-kanban',
-        label: 'Kanban',
-        icon: <VscProject />,
-        keywords: ['panel', 'left', 'board', 'project'],
-        run: () => createKanbanTab()
-      },
-      {
-        id: 'panel-terminal',
-        label: 'Terminal',
-        icon: <VscTerminal />,
-        keywords: ['panel', 'left', 'shell', 'cli'],
-        run: () => createTerminalTab()
-      },
-      {
-        id: 'panel-canvas',
-        label: 'Canvas',
-        icon: <VscSymbolRuler />,
-        keywords: ['panel', 'left', 'diagram', 'whiteboard'],
-        run: () => void createCanvas(getSelectedNoteDir())
-      }
-    ]
-  }, [createCanvas, createKanbanTab, createTerminalTab, selectedNote?.path])
-
-  const editorCommandItems: CommandPaletteItem[] = useMemo(
-    () =>
-      editorMenuEntries
-        .filter((e): e is Extract<EditorMenuEntry, { type: 'item' }> => e.type === 'item')
-        .map(({ id, label, icon, shortcut, keywords, run }) => ({
-          id,
-          label,
-          icon,
-          shortcut,
-          keywords,
-          run: () => run(viewRef.current)
-        })),
-    [editorMenuEntries]
-  )
-
-  const commandPaletteItems: CommandPaletteItem[] = useMemo(
-    () => [...panelCommandItems, ...editorCommandItems],
-    [editorCommandItems, panelCommandItems]
-  )
-
-  const insertAiText = useCallback((text: string) => {
-    const view = viewRef.current
-    if (!view) return
-
-    const selection = view.state.selection.main
-    view.dispatch({
-      changes: { from: selection.from, to: selection.to, insert: text },
-      selection: { anchor: selection.from + text.length }
-    })
-    view.focus()
-  }, [])
-
-  const fileTree = useAtomValue(fileTreeAtom)
-  const fileTreeIndex = useAtomValue(fileTreeIndexAtom)
-
-  const handleGenerateWithAi = useCallback(
-    async (contextPaths: string[] = []) => {
-      if (!viewRef.current) return
-
-      const prompt = aiPrompt.trim()
-      if (!prompt) {
-        setAiError('Prompt is required.')
-        return
-      }
-      if (!selectedAiModel) {
-        setAiError('Please select a model.')
-        return
-      }
-
-      setIsGeneratingWithAi(true)
-      setAiError(null)
-
-      try {
-        const currentContent = viewRef.current.state.doc.toString()
-
-        const normalizePath = (p: string) => p.replace(/\\/g, '/')
-        const rootDirNormalized = normalizePath(rootDir || '').replace(/\/+$/, '')
-        const displayPath = (absPath: string) => {
-          const n = normalizePath(absPath)
-          if (rootDirNormalized && n.startsWith(`${rootDirNormalized}/`)) {
-            return n.slice(rootDirNormalized.length + 1)
-          }
-          return n
-        }
-
-        const truncateMiddle = (text: string, maxChars: number) => {
-          if (text.length <= maxChars) return text
-          const head = Math.floor(maxChars * 0.6)
-          const tail = maxChars - head
-          return `${text.slice(0, head)}\n\n…(truncated ${text.length - maxChars} chars)…\n\n${text.slice(
-            text.length - tail
-          )}`
-        }
-
-        const MAX_NOTE_CHARS = 40_000
-        const contentForAi = truncateMiddle(currentContent, MAX_NOTE_CHARS)
-        const currentNotePath = selectedNote?.path || ''
-        const effectiveContextPaths = currentNotePath
-          ? Array.from(new Set([currentNotePath, ...contextPaths]))
-          : contextPaths
-
-        // Gather context content
-        let fullContext = ''
-        if (effectiveContextPaths.length > 0) {
-          const MAX_CONTEXT_FILES = 20
-          const MAX_CONTEXT_TOTAL_CHARS = 60_000
-          const MAX_CONTEXT_CHARS_PER_FILE = 12_000
-
-          const collectedFiles: FileNode[] = []
-          const visited = new Set<string>()
-          const stack: string[] = [...effectiveContextPaths]
-          while (stack.length) {
-            const p = stack.pop()!
-            if (visited.has(p)) continue
-            visited.add(p)
-
-            const node = fileTreeIndex.get(p)
-            if (!node) continue
-
-            if (node.type === 'file') {
-              if (currentNotePath && node.path === currentNotePath) continue
-              collectedFiles.push(node)
-            } else if (node.children?.length) {
-              for (const child of node.children) stack.push(child.path)
-            }
-          }
-
-          const uniqueFiles = Array.from(
-            new Map(collectedFiles.map((n) => [n.path, n])).values()
-          ).sort((a, b) => displayPath(a.path).localeCompare(displayPath(b.path)))
-
-          const contextLines: string[] = []
-          let used = 0
-          let addedFiles = 0
-          let hitLimit = false
-
-          for (const node of uniqueFiles) {
-            if (addedFiles >= MAX_CONTEXT_FILES) {
-              hitLimit = true
-              break
-            }
-
-            try {
-              const raw = await window.context.readFileNew(node.path)
-              if (raw == null) continue
-
-              const truncated = raw.length > MAX_CONTEXT_CHARS_PER_FILE
-              const snippet = truncated
-                ? `${raw.slice(0, MAX_CONTEXT_CHARS_PER_FILE)}\n…(truncated ${
-                    raw.length - MAX_CONTEXT_CHARS_PER_FILE
-                  } chars)…\n`
-                : raw
-
-              const block = `--- FILE: ${displayPath(node.path)} ---\n${snippet}\n`
-              if (used + block.length > MAX_CONTEXT_TOTAL_CHARS) {
-                hitLimit = true
-                break
-              }
-
-              contextLines.push(block)
-              used += block.length
-              addedFiles++
-            } catch {
-              /* Silently skip files that can't be read */
-            }
-          }
-
-          if (hitLimit) {
-            contextLines.push(
-              `---\n(Some context was omitted to stay within size limits. Try selecting fewer files/folders.)\n---\n`
-            )
-          }
-
-          fullContext = contextLines.join('\n')
-        }
-
-        const noteLine = currentNotePath ? `Current note: ${displayPath(currentNotePath)}\n\n` : ''
-        const finalPrompt = fullContext
-          ? `${noteLine}I am providing some file context below to help with your task.\n\nContext:\n${fullContext}\n\nTask:\n${prompt}`
-          : `${noteLine}${prompt}`
-
-        const result = await window.context.generateWithAi({
-          model: selectedAiModel,
-          prompt: finalPrompt,
-          content: contentForAi,
-          apiKey: aiApiKey.trim() || undefined
-        })
-
-        if ('error' in result) {
-          setAiError(result.error)
-          return
-        }
-
-        insertAiText(result.text)
-        setIsAiModalOpen(false)
-        setAiPrompt('')
-      } catch (error) {
-        setAiError('Failed to generate text.')
-      } finally {
-        setIsGeneratingWithAi(false)
-      }
-    },
-    [aiApiKey, aiPrompt, insertAiText, selectedAiModel, fileTreeIndex, rootDir, selectedNote?.path]
-  )
-
-  useEffect(() => {
-    if (!isGeneratingWithAi) {
-      setAiProgress(0)
-      return
-    }
-
-    setAiProgress(8)
-    const timer = window.setInterval(() => {
-      setAiProgress((prev) => {
-        if (prev >= 92) return prev
-        return prev + Math.max(1, Math.round((100 - prev) / 12))
-      })
-    }, 280)
-
-    return () => window.clearInterval(timer)
-  }, [isGeneratingWithAi])
-
-  /* Initialize editor (once per mount) + switch documents without recreating the view */
-  useEffect(() => {
-    if (!selectedNote?.path || !editorRef.current) {
-      debouncedSetContent.cancel()
-      setDebouncedContent('')
-      return
-    }
-
-    const buildState = (doc: string) =>
-      EditorState.create({
-        doc,
-        selection: { anchor: 0 },
-        extensions: [
-          ...baseExtensions,
-          vimCompartment.of(vimModeEnabled ? vim() : []),
-          themeCompartment.of(getEditorTheme(isDarkMode)),
-          highlightCompartment.of(
-            syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
-          ),
-          relativeLineNumbersCompartment.of(
-            relativeLineNumbersEnabled ? relativeLineNumbers() : []
-          ),
-          lineWrappingCompartment.of(lineWrappingEnabled ? EditorView.lineWrapping : []),
-          tabIndentCompartment.of(tabAsSpaces(tabIndentUnit)),
-          livePreviewImagesCompartment.of(
-            createLivePreviewImages(selectedNote?.path, rootDir || undefined)
-          ),
-          languageSupportCompartment.of([]),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged || update.selectionSet) {
-              /* Only check for language changes if the cursor moved or content changed */
-              const pos = update.state.selection.main.head
-
-              /* Optimization: skip if cursor didn't move much and we already know the language */
-              /* This is handled by resolveInner being fast enough usually,  */
-              /* but we can be more strategic. */
-
-              const tree = ensureSyntaxTree(update.state, pos, 50) || syntaxTree(update.state)
-              const node = tree.resolveInner(pos, -1)
-              let fence = node
-              while (fence && fence.name !== 'FencedCode') {
-                fence = fence.parent!
-                if (!fence) break
-              }
-
-              let langName: string | null = null
-              if (fence) {
-                const info = fence.getChild('CodeInfo')
-                if (info) {
-                  langName = update.state
-                    .sliceDoc(info.from, info.to)
-                    .trim()
-                    .split(/\s+/)[0]
-                    .toLowerCase()
-                }
-              }
-
-              if (langName !== lastLanguageRef.current) {
-                lastLanguageRef.current = langName
-
-                if (langName) {
-                  const desc =
-                    LanguageDescription.matchLanguageName(codeLanguages, langName) ||
-                    LanguageDescription.matchFilename(codeLanguages, `f.${langName}`)
-
-                  if (desc) {
-                    desc
-                      .load()
-                      .then((support) => {
-                        if (lastLanguageRef.current === langName) {
-                          reconfigureLanguage(update.view, support)
-                        }
-                      })
-                      .catch(() => {
-                        reconfigureLanguage(update.view, [])
-                      })
-                  } else {
-                    reconfigureLanguage(update.view, [])
-                  }
-                } else {
-                  reconfigureLanguage(update.view, [])
-                }
-              }
-            }
-            if (update.docChanged && !isSwitchingRef.current) {
-              const content = update.state.doc.toString()
-              debouncedSetContent(content)
-              debouncedSave(content, currentNotePathRef.current)
-            }
-          }),
-          EditorView.domEventHandlers({
-            beforeinput: (event, view) => {
-              const inputType = (event as InputEvent).inputType
-              if (inputType !== 'formatBold' && inputType !== 'formatItalic') return false
-
-              const now = Date.now()
-              if (inputType === 'formatBold' && now < suppressNativeFormatUntilRef.current.bold) {
-                event.preventDefault()
-                return true
-              }
-              if (
-                inputType === 'formatItalic' &&
-                now < suppressNativeFormatUntilRef.current.italic
-              ) {
-                event.preventDefault()
-                return true
-              }
-
-              event.preventDefault()
-              if (inputType === 'formatBold') commands.applyFormat(view, '**', '**')
-              else commands.applyFormat(view, '*', '*')
-              return true
-            },
-            blur: () => {
-              handleBlurSave()
-              return false
-            },
-            dragover: (event) => {
-              if (!event.dataTransfer?.files?.length) return false
-              event.preventDefault()
-              return true
-            },
-            drop: (event, view) => {
-              if (!event.dataTransfer?.files?.length) return false
-              void handleEditorImageDrop(event, view)
-              return true
-            }
-          })
-        ]
-      })
-
-    const ensureView = () => {
-      if (viewRef.current) return
-
-      viewRef.current = new EditorView({ state: buildState(''), parent: editorRef.current! })
-    }
-
-    const switchNote = () => {
-      isSwitchingRef.current = true
-      ensureView()
-
-      const newTitle = selectedNote.title
-      const newContent = selectedNote.content
-
-      /* FLUSH pending debounced saves for the OLD note before replacing refs */
-      /* This prevents data loss when rapidly switching tabs while typing */
-      debouncedSave.flush()
-
-      currentNoteTitleRef.current = newTitle
-      currentNotePathRef.current = selectedNote.path
-      lastLanguageRef.current = null
-
-      /* Update state immediately for visual snappiness */
-      debouncedSetContent.cancel()
-      setDebouncedContent(newContent)
-
-      const view = viewRef.current
-      if (view) {
-        /* Replace state entirely to reset undo history and prevent Ctrl+Z cross-contamination */
-        view.setState(buildState(newContent))
-      }
-      isSwitchingRef.current = false
-    }
-
-    switchNote()
-    return () => {
-      debouncedSave.cancel()
-    }
-    // Intentionally only re-runs on note path change; compartments/settings
-    // are reconfigured separately by applyEditorSettings.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedNote?.path,
-    baseExtensions,
-    debouncedSave,
-    handleBlurSave,
-    handleEditorImageDrop,
-    applyEditorSettings,
-  ])
-
-  /* Sync editor when selectedNote content resolves asynchronously for the current path.
-   * `selectedNoteAtom` uses `unwrap()` which emits the fallback { content: '' } first,
-   * then re-emits with the real file content. The path-keyed effect above already handled
-   * the switch, but with empty content. This effect catches the follow-up emission. */
-  useEffect(() => {
-    if (!selectedNote?.path) return
-    if (selectedNote.path !== currentNotePathRef.current) return
-    if (isSwitchingRef.current) return
-
-    const view = viewRef.current
-    if (!view) return
-
-    const editorContent = view.state.doc.toString()
-    const incomingContent = selectedNote.content
-
-    // Only sync if the editor is still empty (showing the fallback) but real content arrived
-    if (editorContent === '' && incomingContent !== '') {
-      debouncedSetContent.cancel()
-      setDebouncedContent(incomingContent)
-      view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: incomingContent },
-        selection: { anchor: 0 }
-      })
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNote?.content, selectedNote?.path])
-
-  useEffect(() => {
-    applyEditorSettings()
-  }, [applyEditorSettings])
-
-  /* Destroy editor if no note is selected */
-  useEffect(() => {
-    if (!selectedNote?.path && viewRef.current) {
-      viewRef.current.destroy()
-      viewRef.current = null
-    }
-  }, [selectedNote?.path])
-
-  /* Clean up editor */
-  useEffect(() => {
-    return () => {
-      if (viewRef.current) {
-        viewRef.current.destroy()
-        viewRef.current = null
-      }
-      debouncedSave.cancel()
-    }
-  }, [debouncedSave])
-
-  /* Draggable resize */
-  useEffect(() => {
-    if (!isPreview || isFullPreview) return // Disabled for full preview mode
-    const dragBar = dragBarRef.current
-    const editor = editorContainerRef.current
-    const preview = previewContainerRef.current
-    if (!dragBar || !editor || !preview) return
-
-    let startX = 0
-    let startWidth = 0
-
-    const onMouseMove = (e: MouseEvent) => {
-      const delta = e.clientX - startX
-      const newWidth = startWidth + delta
-      const containerWidth = containerRef.current?.offsetWidth || 1
-      const minWidth = containerWidth * 0.2
-      const maxWidth = containerWidth * 0.8
-      const clampedWidth = Math.min(Math.max(newWidth, minWidth), maxWidth)
-      editor.style.width = `${clampedWidth}px`
-      preview.style.width = `${containerWidth - clampedWidth}px`
-    }
-
-    const onMouseUp = () => {
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-
-    const onMouseDown = (e: MouseEvent) => {
-      startX = e.clientX
-      startWidth = editor.offsetWidth
-      window.addEventListener('mousemove', onMouseMove)
-      window.addEventListener('mouseup', onMouseUp)
-    }
-
-    dragBar.addEventListener('mousedown', onMouseDown)
-    return () => {
-      dragBar.removeEventListener('mousedown', onMouseDown)
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [isPreview, isFullPreview])
-
-  /* FAB Visibility & Inactivity Timer */
-  const fabTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    const fabThreshold = 5
-    const inactivityTimeout = 10000 // 10 seconds
-
-    const showAndResetTimer = () => {
-      setShowFAB(true)
-      if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
-      fabTimerRef.current = setTimeout(() => {
-        setShowFAB(false)
-      }, inactivityTimeout)
-    }
-
-    const handleScroll = (e: Event) => {
-      const target = e.target as HTMLElement
-      if (target.scrollTop !== undefined && target.scrollTop > fabThreshold) {
-        showAndResetTimer()
-      }
-    }
-
-    const handleMouseMove = () => {
-      showAndResetTimer()
-    }
-
-    const container = containerRef.current
-    if (container) {
-      container.addEventListener('scroll', handleScroll, true)
-      container.addEventListener('mousemove', handleMouseMove)
-    }
-
-    return () => {
-      container?.removeEventListener('scroll', handleScroll, true)
-      container?.removeEventListener('mousemove', handleMouseMove)
-      if (fabTimerRef.current) clearTimeout(fabTimerRef.current)
-    }
-  }, [selectedNote?.path, isPreview, isFullPreview])
-
-  useEffect(() => {
-    /* Reset FAB when switching notes */
-    setShowFAB(false)
-  }, [selectedNote?.path])
-
-  const captureScrollPercentage = useCallback(() => {
-    if (isFullPreview) {
-      if (previewContainerRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = previewContainerRef.current
-        if (scrollHeight > clientHeight) {
-          lastScrollPercentageRef.current = scrollTop / (scrollHeight - clientHeight)
-        }
-      }
-    } else {
-      if (viewRef.current) {
-        const { scrollDOM } = viewRef.current
-        const { scrollTop, scrollHeight, clientHeight } = scrollDOM
-        if (scrollHeight > clientHeight) {
-          lastScrollPercentageRef.current = scrollTop / (scrollHeight - clientHeight)
-        }
-      }
-    }
-  }, [isFullPreview])
-
-  const restoreScrollPosition = useCallback(() => {
-    const percentage = lastScrollPercentageRef.current
-    if (percentage <= 0) return
-
-    /* Restore Editor Scroll */
-    if (viewRef.current) {
-      const { scrollDOM } = viewRef.current
-      const { scrollHeight, clientHeight } = scrollDOM
-      if (scrollHeight > clientHeight) {
-        scrollDOM.scrollTop = percentage * (scrollHeight - clientHeight)
-      }
-    }
-
-    /* Restore Preview Scroll */
-    if (previewContainerRef.current) {
-      const { scrollHeight, clientHeight } = previewContainerRef.current
-      if (scrollHeight > clientHeight) {
-        previewContainerRef.current.scrollTop = percentage * (scrollHeight - clientHeight)
-      }
-    }
-  }, [])
-
-  /* Restore scroll when mode changes */
-  useEffect(() => {
-    /* 50ms is a good compromise for layout stabilization */
-    const timer = setTimeout(restoreScrollPosition, 50)
-    return () => clearTimeout(timer)
-  }, [isPreview, isFullPreview, restoreScrollPosition])
-
-  const scrollSyncLockRef = useRef<null | 'editor' | 'preview'>(null)
-  const scrollSyncRafRef = useRef<number | null>(null)
-  const lastProgrammaticScrollRef = useRef<{ editor: number; preview: number }>({
-    editor: 0,
-    preview: 0
+  // ── Custom hooks ──────────────────────────────────────────────────────────
+  const noteMetadata = useNoteMetadata({
+    selectedNote: selectedNote as SelectedNote | null,
+    viewRef
   })
 
-  /* Sync scroll between editor + preview in split view */
-  useEffect(() => {
-    if (!isPreview || isFullPreview) return
-
-    const editorContainer = editorContainerRef.current
-    const previewContainer = previewContainerRef.current
-    if (!editorContainer || !previewContainer) return
-
-    const clearRaf = () => {
-      if (scrollSyncRafRef.current != null) {
-        window.cancelAnimationFrame(scrollSyncRafRef.current)
-        scrollSyncRafRef.current = null
-      }
-    }
-
-    const getScrollPercentage = (el: HTMLElement) => {
-      const max = el.scrollHeight - el.clientHeight
-      if (max <= 0) return 0
-      return el.scrollTop / max
-    }
-
-    const setScrollPercentage = (el: HTMLElement, percentage: number) => {
-      const max = el.scrollHeight - el.clientHeight
-      if (max <= 0) {
-        el.scrollTop = 0
-        return
-      }
-      const nextTop = percentage * max
-      if (Math.abs(el.scrollTop - nextTop) < 0.5) return
-      el.scrollTop = nextTop
-    }
-
-    const getEditorScroller = (eventTarget: EventTarget | null): HTMLElement | null => {
-      const viewScroller = viewRef.current?.scrollDOM as HTMLElement | undefined
-      if (viewScroller) return viewScroller
-
-      if (!(eventTarget instanceof HTMLElement)) return null
-      if (eventTarget.classList.contains('cm-scroller')) return eventTarget
-      return eventTarget.closest?.('.cm-scroller') ?? null
-    }
-
-    const syncFromEditor = (source: HTMLElement) => {
-      if (scrollSyncLockRef.current === 'preview') return
-      scrollSyncLockRef.current = 'editor'
-
-      const percentage = getScrollPercentage(source)
-      lastScrollPercentageRef.current = percentage
-
-      clearRaf()
-      scrollSyncRafRef.current = window.requestAnimationFrame(() => {
-        lastProgrammaticScrollRef.current.preview = performance.now()
-        setScrollPercentage(previewContainer, percentage)
-        window.requestAnimationFrame(() => {
-          scrollSyncLockRef.current = null
-        })
-      })
-    }
-
-    const syncFromPreview = () => {
-      if (scrollSyncLockRef.current === 'editor') return
-      const editorScroller = viewRef.current?.scrollDOM as HTMLElement | undefined
-      if (!editorScroller) return
-
-      scrollSyncLockRef.current = 'preview'
-
-      const percentage = getScrollPercentage(previewContainer)
-      lastScrollPercentageRef.current = percentage
-
-      clearRaf()
-      scrollSyncRafRef.current = window.requestAnimationFrame(() => {
-        lastProgrammaticScrollRef.current.editor = performance.now()
-        setScrollPercentage(editorScroller, percentage)
-        window.requestAnimationFrame(() => {
-          scrollSyncLockRef.current = null
-        })
-      })
-    }
-
-    const onEditorScroll = (e: Event) => {
-      if (performance.now() - lastProgrammaticScrollRef.current.editor < 120) return
-      const scroller = getEditorScroller(e.target)
-      if (!scroller) return
-      syncFromEditor(scroller)
-    }
-
-    const onPreviewScroll = () => {
-      if (performance.now() - lastProgrammaticScrollRef.current.preview < 120) return
-      syncFromPreview()
-    }
-
-    editorContainer.addEventListener('scroll', onEditorScroll, true)
-    previewContainer.addEventListener('scroll', onPreviewScroll)
-
-    return () => {
-      editorContainer.removeEventListener('scroll', onEditorScroll, true)
-      previewContainer.removeEventListener('scroll', onPreviewScroll)
-      clearRaf()
-      scrollSyncLockRef.current = null
-    }
-  }, [isPreview, isFullPreview, selectedNote?.path])
-
-  const handleFullPreviewToggle = () => {
-    captureScrollPercentage()
-    /* Synchronize preview content immediately for a safe and efficient transition */
-    if (viewRef.current) {
-      setDebouncedContent(viewRef.current.state.doc.toString())
-    }
-
-    if (isFullPreview) {
-      setIsFullPreview(false)
-      setIsPreview(false)
-    } else {
-      setIsFullPreview(true)
-      setIsPreview(true)
-    }
-  }
-
-  const handleSplitViewToggle = () => {
-    captureScrollPercentage()
-    /* Synchronize preview content immediately for a safe and efficient transition */
-    if (viewRef.current) {
-      setDebouncedContent(viewRef.current.state.doc.toString())
-    }
-    if (isFullPreview) {
-      setIsFullPreview(false)
-      setIsPreview(true)
-    } else {
-      setIsPreview(!isPreview)
-    }
-  }
-
-  const handleStatusChange = (status: string) => {
-    const notePath = selectedNote?.path
-    if (!notePath) return
-
-    setNoteStatuses((prev) => {
-      const next = { ...prev }
-      if (!status) {
-        delete next[notePath]
-        return next
-      }
-      next[notePath] = status as (typeof NOTE_STATUS_VALUES)[number]
-      return next
+  const { compartments, applyEditorSettings, reconfigureLanguage, ...editorSettings } =
+    useEditorCompartments({
+      viewRef,
+      selectedNotePath: selectedNote?.path,
+      rootDir
     })
-  }
 
-  const handleTagChange = (tag: string) => {
-    const notePath = selectedNote?.path
-    if (!notePath) return
+  const lifecycle = useEditorLifecycle({
+    selectedNote: selectedNote as SelectedNote | null,
+    editorRef,
+    viewRef,
+    compartments,
+    isDarkMode: editorSettings.isDarkMode,
+    vimModeEnabled: editorSettings.vimModeEnabled,
+    relativeLineNumbersEnabled: editorSettings.relativeLineNumbersEnabled,
+    lineWrappingEnabled: editorSettings.lineWrappingEnabled,
+    tabIndentUnit: editorSettings.tabIndentUnit,
+    rootDir,
+    reconfigureLanguage
+  })
 
-    setNoteTags((prev) => {
-      const next = { ...prev }
-      if (!tag) {
-        delete next[notePath]
-        return next
-      }
-      next[notePath] = tag
-      return next
-    })
-  }
+  const splitView = useSplitViewSync({
+    viewRef,
+    selectedNote: selectedNote as SelectedNote | null,
+    setDebouncedContent: lifecycle.setDebouncedContent
+  })
 
+  const ai = useAiGeneration({
+    viewRef,
+    rootDir,
+    selectedNote: selectedNote as SelectedNote | null
+  })
+
+  const palette = useCommandPalette({
+    viewRef,
+    selectedNote: selectedNote as SelectedNote | null,
+    isFullPreview: splitView.isFullPreview,
+    isAiModalOpen: ai.isAiModalOpen,
+    openAiModal: ai.openAiModal
+  })
+
+  // ── Empty state ───────────────────────────────────────────────────────────
   if (!selectedNote?.path) {
     return (
       <div className="flex items-center justify-center h-full bg-[var(--obsidian-base)]">
@@ -1404,110 +178,139 @@ export const MarkdownEditor = () => {
 
   return (
     <div className="flex flex-col h-full w-full bg-[var(--obsidian-base)]">
-      {exportNotice && (
+      {noteMetadata.exportNotice && (
         <div className="absolute top-14 right-5 z-50 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg">
-          {exportNotice}
+          {noteMetadata.exportNotice}
         </div>
       )}
+
       <EditorHeader
         title={selectedNote.title}
         path={selectedNote.path}
-        currentStatus={currentNoteStatus}
-        currentTag={currentNoteTag}
-        tagInput={tagInput}
-        setTagInput={setTagInput}
-        handleStatusChange={handleStatusChange}
-        handleTagChange={handleTagChange}
-        handleExportPdf={() => void handleExportPdf()}
-        onRename={handleHeaderRename}
-        isExportingPdf={isExportingPdf}
+        saveStatus={selectedNote.readError ? 'error' : lifecycle.saveStatus}
+        saveError={selectedNote.readError ?? lifecycle.saveError}
+        hasUnsavedChanges={lifecycle.hasUnsavedChanges}
+        onRetrySave={selectedNote.readError ? undefined : lifecycle.retrySaveNow}
+        currentStatus={noteMetadata.currentNoteStatus}
+        currentTag={noteMetadata.currentNoteTag}
+        tagInput={noteMetadata.tagInput}
+        setTagInput={noteMetadata.setTagInput}
+        handleStatusChange={noteMetadata.handleStatusChange}
+        handleTagChange={noteMetadata.handleTagChange}
+        handleExportPdf={() => void noteMetadata.handleExportPdf()}
+        onRename={noteMetadata.handleHeaderRename}
+        isExportingPdf={noteMetadata.isExportingPdf}
       />
 
-      <div
-        ref={containerRef}
-        className="flex-1 flex h-full overflow-hidden relative"
-        onContextMenu={(e) => {
-          if (isFullPreview) return
-          e.preventDefault()
-          setContextMenu({ x: e.clientX, y: e.clientY })
-        }}
-      >
-        {/* Floating Format Toolbar */}
-        {!isFullPreview && showToolbar && (
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto shrink-0">
-            <MarkdownToolbarMemo view={viewRef.current} onWriteWithAi={() => void openAiModal()} />
+      {selectedNote.readError ? (
+        <div className="flex flex-1 items-center justify-center bg-[var(--obsidian-base)] px-6">
+          <div className="max-w-md rounded-md border border-red-500/30 bg-red-500/10 p-5 text-center">
+            <h2 className="text-base font-semibold text-red-500">Could not open this note</h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--obsidian-text-muted)]">
+              The file could not be read, so editing is disabled to protect the content on disk.
+            </p>
+            <p className="mt-3 break-words text-xs text-[var(--obsidian-text-muted)]">
+              {selectedNote.readError}
+            </p>
           </div>
-        )}
-
-        {/* Floating Action Button (FAB) */}
-        <EditorFAB
-          showFAB={showFAB}
-          isFullPreview={isFullPreview}
-          isPreview={isPreview}
-          handleFullPreviewToggle={handleFullPreviewToggle}
-          handleSplitViewToggle={handleSplitViewToggle}
-        />
-        <div
-          ref={editorContainerRef}
-          className="h-full"
-          style={{
-            width: isFullPreview ? '0' : isPreview ? '50%' : '100%',
-            display: isFullPreview ? 'none' : 'block'
-          }}
-        >
-          <div ref={editorRef} className="absolute inset-0 w-full h-full visible" />
         </div>
-
-        {isPreview && !isFullPreview && (
-          <div
-            ref={dragBarRef}
-            className="w-1.5 cursor-col-resize bg-[var(--obsidian-border)] hover:bg-[var(--obsidian-accent)] z-10 flex items-center justify-center transition-colors"
-          >
-            <MdDragIndicator className="w-3 h-3 text-[var(--obsidian-text-muted)]" />
-          </div>
-        )}
-
-        {/* Toggleable Preview Container */}
+      ) : (
         <div
-          ref={previewContainerRef}
-          className="h-full writr-markdown-preview preview-scrollbar overflow-auto bg-[var(--obsidian-base)] p-8"
-          style={{
-            width: isFullPreview ? '100%' : '50%',
-            display: isPreview ? 'block' : 'none'
+          ref={splitView.containerRef}
+          className="flex-1 flex h-full overflow-hidden relative"
+          onContextMenu={(e) => {
+            if (splitView.isFullPreview) return
+            e.preventDefault()
+            setContextMenu({ x: e.clientX, y: e.clientY })
           }}
         >
-          <div className="w-full min-w-0">
-            <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
-              <MarkdownPreview
-                previewMarkdown={previewMarkdown}
-                selectedNotePath={selectedNote.path}
-                rootDir={rootDir || undefined}
-                isDarkMode={isDarkMode}
-                previewReadableWidthClass={previewReadableWidthClass}
-                getReactNodeText={getReactNodeText}
-                getCalloutMeta={getCalloutMeta}
-                isFullPreview={isFullPreview}
+          {/* Floating Format Toolbar */}
+          {!splitView.isFullPreview && palette.showToolbar && (
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto shrink-0">
+              <MarkdownToolbarMemo
+                view={viewRef.current}
+                onWriteWithAi={() => void ai.openAiModal()}
               />
+            </div>
+          )}
+
+          {/* Floating Action Button (FAB) */}
+          <EditorFAB
+            showFAB={splitView.showFAB}
+            isFullPreview={splitView.isFullPreview}
+            isPreview={splitView.isPreview}
+            handleFullPreviewToggle={splitView.handleFullPreviewToggle}
+            handleSplitViewToggle={splitView.handleSplitViewToggle}
+          />
+
+          {/* Editor pane */}
+          <div
+            ref={splitView.editorContainerRef}
+            className="h-full"
+            style={{
+              width: splitView.isFullPreview ? '0' : splitView.isPreview ? '50%' : '100%',
+              display: splitView.isFullPreview ? 'none' : 'block'
+            }}
+          >
+            <div ref={editorRef} className="absolute inset-0 w-full h-full visible" />
+          </div>
+
+          {/* Drag resize bar */}
+          {splitView.isPreview && !splitView.isFullPreview && (
+            <div
+              ref={splitView.dragBarRef}
+              className="w-1.5 cursor-col-resize bg-[var(--obsidian-border)] hover:bg-[var(--obsidian-accent)] z-10 flex items-center justify-center transition-colors"
+            >
+              <MdDragIndicator className="w-3 h-3 text-[var(--obsidian-text-muted)]" />
+            </div>
+          )}
+
+          {/* Preview pane */}
+          <div
+            ref={splitView.previewContainerRef}
+            className="h-full writr-markdown-preview preview-scrollbar overflow-auto bg-[var(--obsidian-base)] p-8"
+            style={{
+              width: splitView.isFullPreview ? '100%' : '50%',
+              display: splitView.isPreview ? 'block' : 'none'
+            }}
+          >
+            <div className="w-full min-w-0">
+              <div className="prose prose-sm max-w-none w-full break-words text-[var(--obsidian-text)]">
+                <MarkdownPreview
+                  previewMarkdown={lifecycle.previewMarkdown}
+                  selectedNotePath={selectedNote.path}
+                  rootDir={rootDir || undefined}
+                  isDarkMode={isDarkMode}
+                  previewReadableWidthClass={previewReadableWidthClass}
+                  getReactNodeText={getReactNodeText}
+                  getCalloutMeta={getCalloutMeta}
+                  isFullPreview={splitView.isFullPreview}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* AI Modal */}
       <AiModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-        selectedAiModel={selectedAiModel}
-        setSelectedAiModel={setSelectedAiModel}
-        aiModels={aiModels}
-        isLoadingAiModels={isLoadingAiModels}
-        aiPrompt={aiPrompt}
-        setAiPrompt={setAiPrompt}
-        isGeneratingWithAi={isGeneratingWithAi}
-        aiProgress={aiProgress}
-        aiError={aiError}
-        onGenerate={(paths) => void handleGenerateWithAi(paths)}
+        isOpen={ai.isAiModalOpen}
+        onClose={() => ai.setIsAiModalOpen(false)}
+        selectedAiModel={ai.selectedAiModel}
+        setSelectedAiModel={ai.setSelectedAiModel}
+        aiModels={ai.aiModels}
+        isLoadingAiModels={ai.isLoadingAiModels}
+        aiPrompt={ai.aiPrompt}
+        setAiPrompt={ai.setAiPrompt}
+        isGeneratingWithAi={ai.isGeneratingWithAi}
+        aiProgress={ai.aiProgress}
+        aiError={ai.aiError}
+        onGenerate={(paths) => void ai.handleGenerateWithAi(paths)}
         fileTree={fileTree ?? []}
         currentNotePath={selectedNote?.path ?? null}
       />
+
+      {/* Context menu */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -1515,7 +318,7 @@ export const MarkdownEditor = () => {
           onClose={() => setContextMenu(null)}
           className="fixed z-50 bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar"
         >
-          {editorMenuEntries.map((entry) => {
+          {palette.editorMenuEntries.map((entry) => {
             if (entry.type === 'separator') {
               return <div key={entry.id} className="my-1 h-px bg-[var(--obsidian-border-soft)]" />
             }
@@ -1538,11 +341,13 @@ export const MarkdownEditor = () => {
           })}
         </ContextMenu>
       )}
+
+      {/* Command palette */}
       <CommandPaletteModal
-        isOpen={isCommandPaletteOpen}
-        items={commandPaletteItems}
+        isOpen={palette.isCommandPaletteOpen}
+        items={palette.commandPaletteItems}
         onClose={() => {
-          setIsCommandPaletteOpen(false)
+          palette.setIsCommandPaletteOpen(false)
           viewRef.current?.focus()
         }}
       />

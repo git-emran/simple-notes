@@ -1,4 +1,4 @@
-import { EditorView } from "@codemirror/view"
+import type { EditorView } from '@codemirror/view'
 
 const isRepeatedSingleCharacterDelimiter = (value: string) =>
   value.length > 0 && value.split('').every((char) => char === value[0])
