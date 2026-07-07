@@ -112,12 +112,11 @@ export const MarkdownEditor = () => {
     viewRef
   })
 
-  const { compartments, applyEditorSettings, reconfigureLanguage, ...editorSettings } =
-    useEditorCompartments({
-      viewRef,
-      selectedNotePath: selectedNote?.path,
-      rootDir
-    })
+  const { compartments, reconfigureLanguage, ...editorSettings } = useEditorCompartments({
+    viewRef,
+    selectedNotePath: selectedNote?.path,
+    rootDir
+  })
 
   const lifecycle = useEditorLifecycle({
     selectedNote: selectedNote as SelectedNote | null,

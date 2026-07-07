@@ -13,6 +13,7 @@ import { CanvasEditor } from './components/canvas/CanvasEditor'
 import { SettingsModal } from './components/SettingsModal'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { KanbanReminderHost } from './components/kanban/KanbanReminderHost'
+import { SpreadsheetPanel } from './components/spreadsheet/SpreadsheetPanel'
 import { TerminalTab } from './components/terminal/TerminalTab'
 import { Tooltip } from './components/Tooltip'
 import { UpdateManager } from './components/updater/UpdateManager'
@@ -27,6 +28,7 @@ import {
   restoreClosedTabAtom,
   createCanvasAtom,
   createTerminalTabAtom,
+  createSpreadsheetTabAtom,
   selectedNodeAtom,
   createKanbanTabAtom,
   editorFontAtom,
@@ -48,6 +50,7 @@ import {
   VscLayoutSidebarLeftOff,
   VscProject,
   VscSymbolRuler,
+  VscTable,
   VscTerminal,
   VscSettingsGear
 } from 'react-icons/vsc'
@@ -101,6 +104,7 @@ const App = () => {
   const createCanvas = useSetAtom(createCanvasAtom)
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
   const createTerminalTab = useSetAtom(createTerminalTabAtom)
+  const createSpreadsheetTab = useSetAtom(createSpreadsheetTabAtom)
   const selectedNode = useAtomValue(selectedNodeAtom)
   const setSelectedNode = useSetAtom(selectedNodeAtom)
   const activeTab = useAtomValue(activeTabAtom)
@@ -387,13 +391,24 @@ const App = () => {
             </Tooltip>
             <Tooltip content="Kanban" position="right" icon={<VscProject className="w-3.5 h-3.5" />}>
               <button
-                className="obsidian-ribbon-btn"
+                className={`obsidian-ribbon-btn ${activeTab?.kind === 'kanban' ? 'is-active' : ''}`}
                 onClick={() => {
                   setCollapsed(false)
                   createKanbanTab()
                 }}
               >
                 <VscProject />
+              </button>
+            </Tooltip>
+            <Tooltip content="Spreadsheet" position="right" icon={<VscTable className="w-3.5 h-3.5" />}>
+              <button
+                className={`obsidian-ribbon-btn ${activeTab?.kind === 'spreadsheet' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setCollapsed(false)
+                  createSpreadsheetTab()
+                }}
+              >
+                <VscTable />
               </button>
             </Tooltip>
             <Tooltip content="Terminal" position="right" icon={<VscTerminal className="w-3.5 h-3.5" />}>
@@ -461,6 +476,8 @@ const App = () => {
                 />
               ) : activeTab?.kind === 'kanban' ? (
                 <KanbanBoard />
+              ) : activeTab?.kind === 'spreadsheet' ? (
+                <SpreadsheetPanel />
               ) : (
                 (appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />)
               )}

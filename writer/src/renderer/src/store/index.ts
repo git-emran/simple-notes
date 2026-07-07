@@ -4,6 +4,7 @@ import { atomWithStorage, unwrap } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
 export * from './settingsStore'
 export * from './kanbanStore'
+export * from './spreadsheetStore'
 
 /* File Tree Atoms */
 const loadFileTree = async () => {
@@ -70,7 +71,7 @@ export const selectedNodeAtom = atom<FileNode | null>(null)
 /* Tabs State */
 export type EditorTab = {
   id: string
-  kind: 'empty' | 'file' | 'kanban' | 'terminal'
+  kind: 'empty' | 'file' | 'kanban' | 'terminal' | 'spreadsheet'
   path: string | null
   name: string
   terminalSessionId?: string | null
@@ -229,6 +230,27 @@ export const createTerminalTabAtom = atom(null, (get, set) => {
   set(selectedNodeAtom, null)
 })
 
+export const createSpreadsheetTabAtom = atom(null, (get, set) => {
+  const tabs = get(tabsAtom)
+  const existing = tabs.find((tab) => tab.kind === 'spreadsheet')
+  if (existing) {
+    set(activeTabIdAtom, existing.id)
+    set(selectedNodeAtom, null)
+    return
+  }
+
+  const nextTab: EditorTab = {
+    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    kind: 'spreadsheet',
+    path: null,
+    name: 'Spreadsheet'
+  }
+
+  set(tabsAtom, [...tabs, nextTab])
+  set(activeTabIdAtom, nextTab.id)
+  set(selectedNodeAtom, null)
+})
+
 export const setTerminalSessionIdAtom = atom(
   null,
   (get, set, payload: { tabId: string; sessionId: string | null }) => {
@@ -259,7 +281,10 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   }
 
   const activeTab = tabs.find((t) => t.id === activeId)
-  const activeIsSpecial = activeTab?.kind === 'kanban' || activeTab?.kind === 'terminal'
+  const activeIsSpecial =
+    activeTab?.kind === 'kanban' ||
+    activeTab?.kind === 'terminal' ||
+    activeTab?.kind === 'spreadsheet'
 
   if (activeIsSpecial) {
     const reusableTab = tabs.find((t) => t.kind === 'file' || t.kind === 'empty')

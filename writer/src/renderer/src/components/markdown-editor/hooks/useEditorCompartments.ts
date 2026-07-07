@@ -17,7 +17,6 @@ import { createLivePreviewImages } from '../livePreviewImages'
 import { tabAsSpaces } from '../tabAsSpaces'
 import {
   getEditorTheme,
-  gutterTheme,
   markdownHighlightStyle,
   markdownHighlightStyleDark,
 } from '../editorTheme'

@@ -1,12 +1,13 @@
 import {
   createCanvasAtom,
   createKanbanTabAtom,
+  createSpreadsheetTabAtom,
   createTerminalTabAtom,
   showToolbarAtom,
 } from '@renderer/store'
 import { useAtom, useSetAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { VscProject, VscSymbolRuler, VscTerminal } from 'react-icons/vsc'
+import { VscProject, VscSymbolRuler, VscTable, VscTerminal } from 'react-icons/vsc'
 import { type CommandPaletteItem } from '../CommandPaletteModal'
 import { EditorMenuEntry, getEditorMenuEntries } from '../editorMenuLogic'
 import type { SelectedNote, ViewRef } from './types'
@@ -29,6 +30,7 @@ export function useCommandPalette({
   const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
   const createTerminalTab = useSetAtom(createTerminalTabAtom)
+  const createSpreadsheetTab = useSetAtom(createSpreadsheetTabAtom)
   const createCanvas = useSetAtom(createCanvasAtom)
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
@@ -98,6 +100,13 @@ export function useCommandPalette({
         run: () => createTerminalTab()
       },
       {
+        id: 'panel-spreadsheet',
+        label: 'Spreadsheet',
+        icon: <VscTable />,
+        keywords: ['panel', 'table', 'sheet', 'grid', 'database'],
+        run: () => createSpreadsheetTab()
+      },
+      {
         id: 'panel-canvas',
         label: 'Canvas',
         icon: <VscSymbolRuler />,
@@ -105,7 +114,7 @@ export function useCommandPalette({
         run: () => void createCanvas(getSelectedNoteDir())
       }
     ],
-    [createCanvas, createKanbanTab, createTerminalTab, getSelectedNoteDir]
+    [createCanvas, createKanbanTab, createSpreadsheetTab, createTerminalTab, getSelectedNoteDir]
   )
 
   const editorCommandItems: CommandPaletteItem[] = useMemo(

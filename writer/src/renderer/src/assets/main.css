@@ -192,6 +192,89 @@ header {
   background: var(--obsidian-accent-dim);
 }
 
+.spreadsheet-toolbar-btn {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--obsidian-text-muted);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.spreadsheet-toolbar-btn:hover {
+  background: var(--obsidian-hover);
+  color: var(--obsidian-text);
+}
+
+.spreadsheet-primary-btn {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  background: var(--obsidian-accent);
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.spreadsheet-primary-btn:hover {
+  opacity: 0.9;
+}
+
+.spreadsheet-primary-btn:active {
+  transform: translateY(1px);
+}
+
+.spreadsheet-icon-btn {
+  display: inline-flex;
+  height: 22px;
+  width: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--obsidian-text-muted);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease;
+}
+
+.spreadsheet-icon-btn:hover {
+  background: var(--obsidian-hover);
+  color: var(--obsidian-text);
+}
+
+.spreadsheet-tab-add {
+  display: inline-flex;
+  height: 30px;
+  width: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--obsidian-text-muted);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.spreadsheet-tab-add:hover {
+  background: var(--obsidian-hover);
+  color: var(--obsidian-text);
+}
+
 .cm-editor .cm-selectionBackground {
   background-color: rgba(124, 158, 251, 0.24) !important;
 }
