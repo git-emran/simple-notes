@@ -27,7 +27,8 @@ export const getEditorTheme = (isDark: boolean) =>
     '.cm-scroller': {
       fontFamily: editorFontFamilyVar,
       padding: '0',
-      backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)'
+      backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)',
+      overflowX: 'auto'
     },
     '.cm-focused': {
       outline: 'none'
@@ -250,21 +251,38 @@ export const getEditorTheme = (isDark: boolean) =>
       fontSize: '0.9em'
     },
     '.cm-table-line': {
-      fontFamily: editorFontFamilyVar,
-      whiteSpace: 'pre',
+      fontFamily: '"JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace !important',
+      whiteSpace: 'pre !important',
+      overflowWrap: 'normal !important',
+      wordBreak: 'normal !important',
       backgroundColor: isDark ? 'rgba(0, 0, 0, 0.12)' : 'rgba(128, 128, 128, 0.03)',
       borderLeft: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.2)',
       borderRight: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.2)',
       paddingTop: '4px',
       paddingBottom: '4px',
-      overflowX: 'auto'
+      overflowX: 'visible',
+      minWidth: '100%',
+      width: 'max-content'
     },
     '.cm-table-header': {
+      fontFamily: '"JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace !important',
+      whiteSpace: 'pre !important',
+      overflowWrap: 'normal !important',
+      wordBreak: 'normal !important',
       backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(128, 128, 128, 0.1)',
       fontWeight: 'bold',
       borderTop: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.3)',
       borderBottom: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.3)',
-      overflowX: 'auto'
+      borderTopLeftRadius: '6px',
+      borderTopRightRadius: '6px',
+      overflowX: 'visible',
+      minWidth: '100%',
+      width: 'max-content'
+    },
+    '.cm-table-last-row': {
+      borderBottom: isDark ? '1px solid #333744' : '1px solid rgba(128, 128, 128, 0.3)',
+      borderBottomLeftRadius: '6px',
+      borderBottomRightRadius: '6px'
     },
     '.cm-table-hidden-pipe': {
       display: 'none'
@@ -273,9 +291,23 @@ export const getEditorTheme = (isDark: boolean) =>
       display: 'none'
     },
     '.cm-focused-table-row': {
+      fontFamily: '"JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace !important',
+      whiteSpace: 'pre !important',
+      overflowWrap: 'normal !important',
+      wordBreak: 'normal !important',
       backgroundColor: 'rgba(124, 158, 251, 0.08)',
       outline: '1px solid rgba(124, 158, 251, 0.24)',
-      overflow: 'visible'
+      overflowX: 'visible',
+      minWidth: '100%',
+      width: 'max-content',
+      zIndex: '1'
+    },
+    '.cm-focused-table-row.cm-table-sep-line': {
+      display: 'block !important',
+      fontFamily: '"JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace !important',
+      whiteSpace: 'pre !important',
+      overflowWrap: 'normal !important',
+      wordBreak: 'normal !important'
     },
     '.cm-codeblock-line': {
       backgroundColor: isDark ? 'rgba(0, 0, 0, 0.09)' : 'rgba(0, 0, 0, 0.0175)',

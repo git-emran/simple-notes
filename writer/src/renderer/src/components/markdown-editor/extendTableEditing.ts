@@ -6,67 +6,64 @@ import {
   ViewPlugin,
   ViewUpdate
 } from '@codemirror/view'
-import { Prec } from '@codemirror/state'
+import { Prec, RangeSetBuilder, EditorState } from '@codemirror/state'
 
-/**
- * Utility: check if a line is part of a Markdown table
- */
-function isTableLine(text: string) {
-  return /\|/.test(text) && text.trim().startsWith('|')
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+
+/** Returns true if the line looks like part of a GFM table row */
+function isTableLine(text: string): boolean {
+  return text.includes('|') && text.trim().startsWith('|')
 }
 
-/**
- * Utility: split a Markdown table row into cells
- */
-function splitCells(line: string) {
-  /* remove leading/trailing pipes and split */
-  return line
-    .replace(/^\||\|$/g, '')
-    .split('|')
-    .map((c) => c.trim())
+/** Returns true for a GFM separator row (e.g. `| --- | :---: |`) */
+function isSeparatorLine(text: string): boolean {
+  return /^\|[\s\-:|]+\|[\s\-:|]*$/.test(text.trim()) && text.includes('-')
 }
 
-type TableCellRange = {
-  from: number
-  to: number
+/** Split a raw table row into trimmed cell strings. Handles escaped pipes `\|`. */
+function splitCells(line: string): string[] {
+  // Strip outermost pipes then split on unescaped pipes
+  const stripped = line.trim().replace(/^\||\|$/g, '')
+  return stripped.split(/(?<!\\)\|/).map((c) => c.trim())
 }
 
-const isSeparatorLine = (text: string) => /^[|\s-:]+$/.test(text) && text.includes('---')
+type CellRange = { from: number; to: number }
 
 /**
- * Compute cell ranges within a single table line, in document coordinates.
- * Ranges exclude the surrounding pipe and a single adjacent space when present.
+ * Return document-absolute ranges for each cell in `lineText`, trimming the
+ * surrounding space on each side of the pipe character.
+ * Escaped pipes (`\|`) are not treated as column delimiters.
  */
-function getTableCellRanges(lineText: string, lineFrom: number): TableCellRange[] {
-  const pipePositions: number[] = []
+function getCellRanges(lineText: string, lineFrom: number): CellRange[] {
+  const pipes: number[] = []
   for (let i = 0; i < lineText.length; i++) {
-    if (lineText[i] === '|') pipePositions.push(i)
+    if (lineText[i] === '|' && (i === 0 || lineText[i - 1] !== '\\')) {
+      pipes.push(i)
+    }
   }
+  if (pipes.length < 2) return []
 
-  if (pipePositions.length < 2) return []
-
-  const ranges: TableCellRange[] = []
-  for (let i = 0; i < pipePositions.length - 1; i++) {
-    const leftPipe = pipePositions[i]
-    const rightPipe = pipePositions[i + 1]
-    let start = leftPipe + 1
-    let end = rightPipe
-
-    if (start < end && lineText[start] === ' ') start += 1
-    if (end > start && lineText[end - 1] === ' ') end -= 1
-
-    ranges.push({ from: lineFrom + start, to: lineFrom + end })
+  const ranges: CellRange[] = []
+  for (let i = 0; i < pipes.length - 1; i++) {
+    let s = pipes[i] + 1
+    let e = pipes[i + 1]
+    if (s < e && lineText[s] === ' ') s++
+    if (e > s && lineText[e - 1] === ' ') e--
+    ranges.push({ from: lineFrom + s, to: lineFrom + e })
   }
-
   return ranges
 }
 
-function findCellIndex(ranges: TableCellRange[], pos: number): number {
+/**
+ * Find the 0-based index of the cell that contains `pos`, or the nearest
+ * cell when `pos` sits on a pipe / whitespace boundary.
+ */
+function findCellIndex(ranges: CellRange[], pos: number): number {
   for (let i = 0; i < ranges.length; i++) {
-    const r = ranges[i]
-    if (pos >= r.from && pos <= r.to) return i
+    if (pos >= ranges[i].from && pos <= ranges[i].to) return i
   }
-  /* If the cursor is on a pipe/whitespace, snap to the nearest cell */
   for (let i = 0; i < ranges.length; i++) {
     if (pos < ranges[i].from) return Math.max(0, i - 1)
   }
@@ -74,136 +71,170 @@ function findCellIndex(ranges: TableCellRange[], pos: number): number {
 }
 
 /**
- * Format a Markdown table string and maintain cursor cell position
+ * Return the 1-indexed line numbers that span the contiguous table block
+ * that contains `lineNum`.
  */
-function formatTableString(text: string): string {
-  const allLines = text.split('\n')
-  const tableLines = allLines.filter((l) => isTableLine(l))
-  if (!tableLines.length) return text
-
-  /* Identify separator line (contains ---) */
-  const isSeparator = (l: string) => isSeparatorLine(l)
-  
-  const rows = tableLines.map((line) => {
-    if (isSeparator(line)) return 'SEPARATOR'
-    return splitCells(line)
-  })
-
-  /* Remove existing separator to recalibrate */
-  const cleanRows = rows.filter(r => r !== 'SEPARATOR') as string[][]
-  const colCount = Math.max(...cleanRows.map((r) => r.length))
-
-  /* Normalize column lengths */
-  cleanRows.forEach((r) => {
-    while (r.length < colCount) r.push('')
-  })
-
-  /* Calculate max width for each column */
-  const colWidths = new Array(colCount).fill(0)
-  cleanRows.forEach((r) => {
-    r.forEach((c, i) => {
-      colWidths[i] = Math.max(colWidths[i], c.length, 3) // min width 3
-    })
-  })
-
-  /* Rebuild lines */
-  const formattedRows = cleanRows.map((r) => {
-    return '| ' + r.map((c, i) => c.padEnd(colWidths[i], ' ')).join(' | ') + ' |'
-  })
-
-  /* Re-insert separator after first row */
-  const sep = '| ' + colWidths.map((w) => '-'.repeat(w)).join(' | ') + ' |'
-  formattedRows.splice(1, 0, sep)
-
-  return formattedRows.join('\n')
-}
-
-/**
- * Command: format the whole table under the cursor
- */
-function formatTableCommand(view: EditorView): boolean {
-  const { state } = view
-  const line = state.doc.lineAt(state.selection.main.head)
-  if (!isTableLine(line.text)) return false
-
-  /* Find full table block */
-  let start = line.number
-  let end = line.number
+function getTableBounds(
+  state: EditorState,
+  lineNum: number
+): { start: number; end: number } {
+  let start = lineNum
+  let end = lineNum
   while (start > 1 && isTableLine(state.doc.line(start - 1).text)) start--
   while (end < state.doc.lines && isTableLine(state.doc.line(end + 1).text)) end++
+  return { start, end }
+}
 
-  const from = state.doc.line(start).from
-  const to = state.doc.line(end).to
-  const text = state.doc.sliceString(from, to)
-  const formatted = formatTableString(text)
+// ---------------------------------------------------------------------------
+// Formatting
+// ---------------------------------------------------------------------------
 
-  view.dispatch({
-    changes: { from, to, insert: formatted }
-  })
+/**
+ * Re-format a raw table text block so that every column is padded to the
+ * maximum cell width. A separator row is always present after the header.
+ * Returns the formatted string.
+ */
+function formatTableString(raw: string): string {
+  const lines = raw.split('\n').filter((l) => isTableLine(l))
+  if (!lines.length) return raw
 
-  /* Restore cursor roughly to the same cell can be improved later if needed. */
-  
-  return true
+  // Separate data rows from any existing separator rows
+  const dataRows = lines.filter((l) => !isSeparatorLine(l)).map((l) => splitCells(l))
+  if (!dataRows.length) return raw
+
+  const colCount = Math.max(...dataRows.map((r) => r.length))
+
+  // Pad every row to the same column count
+  for (const row of dataRows) {
+    while (row.length < colCount) row.push('')
+  }
+
+  // Compute the maximum content width for each column (min 3)
+  const colWidths = new Array<number>(colCount).fill(3)
+  for (const row of dataRows) {
+    for (let i = 0; i < colCount; i++) {
+      colWidths[i] = Math.max(colWidths[i], row[i].length)
+    }
+  }
+
+  const fmtRow = (row: string[]) =>
+    '| ' + row.map((c, i) => c.padEnd(colWidths[i])).join(' | ') + ' |'
+
+  const sep = '| ' + colWidths.map((w) => '-'.repeat(w)).join(' | ') + ' |'
+
+  const out: string[] = [fmtRow(dataRows[0]), sep]
+  for (let i = 1; i < dataRows.length; i++) out.push(fmtRow(dataRows[i]))
+
+  return out.join('\n')
 }
 
 /**
- * Navigation behavior: Tab/Enter inside tables
+ * Apply `formatTableString` to the table block containing line `lineNum`.
+ * Does NOT move the cursor.
+ *
+ * Returns:
+ *   - `newStart` / `newEnd`: 1-indexed boundaries of the formatted block
+ *   - `hadSeparator`: whether the original block already had a separator row
+ *   - `colWidths`: the padded column widths in the formatted table
  */
+function applyFormat(
+  view: EditorView,
+  lineNum: number
+): {
+  newStart: number
+  newEnd: number
+  hadSeparator: boolean
+  colWidths: number[]
+} | null {
+  const { state } = view
+  const lineTxt = state.doc.line(lineNum).text
+  if (!isTableLine(lineTxt)) return null
+
+  const { start, end } = getTableBounds(state, lineNum)
+  const from = state.doc.line(start).from
+  const to = state.doc.line(end).to
+  const raw = state.doc.sliceString(from, to)
+  const hadSeparator = raw.split('\n').some((l) => isSeparatorLine(l))
+  const formatted = formatTableString(raw)
+
+  view.dispatch({ changes: { from, to, insert: formatted } })
+
+  // Recalculate bounds after the edit (line count may have changed)
+  const { start: newStart, end: newEnd } = getTableBounds(view.state, start)
+
+  // Derive column widths from the first formatted data row (always line newStart)
+  const firstFmtLine = view.state.doc.line(newStart)
+  const colWidths = getCellRanges(firstFmtLine.text, firstFmtLine.from).map(
+    (r) => r.to - r.from
+  )
+
+  return { newStart, newEnd, hadSeparator, colWidths }
+}
+
 /**
- * Navigation behavior: Tab/Shift-Tab/Enter inside tables
- * This aims to match Obsidian's smooth table editing.
+ * Convert a `relativeLineIndex` (0-based index into the original table block)
+ * to the correct 1-indexed line number in the newly formatted table.
+ *
+ * When a separator is added by formatting, every data row after the header
+ * shifts down by one line.
  */
+function adjustedLineNum(
+  newStart: number,
+  relIndex: number,
+  hadSeparator: boolean
+): number {
+  // relIndex 0 = header → stays at newStart + 0
+  // relIndex > 0 and separator was just inserted → shift by 1
+  const shift = !hadSeparator && relIndex > 0 ? 1 : 0
+  return newStart + relIndex + shift
+}
+
+// ---------------------------------------------------------------------------
+// Keybindings
+// ---------------------------------------------------------------------------
+
 const tableKeymap = [
+  // Tab → next cell (wraps to first cell of next row; appends new row at end)
   {
     key: 'Tab',
     preventDefault: true,
-    run: (view: EditorView) => {
+    run: (view: EditorView): boolean => {
       const { state } = view
       const head = state.selection.main.head
       const line = state.doc.lineAt(head)
       if (!isTableLine(line.text)) return false
 
-      /* Find full table block to track absolute boundaries */
-      let startLineNum = line.number
-      let endLineNum = line.number
-      while (startLineNum > 1 && isTableLine(state.doc.line(startLineNum - 1).text)) startLineNum--
-      while (endLineNum < state.doc.lines && isTableLine(state.doc.line(endLineNum + 1).text)) endLineNum++
+      const { start: startBefore } = getTableBounds(state, line.number)
+      const relIndex = line.number - startBefore
+      const rangesBefore = getCellRanges(line.text, line.from)
+      if (!rangesBefore.length) return false
+      const cellIdx = findCellIndex(rangesBefore, head)
 
-      /* Find cell index BEFORE formatting */
-      const rangesBefore = getTableCellRanges(line.text, line.from)
-      if (rangesBefore.length === 0) return false
-      const cellIndex = findCellIndex(rangesBefore, head)
+      const result = applyFormat(view, line.number)
+      if (!result) return false
 
-      /* Always format the table first */
-      formatTableCommand(view)
+      const { newStart, newEnd, hadSeparator, colWidths } = result
+      const curLineNum = adjustedLineNum(newStart, relIndex, hadSeparator)
 
-      /* Get fresh state after formatting */
-      const newLine = view.state.doc.line(line.number)
-      const newRanges = getTableCellRanges(newLine.text, newLine.from)
-      if (newRanges.length === 0) return false
-
-      const nextIndex = cellIndex + 1
-
-      if (nextIndex < newRanges.length) {
-        /* Move to the next cell in the same row and select it */
+      // Try: move to next cell in the same row
+      const curLine = view.state.doc.line(curLineNum)
+      const curRanges = getCellRanges(curLine.text, curLine.from)
+      if (curRanges.length > 0 && cellIdx + 1 < curRanges.length) {
+        const next = curRanges[cellIdx + 1]
         view.dispatch({
-          selection: { anchor: newRanges[nextIndex].from, head: newRanges[nextIndex].to },
+          selection: { anchor: next.from, head: next.to },
           scrollIntoView: true
         })
         return true
       }
 
-      /* Move to next (non-separator) table row, first cell */
-      let nextLineNum = line.number + 1
-      while (nextLineNum <= endLineNum) {
-        const nextLine = view.state.doc.line(nextLineNum)
-        if (isSeparatorLine(nextLine.text)) {
-          nextLineNum++
-          continue
-        }
+      // Try: move to first cell of the next data row
+      let nextNum = curLineNum + 1
+      while (nextNum <= newEnd) {
+        const nextLine = view.state.doc.line(nextNum)
+        if (isSeparatorLine(nextLine.text)) { nextNum++; continue }
         if (!isTableLine(nextLine.text)) break
-
-        const nextRanges = getTableCellRanges(nextLine.text, nextLine.from)
+        const nextRanges = getCellRanges(nextLine.text, nextLine.from)
         if (nextRanges.length > 0) {
           view.dispatch({
             selection: { anchor: nextRanges[0].from, head: nextRanges[0].to },
@@ -211,120 +242,119 @@ const tableKeymap = [
           })
           return true
         }
-        nextLineNum++
+        nextNum++
       }
 
-      /* If at the end of last row, create a new row matching column count */
-      const rowCells = splitCells(newLine.text)
-      const emptyRow = '| ' + rowCells.map(() => '   ').join(' | ') + ' |'
-      const insertPos = newLine.to
+      // Append a new row at the end and select its first cell
+      const lastLine = view.state.doc.line(newEnd)
+      const insertPos = lastLine.to
+      const blankCells = colWidths.map((w) => ' '.repeat(w))
+      const newRow = '| ' + blankCells.join(' | ') + ' |'
       view.dispatch({
-        changes: { from: insertPos, to: insertPos, insert: '\n' + emptyRow },
-        selection: { anchor: insertPos + 3, head: insertPos + 6 },
+        changes: { from: insertPos, to: insertPos, insert: '\n' + newRow },
+        selection: {
+          anchor: insertPos + 3,
+          head: insertPos + 3 + (colWidths[0] ?? 3)
+        },
         scrollIntoView: true
       })
       return true
     }
   },
+
+  // Shift-Tab → previous cell (wraps to last cell of previous row)
   {
     key: 'Shift-Tab',
     preventDefault: true,
-    run: (view: EditorView) => {
+    run: (view: EditorView): boolean => {
       const { state } = view
       const head = state.selection.main.head
       const line = state.doc.lineAt(head)
       if (!isTableLine(line.text)) return false
 
-      let startLineNum = line.number
-      let endLineNum = line.number
-      while (startLineNum > 1 && isTableLine(state.doc.line(startLineNum - 1).text)) startLineNum--
-      while (endLineNum < state.doc.lines && isTableLine(state.doc.line(endLineNum + 1).text)) endLineNum++
+      const { start: startBefore } = getTableBounds(state, line.number)
+      const relIndex = line.number - startBefore
+      const rangesBefore = getCellRanges(line.text, line.from)
+      if (!rangesBefore.length) return false
+      const cellIdx = findCellIndex(rangesBefore, head)
 
-      const rangesBefore = getTableCellRanges(line.text, line.from)
-      if (rangesBefore.length === 0) return false
-      const cellIndex = findCellIndex(rangesBefore, head)
+      const result = applyFormat(view, line.number)
+      if (!result) return false
 
-      formatTableCommand(view)
+      const { newStart, hadSeparator } = result
+      const curLineNum = adjustedLineNum(newStart, relIndex, hadSeparator)
 
-      const newLine = view.state.doc.line(line.number)
-      const newRanges = getTableCellRanges(newLine.text, newLine.from)
-      if (newRanges.length === 0) return false
-
-      const prevIndex = cellIndex - 1
-
-      if (prevIndex >= 0) {
-        /* Move to previous cell in the same row and select it */
+      // Try: move to previous cell in the same row
+      const curLine = view.state.doc.line(curLineNum)
+      const curRanges = getCellRanges(curLine.text, curLine.from)
+      if (curRanges.length > 0 && cellIdx - 1 >= 0) {
+        const prev = curRanges[cellIdx - 1]
         view.dispatch({
-          selection: { anchor: newRanges[prevIndex].from, head: newRanges[prevIndex].to },
+          selection: { anchor: prev.from, head: prev.to },
           scrollIntoView: true
         })
         return true
       }
 
-      /* Move to previous (non-separator) table row, last cell */
-      let prevLineNum = line.number - 1
-      while (prevLineNum >= startLineNum) {
-        const prevLine = view.state.doc.line(prevLineNum)
-        if (isSeparatorLine(prevLine.text)) {
-          prevLineNum--
-          continue
-        }
+      // Try: move to last cell of the previous data row
+      let prevNum = curLineNum - 1
+      while (prevNum >= newStart) {
+        const prevLine = view.state.doc.line(prevNum)
+        if (isSeparatorLine(prevLine.text)) { prevNum--; continue }
         if (!isTableLine(prevLine.text)) break
-
-        const prevRanges = getTableCellRanges(prevLine.text, prevLine.from)
+        const prevRanges = getCellRanges(prevLine.text, prevLine.from)
         if (prevRanges.length > 0) {
-          const lastIdx = prevRanges.length - 1
+          const last = prevRanges[prevRanges.length - 1]
           view.dispatch({
-            selection: { anchor: prevRanges[lastIdx].from, head: prevRanges[lastIdx].to },
+            selection: { anchor: last.from, head: last.to },
             scrollIntoView: true
           })
           return true
         }
-        prevLineNum--
+        prevNum--
       }
 
       return true
     }
   },
+
+  // Enter → move to same column in next row (appends new row at end)
   {
     key: 'Enter',
     preventDefault: true,
-    run: (view: EditorView) => {
+    run: (view: EditorView): boolean => {
       const { state } = view
       const head = state.selection.main.head
       const line = state.doc.lineAt(head)
       if (!isTableLine(line.text)) return false
 
-      let startLineNum = line.number
-      let endLineNum = line.number
-      while (startLineNum > 1 && isTableLine(state.doc.line(startLineNum - 1).text)) startLineNum--
-      while (endLineNum < state.doc.lines && isTableLine(state.doc.line(endLineNum + 1).text)) endLineNum++
+      const { start: startBefore } = getTableBounds(state, line.number)
+      const relIndex = line.number - startBefore
+      const rangesBefore = getCellRanges(line.text, line.from)
+      if (!rangesBefore.length) return false
+      const cellIdx = findCellIndex(rangesBefore, head)
 
-      const rangesBefore = getTableCellRanges(line.text, line.from)
-      if (rangesBefore.length === 0) return false
-      const cellIndex = findCellIndex(rangesBefore, head)
+      const result = applyFormat(view, line.number)
+      if (!result) return false
 
-      formatTableCommand(view)
+      const { newStart, newEnd, hadSeparator, colWidths } = result
+      const curLineNum = adjustedLineNum(newStart, relIndex, hadSeparator)
 
-      const currentLine = view.state.doc.line(line.number)
-      let nextLineNum = currentLine.number + 1
-
-      /* Skip separator lines if present */
-      if (nextLineNum <= endLineNum) {
-        const nextLine = view.state.doc.line(nextLineNum)
-        if (isSeparatorLine(nextLine.text)) {
-          nextLineNum++
-        }
+      // Skip separator rows when looking for the next row
+      let nextNum = curLineNum + 1
+      while (nextNum <= newEnd && isSeparatorLine(view.state.doc.line(nextNum).text)) {
+        nextNum++
       }
 
-      if (nextLineNum <= endLineNum) {
-        const nextLine = view.state.doc.line(nextLineNum)
+      if (nextNum <= newEnd) {
+        const nextLine = view.state.doc.line(nextNum)
         if (isTableLine(nextLine.text)) {
-          const nextRanges = getTableCellRanges(nextLine.text, nextLine.from)
+          const nextRanges = getCellRanges(nextLine.text, nextLine.from)
           if (nextRanges.length > 0) {
-            const targetIdx = Math.min(cellIndex, nextRanges.length - 1)
+            const targetIdx = Math.min(cellIdx, nextRanges.length - 1)
+            const target = nextRanges[targetIdx]
             view.dispatch({
-              selection: { anchor: nextRanges[targetIdx].from, head: nextRanges[targetIdx].to },
+              selection: { anchor: target.from, head: target.to },
               scrollIntoView: true
             })
             return true
@@ -332,76 +362,99 @@ const tableKeymap = [
         }
       }
 
-      /* Otherwise create a new row and select the corresponding column cell */
-      const cells = splitCells(currentLine.text)
-      const newRow = '| ' + cells.map(() => '   ').join(' | ') + ' |'
-      let insertText = '\n' + newRow
-      
-      const isHeader = currentLine.number === startLineNum
-      const hasNext = nextLineNum <= view.state.doc.lines
-      const nextText = hasNext ? view.state.doc.line(nextLineNum).text : ''
-      
-      let finalAnchor = currentLine.to + 3
-      let finalHead = currentLine.to + 6
+      // Append new row at the end, landing on the same column
+      const lastLine = view.state.doc.line(newEnd)
+      const insertPos = lastLine.to
+      const blankCells = colWidths.map((w) => ' '.repeat(w))
+      const newRow = '| ' + blankCells.join(' | ') + ' |'
 
-      if (isHeader && (!hasNext || !nextText.includes('---'))) {
-        const sep = '| ' + cells.map(() => '---').join(' | ') + ' |'
-        insertText = '\n' + sep + '\n' + newRow
-        // Adjust selection position to account for the separator row length
-        const offset = sep.length + 1
-        finalAnchor = currentLine.to + offset + 3
-        finalHead = currentLine.to + offset + 6
-      } else {
-        // Position relative to cellIndex
-        let currentOffset = 2 // '| '
-        for (let i = 0; i < cellIndex; i++) {
-          currentOffset += 6 // '   | '
-        }
-        finalAnchor = currentLine.to + 1 + currentOffset
-        finalHead = finalAnchor + 3
+      // Compute exact cursor offset for the target column
+      const targetColIdx = Math.min(cellIdx, colWidths.length - 1)
+      let colOffset = 2 // after '| '
+      for (let i = 0; i < targetColIdx; i++) {
+        colOffset += (colWidths[i] ?? 3) + 3 // cell + ' | '
       }
+      const cellW = colWidths[targetColIdx] ?? 3
 
       view.dispatch({
-        changes: { from: currentLine.to, to: currentLine.to, insert: insertText },
-        selection: { anchor: finalAnchor, head: finalHead },
+        changes: { from: insertPos, to: insertPos, insert: '\n' + newRow },
+        selection: {
+          anchor: insertPos + 1 + colOffset,
+          head: insertPos + 1 + colOffset + cellW
+        },
         scrollIntoView: true
       })
       return true
     }
   },
+
+  // Cmd/Ctrl+Shift+F → format table and restore cursor to the same cell
   {
     key: 'Mod-Shift-F',
-    run: formatTableCommand
+    run: (view: EditorView): boolean => {
+      const { state } = view
+      const head = state.selection.main.head
+      const line = state.doc.lineAt(head)
+      if (!isTableLine(line.text)) return false
+
+      // Snapshot cursor position before formatting
+      const { start: startBefore } = getTableBounds(state, line.number)
+      const relIndex = line.number - startBefore
+      const rangesBefore = getCellRanges(line.text, line.from)
+      let savedCellIdx = -1
+      let savedCellOffset = 0
+      if (rangesBefore.length > 0) {
+        savedCellIdx = findCellIndex(rangesBefore, head)
+        if (savedCellIdx !== -1) {
+          savedCellOffset = head - rangesBefore[savedCellIdx].from
+        }
+      }
+
+      const result = applyFormat(view, line.number)
+      if (!result) return false
+
+      // Restore cursor to the same relative cell
+      const { newStart, newEnd, hadSeparator } = result
+      const newLineNum = adjustedLineNum(newStart, relIndex, hadSeparator)
+      if (newLineNum <= newEnd) {
+        const newLine = view.state.doc.line(newLineNum)
+        if (!isSeparatorLine(newLine.text)) {
+          const newRanges = getCellRanges(newLine.text, newLine.from)
+          if (newRanges.length > 0 && savedCellIdx !== -1) {
+            const r = newRanges[Math.min(savedCellIdx, newRanges.length - 1)]
+            const pos = Math.min(r.from + savedCellOffset, r.to)
+            view.dispatch({ selection: { anchor: pos, head: pos }, scrollIntoView: true })
+          }
+        }
+      }
+
+      return true
+    }
   }
 ]
 
-/**
- * Fallback DOM key handler for Tab navigation.
- * In some setups, other keymaps/extensions may preempt Tab before our keymap runs.
- */
+// ---------------------------------------------------------------------------
+// Fallback DOM-level Tab handler
+// (some CodeMirror setups intercept Tab before the keymap runs)
+// ---------------------------------------------------------------------------
 const tableDomKeyHandler = EditorView.domEventHandlers({
   keydown: (event, view) => {
     if (event.key !== 'Tab') return false
-
     const line = view.state.doc.lineAt(view.state.selection.main.head)
     if (!isTableLine(line.text)) return false
-
     event.preventDefault()
     event.stopPropagation()
-
-    if (event.shiftKey) {
-      const handler = tableKeymap.find((k) => k.key === 'Shift-Tab') as any
-      return handler?.run?.(view) ?? true
-    }
-
-    const handler = tableKeymap.find((k) => k.key === 'Tab') as any
+    const key = event.shiftKey ? 'Shift-Tab' : 'Tab'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handler = tableKeymap.find((k) => k.key === key) as any
     return handler?.run?.(view) ?? true
   }
 })
 
-/**
- * Decoration plugin: highlight table rows and provide Live Preview
- */
+// ---------------------------------------------------------------------------
+// Decoration plugin – highlights table rows and hides pipes/separator
+// when the cursor is not inside the table block
+// ---------------------------------------------------------------------------
 const tableHighlight = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet
@@ -416,58 +469,78 @@ const tableHighlight = ViewPlugin.fromClass(
       }
     }
 
-    buildDecos(view: EditorView) {
+    buildDecos(view: EditorView): DecorationSet {
       const builder = new RangeSetBuilder<Decoration>()
       const { state } = view
-      const selection = state.selection.main
+      const sel = state.selection.main
 
-      for (let { from, to } of view.visibleRanges) {
-        let lineIdx = state.doc.lineAt(from).number
-        let endLineIdx = state.doc.lineAt(to).number
+      // Determine which line numbers belong to the table block under the cursor
+      const focusedLines = new Set<number>()
+      const cursorLine = state.doc.lineAt(sel.head)
+      if (isTableLine(cursorLine.text)) {
+        let s = cursorLine.number
+        let e = cursorLine.number
+        while (s > 1 && isTableLine(state.doc.line(s - 1).text)) s--
+        while (e < state.doc.lines && isTableLine(state.doc.line(e + 1).text)) e++
+        for (let i = s; i <= e; i++) focusedLines.add(i)
+      }
 
-        for (let i = lineIdx; i <= endLineIdx; i++) {
+      for (const { from, to } of view.visibleRanges) {
+        const firstNum = state.doc.lineAt(from).number
+        const lastNum = state.doc.lineAt(to).number
+
+        for (let i = firstNum; i <= lastNum; i++) {
           const line = state.doc.line(i)
           if (!isTableLine(line.text)) continue
 
-          const isFocused = selection.from >= line.from && selection.to <= line.to
-          const isSeparatorLine = /^[|\s-:]+$/.test(line.text) && line.text.includes('---')
+          const isSep = isSeparatorLine(line.text)
+          const isFocused = focusedLines.has(i)
+          // Guard against accessing line 0 (CodeMirror lines are 1-indexed)
+          const prevLineIsTable = i > 1 && isTableLine(state.doc.line(i - 1).text)
+          const isHeaderRow = !isSep && !prevLineIsTable
+          const nextLineIsTable = i < state.doc.lines && isTableLine(state.doc.line(i + 1).text)
 
-          /* Line level decoration */
-          const lineClass = isSeparatorLine ? 'cm-table-sep-line' : 'cm-table-line'
-          const headerClass = (i === 1 || !isTableLine(state.doc.line(i - 1).text)) ? ' cm-table-header' : ''
-          
-          builder.add(line.from, line.from, Decoration.line({
-            attributes: { class: lineClass + headerClass + (isFocused ? ' cm-focused-table-row' : '') }
-          }))
+          // Build class list for the line element
+          let cls = isSep ? 'cm-table-sep-line' : 'cm-table-line'
+          if (isHeaderRow) cls += ' cm-table-header'
+          if (!nextLineIsTable) cls += ' cm-table-last-row'
+          if (isFocused) cls += ' cm-focused-table-row'
 
-          if (!isFocused) {
-            /* Hide separator lines completely when not focused */
-            if (isSeparatorLine) {
-              builder.add(line.from, line.to, Decoration.replace({}))
-            } else {
-              /* Hide pipes in normal table rows */
-              const text = line.text
-              for (let j = 0; j < text.length; j++) {
-                if (text[j] === '|') {
-                  builder.add(line.from + j, line.from + j + 1, Decoration.mark({
-                    attributes: { class: 'cm-table-hidden-pipe' }
-                  }))
-                }
+          builder.add(line.from, line.from, Decoration.line({ attributes: { class: cls } }))
+
+          if (isFocused) {
+            // When the table block is focused: show everything as-is
+            continue
+          }
+
+          if (isSep) {
+            // Collapse the separator row visually (0-height replace)
+            builder.add(line.from, line.to, Decoration.replace({}))
+          } else {
+            // Hide pipe characters so the row looks like plain text
+            const text = line.text
+            for (let j = 0; j < text.length; j++) {
+              if (text[j] === '|' && (j === 0 || text[j - 1] !== '\\')) {
+                builder.add(
+                  line.from + j,
+                  line.from + j + 1,
+                  Decoration.mark({ attributes: { class: 'cm-table-hidden-pipe' } })
+                )
               }
             }
           }
         }
       }
+
       return builder.finish()
     }
   },
   { decorations: (v) => v.decorations }
 )
 
-/**
- * Exported extension
- */
-import { RangeSetBuilder } from '@codemirror/state'
+// ---------------------------------------------------------------------------
+// Exported extension bundle
+// ---------------------------------------------------------------------------
 export const markdownTableEnhancement = [
   Prec.highest(tableDomKeyHandler),
   Prec.highest(keymap.of(tableKeymap)),

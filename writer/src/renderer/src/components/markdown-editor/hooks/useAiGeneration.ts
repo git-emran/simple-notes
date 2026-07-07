@@ -1,7 +1,6 @@
 import { aiApiKeyAtom, fileTreeIndexAtom } from '@renderer/store'
 import type { FileNode } from '@shared/models'
 import type { AiModelInfo } from '@shared/types'
-import type { EditorView } from '@codemirror/view'
 import { useAtomValue } from 'jotai'
 import { useCallback, useEffect, useState } from 'react'
 import type { SelectedNote, ViewRef } from './types'

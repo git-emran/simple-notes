@@ -1,4 +1,3 @@
-import type { EditorView } from '@codemirror/view'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SelectedNote, ViewRef } from './types'
 

@@ -75,6 +75,7 @@
     --writr-filetree-indent-guide: rgba(156, 163, 175, 0.22);
     --writr-scrollbar-thumb: rgba(17, 24, 39, 0.22);
     --writr-scrollbar-thumb-hover: rgba(17, 24, 39, 0.32);
+    color-scheme: light;
   }
 
   .dark {
@@ -105,6 +106,7 @@
     --writr-filetree-indent-guide: rgba(209, 213, 219, 0.14);
     --writr-scrollbar-thumb: rgba(255, 255, 255, 0.18);
     --writr-scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
+    color-scheme: dark;
   }
 
   #root {
@@ -286,8 +288,8 @@ header {
 }
 
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-thumb {
