@@ -12,6 +12,7 @@ import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { drawSelection, EditorView, keymap } from '@codemirror/view'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
 import { autoCloseTags } from '@codemirror/lang-html'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { vim } from '@replit/codemirror-vim'
@@ -382,12 +383,14 @@ export function useEditorLifecycle({
           }
         ])
       ),
-      keymap.of([...defaultKeymap, ...historyKeymap, ...foldKeymap]),
+      keymap.of([...searchKeymap, ...defaultKeymap, ...historyKeymap, ...foldKeymap]),
       drawSelection(),
       closeBrackets(),
       autoCloseTags,
       gutterTheme,
       foldGutter(),
+      search({ top: true }),
+      highlightSelectionMatches({ highlightWordAroundCursor: false, minSelectionLength: 2 }),
       markdown({ base: markdownLanguage, codeLanguages, addKeymap: true, completeHTMLTags: false }),
       lintGutter(),
       indentationMarkers({
