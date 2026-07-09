@@ -4,7 +4,8 @@
 
 **Writer** is an engineered-to-order, distraction-free Markdown text editor designed for Cross platform use (Currently only macOS and Linux have not tested on windows). Architected for developers, students, and power users, it fuses the efficiency of Vim motions with modern development tools. Whether you are documenting complex system architectures, practicing DSA implementations, or capturing rapid brain dumps, Writer brings IDE-grade utility directly to your writing workflow.
 
-<img width="1573" height="1218" alt="writer_main" src="https://github.com/user-attachments/assets/a6a58f81-5829-4296-b36f-1d16e2a5e881" />
+<img width="1364" height="1015" alt="hero" src="https://github.com/user-attachments/assets/aa55e7c5-aaf0-43ab-b0c8-fd408572b022" />
+
 
 # Key Features
 ### **Interactive Canvas**
@@ -22,6 +23,12 @@
 <img width="1378" height="1053" alt="kanban" src="https://github.com/user-attachments/assets/41f337c0-de43-4c39-87e4-2aa11ebd3506" />
 
 
+### **Spreadsheet**
+
+- **Spreadsheet Management:** Maintain a small scale database with the spreadsheet. Possible usecase is: Let's say you have some leads on your hand and you want to track how everything plays out by tracking informations in a table format. That's when the spreadsheet comes in handy with its custom tags and pre-built data types.
+
+<img width="1001" height="700" alt="Spreadsheet" src="https://github.com/user-attachments/assets/13242ce0-3dcd-4c52-84b4-a542ebea4f06" />
+
 ### **Automated Daily Notes**
 
 - **Zero Setup Journaling:** Instantly bootstrap a new markdown file named with the current date to log daily standups, progress, or sudden ideas.
@@ -37,8 +44,7 @@
 
 - **Lifecycle Management:** Tracks the state of your notes. You can categorize files into statuses like Active, On-Hold, Completed, and Dropped.
 
-<img width="452" height="900" alt="Notes books" src="https://github.com/user-attachments/assets/78736864-f0e7-4170-916d-d70fbe9d9b48" />
-
+<img width="280" height="626" alt="FileExplorer" src="https://github.com/user-attachments/assets/cb0f2750-7e32-4b8e-961f-c2ae4b447cad" />
 
 ### **Extensible Custom Tags**
 
