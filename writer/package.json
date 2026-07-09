@@ -104,5 +104,25 @@
     "tailwindcss": "^3.4.0",
     "typescript": "^5.1.6",
     "vite": "^4.4.9"
+  },
+  "build": {
+    "appId": "com.git-emran.writer",
+    "productName": "Writer",
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "icon": "resources/icon.icns"
+    },
+    "win": {
+      "icon": "resources/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office;Utility",
+      "icon": "resources/icons"
+    }
   }
 }

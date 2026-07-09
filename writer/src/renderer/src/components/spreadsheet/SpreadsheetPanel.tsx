@@ -551,14 +551,22 @@ export const SpreadsheetPanel = () => {
                   <VscFilter />
                 </button>
                 <span
-                  className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize"
+                  className="absolute bottom-0 -right-[2px] top-0 z-10 w-[5px] cursor-col-resize hover:bg-[var(--obsidian-accent)]/50 active:bg-[var(--obsidian-accent)] transition-colors"
                   onMouseDown={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
                     const startX = event.clientX
                     const startWidth = column.width
+                    
+                    document.body.style.userSelect = 'none'
+                    document.body.style.cursor = 'col-resize'
+
                     const onMove = (moveEvent: MouseEvent) => {
                       updateColumn(column.id, { width: Math.max(90, startWidth + moveEvent.clientX - startX) })
                     }
                     const onUp = () => {
+                      document.body.style.userSelect = ''
+                      document.body.style.cursor = ''
                       window.removeEventListener('mousemove', onMove)
                       window.removeEventListener('mouseup', onUp)
                     }
