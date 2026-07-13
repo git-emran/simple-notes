@@ -16,7 +16,6 @@ import { FaFire } from "react-icons/fa";
 import { FiPlus, FiTrash } from "react-icons/fi";
 import { VscAdd, VscTrash, VscChevronDown } from "react-icons/vsc";
 import { twMerge } from "tailwind-merge";
-import { priorityToPrefix } from "./kanbanPriority";
 import { TaskDetailsPanel } from "./TaskDetailsPanel";
 
 export const KanbanBoard = () => {
@@ -527,7 +526,6 @@ interface CardProps {
 }
 
 const Card = ({ text, id, column, priority, description, handleDragStart, onClick }: CardProps) => {
-  const prefix = priorityToPrefix(priority);
   const priorityColors: Record<string, string> = {
     low: "#10B981", // Emerald/Green
     medium: "#F59E0B", // Amber/Yellow
@@ -547,20 +545,14 @@ const Card = ({ text, id, column, priority, description, handleDragStart, onClic
         className="cursor-grab rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-3 active:cursor-grabbing transition-all hover:border-[var(--obsidian-accent)]/50"
         style={color ? { backgroundColor: `color-mix(in srgb, var(--obsidian-pane) 93%, ${color} 7%)` } : {}}
       >
-        <div className="flex items-start gap-2">
-          {prefix && (
+        <div className="flex items-center gap-2">
+          {color && (
             <span
-              className="shrink-0 text-xs font-black px-1.5 py-0.5 rounded select-none font-mono"
-              style={{
-                color: color,
-                backgroundColor: color ? `${color}15` : undefined,
-                border: color ? `1px solid ${color}35` : undefined,
-              }}
-            >
-              {prefix}
-            </span>
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: color }}
+            />
           )}
-          <p className="text-sm text-[var(--obsidian-text)] flex-1 break-words mt-0.5 font-medium">{text}</p>
+          <p className="text-sm text-[var(--obsidian-text)] flex-1 break-words font-medium">{text}</p>
         </div>
         {description && (
           <p className="mt-1.5 text-xs text-[var(--obsidian-text-muted)] leading-relaxed line-clamp-2 break-words">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { VscClose, VscEdit, VscSave, VscDiscard, VscChevronDown } from 'react-icons/vsc'
 import type { KanbanCard, KanbanCardPriority } from '@renderer/store/kanbanStore'
-import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint, priorityToPrefix } from './kanbanPriority'
+import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint } from './kanbanPriority'
 
 
 type TaskDetailsPanelProps = {
@@ -83,7 +83,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
 
   if (!internalCard) return null
 
-  const prefix = priorityToPrefix(internalCard.priority)
+
   const prefixTint =
     internalCard.priority && internalCard.priority !== null ? getPriorityChipTint(internalCard.priority).borderActive : undefined
 
@@ -260,11 +260,12 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
             <div className="space-y-6">
               <div>
                 <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Title</div>
-                <div className="mt-2 text-2xl font-semibold leading-tight text-[var(--obsidian-text)]">
-                  {prefix ? (
-                    <span className="mr-px font-mono opacity-80" style={{ color: prefixTint }}>
-                      {prefix}
-                    </span>
+                <div className="mt-2 flex items-center gap-2 text-2xl font-semibold leading-tight text-[var(--obsidian-text)]">
+                  {prefixTint ? (
+                    <span 
+                      className="h-4 w-4 rounded-full shrink-0" 
+                      style={{ backgroundColor: prefixTint }} 
+                    />
                   ) : null}
                   <span>{internalCard.text}</span>
                 </div>
@@ -282,7 +283,10 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
               <div>
                 <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
                 <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-1.5 text-sm text-[var(--obsidian-text)]">
-                  <span className="font-mono text-xs opacity-70">{priorityToPrefix(internalCard.priority) || '—'}</span>
+                  <span 
+                    className="h-2 w-2 rounded-full" 
+                    style={{ backgroundColor: prefixTint }} 
+                  />
                   <span className="capitalize">{internalCard.priority ?? 'low'}</span>
                 </div>
               </div>

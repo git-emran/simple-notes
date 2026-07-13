@@ -1,26 +1,12 @@
 import type { KanbanCardPriority } from '@renderer/store/kanbanStore'
 
-export const priorityToPrefix = (priority: KanbanCardPriority | undefined): string => {
-  switch (priority) {
-    case 'high':
-      return '!!!'
-    case 'medium':
-      return '!!'
-    case 'low':
-      return '!'
-    default:
-      return ''
-  }
-}
-
 export const KANBAN_PRIORITY_OPTIONS: Array<{
   value: Exclude<KanbanCardPriority, null>
   label: string
-  prefix: string
 }> = [
-  { value: 'low', label: 'Low', prefix: '!' },
-  { value: 'medium', label: 'Medium', prefix: '!!' },
-  { value: 'high', label: 'High', prefix: '!!!' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
 ]
 
 export const getPriorityChipTint = (priority: Exclude<KanbanCardPriority, null>) => {
