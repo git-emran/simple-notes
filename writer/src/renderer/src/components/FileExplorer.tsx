@@ -1,42 +1,42 @@
 import {
-  activeTabPathAtom,
-  createDirectoryAtom,
-  createNoteAtom,
-  deleteNodeAtom,
-  fileTreeAtom,
-  fileTreeIndexAtom,
-  fileTreeUiByRootAtom,
-  movePathAtom,
-  notesRootDirAtom,
-  noteStatusByPathAtom,
-  noteTagByPathAtom,
-  openInNewTabAtom,
-  openTabAtom,
-  reindexTodoStatsAtom,
-  selectedNodeAtom,
-  showFolderIconsAtom
+    activeTabPathAtom,
+    createDirectoryAtom,
+    createNoteAtom,
+    deleteNodeAtom,
+    fileTreeAtom,
+    fileTreeIndexAtom,
+    fileTreeUiByRootAtom,
+    movePathAtom,
+    notesRootDirAtom,
+    noteStatusByPathAtom,
+    noteTagByPathAtom,
+    openInNewTabAtom,
+    openTabAtom,
+    reindexTodoStatsAtom,
+    selectedNodeAtom,
+    showFolderIconsAtom
 } from '@renderer/store'
 import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
 import { FileNode } from '@shared/models'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
-  ComponentProps,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type MouseEvent
+    ComponentProps,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type MouseEvent
 } from 'react'
 import {
-  VscCollapseAll,
-  VscEdit,
-  VscExpandAll,
-  VscGoToFile,
-  VscNewFile,
-  VscNewFolder,
-  VscSearch,
-  VscTrash
+    VscCollapseAll,
+    VscEdit,
+    VscExpandAll,
+    VscGoToFile,
+    VscNewFile,
+    VscNewFolder,
+    VscSearch,
+    VscTrash
 } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
@@ -103,6 +103,16 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   )
   const [renamingPath, setRenamingPath] = useState<string | null>(null)
   const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
+
+  useEffect(() => {
+    const handleGlobalDragEnd = () => setIsDraggingOverRoot(false)
+    window.addEventListener('dragend', handleGlobalDragEnd)
+    window.addEventListener('drop', handleGlobalDragEnd)
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDragEnd)
+      window.removeEventListener('drop', handleGlobalDragEnd)
+    }
+  }, [])
   const [showScrollbar, setShowScrollbar] = useState(false)
   const scrollbarTimerRef = useRef<number | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -548,10 +558,8 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           isDraggingOverRoot && 'bg-[var(--obsidian-accent-dim)]'
         )}
         onScroll={handleScroll}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setSelectedNode(null)
-          }
+        onClick={() => {
+          setSelectedNode(null)
         }}
         onContextMenu={(e) => {
           if (e.target === e.currentTarget) {

@@ -1,22 +1,22 @@
 import { ContextMenu, ContextMenuItem } from "@renderer/components/ContextMenu";
+import type { KanbanCard, KanbanCardPriority } from "@renderer/store/kanbanStore";
 import {
-  createKanbanCard,
-  createKanbanColumn,
-  createKanbanWorkspace,
-  kanbanStateAtom,
-  normalizeKanbanState,
+    createKanbanCard,
+    createKanbanColumn,
+    createKanbanWorkspace,
+    kanbanStateAtom,
+    normalizeKanbanState,
 } from "@renderer/store/kanbanStore";
-import type { KanbanCardPriority, KanbanCard } from "@renderer/store/kanbanStore";
-
-export type KanbanCardWithColumn = KanbanCard & { column: string };
 import { useAtom } from "jotai";
 import { motion } from "motion/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FaFire } from "react-icons/fa";
 import { FiPlus, FiTrash } from "react-icons/fi";
-import { VscAdd, VscTrash, VscChevronDown } from "react-icons/vsc";
+import { VscAdd, VscChevronDown, VscTrash } from "react-icons/vsc";
 import { twMerge } from "tailwind-merge";
 import { TaskDetailsPanel } from "./TaskDetailsPanel";
+
+export type KanbanCardWithColumn = KanbanCard & { column: string };
 
 export const KanbanBoard = () => {
   const [storedState, setState] = useAtom(kanbanStateAtom);
@@ -36,6 +36,9 @@ export const KanbanBoard = () => {
   const [columnContextMenu, setColumnContextMenu] = useState<{ x: number; y: number; columnId: string } | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [pendingDeleteColumnId, setPendingDeleteColumnId] = useState<string | null>(null);
+  const [pendingDeleteWorkspaceId, setPendingDeleteWorkspaceId] = useState<string | null>(null);
+  const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
+  const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
 
   const newWorkspaceInputRef = useRef<HTMLInputElement>(null);
 
@@ -190,22 +193,51 @@ export const KanbanBoard = () => {
       <div className="px-6 py-4 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {state.workspaces.map((workspace) => (
-            <button
-              key={workspace.id}
-              onClick={() => setState((prev) => ({ ...prev, activeWorkspaceId: workspace.id }))}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                setWorkspaceContextMenu({ x: e.clientX, y: e.clientY, workspaceId: workspace.id });
-              }}
-              className={twMerge(
-                "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-sm transition-colors",
-                workspace.id === state.activeWorkspaceId
-                  ? "bg-[var(--obsidian-hover)] font-semibold text-[var(--obsidian-text)]"
-                  : "text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]"
-              )}
-            >
-              {workspace.name}
-            </button>
+            editingWorkspaceId === workspace.id ? (
+              <input
+                key={`edit-${workspace.id}`}
+                autoFocus
+                value={editingWorkspaceName}
+                onChange={(e) => setEditingWorkspaceName(e.target.value)}
+                onBlur={() => {
+                  if (editingWorkspaceName.trim()) {
+                    setState((prev) => ({
+                      ...prev,
+                      workspaces: prev.workspaces.map((w) =>
+                        w.id === workspace.id ? { ...w, name: editingWorkspaceName.trim() } : w
+                      ),
+                    }));
+                  }
+                  setEditingWorkspaceId(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                  if (e.key === "Escape") setEditingWorkspaceId(null);
+                }}
+                className="inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-sm bg-[var(--obsidian-workspace)] border border-[var(--obsidian-accent)] text-[var(--obsidian-text)] outline-none"
+              />
+            ) : (
+              <button
+                key={workspace.id}
+                onClick={() => setState((prev) => ({ ...prev, activeWorkspaceId: workspace.id }))}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setWorkspaceContextMenu({ x: e.clientX, y: e.clientY, workspaceId: workspace.id });
+                }}
+                onDoubleClick={() => {
+                  setEditingWorkspaceId(workspace.id);
+                  setEditingWorkspaceName(workspace.name);
+                }}
+                className={twMerge(
+                  "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-sm transition-colors",
+                  workspace.id === state.activeWorkspaceId
+                    ? "bg-[var(--obsidian-hover)] font-semibold text-[var(--obsidian-text)]"
+                    : "text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover-soft)]"
+                )}
+              >
+                {workspace.name}
+              </button>
+            )
           ))}
           <button
             onClick={() => setIsWorkspaceModalOpen(true)}

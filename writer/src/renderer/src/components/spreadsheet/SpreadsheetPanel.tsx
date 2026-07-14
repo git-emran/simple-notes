@@ -802,7 +802,7 @@ const Cell = ({
           value={textValue}
           onBlur={() => setEditing(false)}
           onKeyDown={(event) => {
-            if (event.key === 'Escape') {
+            if (event.key === 'Escape' || event.key === 'Enter') {
               setEditing(false)
             }
           }}
@@ -832,7 +832,7 @@ const Cell = ({
         onBlur={() => setEditing(false)}
         onDoubleClick={() => setEditing(true)}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') {
+          if (event.key === 'Escape' || event.key === 'Enter') {
             event.currentTarget.blur()
           }
         }}
