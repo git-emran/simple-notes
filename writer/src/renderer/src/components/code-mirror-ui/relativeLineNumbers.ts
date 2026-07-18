@@ -1,46 +1,28 @@
 import { gutter, GutterMarker } from '@codemirror/view'
 import { StateField, Transaction } from '@codemirror/state'
 
-/* Bounded cache for DOM elements with LRU-style cleanup */
-const MAX_CACHE_SIZE = 200 // Reasonable limit for most use cases
-const markerCache = new Map<string, GutterMarker>()
-
-/* Get cached or create new marker with bounded cache */
-function getMarker(text: string, isCurrentLine: boolean): GutterMarker {
-  const key = `${text}-${isCurrentLine}`
-
-  if (markerCache.has(key)) {
-    /* Move to end for LRU behavior */
-    const marker = markerCache.get(key)!
-    markerCache.delete(key)
-    markerCache.set(key, marker)
-    return marker
+class RelativeNumberMarker extends GutterMarker {
+  constructor(
+    readonly text: string,
+    readonly isCurrent: boolean
+  ) {
+    super()
   }
 
-  /* Clean up if cache is too large */
-  if (markerCache.size >= MAX_CACHE_SIZE) {
-    /* Remove oldest 50 entries */
-    const toDelete = Array.from(markerCache.keys()).slice(0, 50)
-    toDelete.forEach((k) => markerCache.delete(k))
+  eq(other: RelativeNumberMarker) {
+    return this.text === other.text && this.isCurrent === other.isCurrent
   }
 
-  const marker = new (class extends GutterMarker {
-    toDOM() {
-      const span = document.createElement('span')
-      span.textContent = text
-      span.style.display = 'inline-block'
-      span.style.width = '100%'
-      span.style.paddingLeft = '6px'
-      span.className = isCurrentLine
-        ? 'cm-lineNumber cm-current-line transition-colors duration-200 font-bold text-gray-800 dark:text-white'
-        : 'cm-lineNumber transition-colors duration-200 text-gray-400 dark:text-gray-500'
-      span.textContent = text
-      return span
-    }
-  })()
-
-  markerCache.set(key, marker)
-  return marker
+  toDOM() {
+    const span = document.createElement('span')
+    span.textContent = this.text
+    // Modern UI: tabular-nums ensures digits align properly.
+    // Right alignment with pr-2 looks much better for line numbers.
+    span.className = this.isCurrent
+      ? 'cm-lineNumber pr-2 tabular-nums font-semibold text-[var(--obsidian-accent)] transition-colors duration-200 block text-right w-full'
+      : 'cm-lineNumber pr-2 tabular-nums text-[var(--obsidian-text-muted)] opacity-50 hover:opacity-100 transition-opacity duration-200 block text-right w-full'
+    return span
+  }
 }
 
 /* State field that increments on any selection change to force gutter updates */
@@ -67,10 +49,10 @@ export function relativeLineNumbers() {
         const lineNum = view.state.doc.lineAt(line.from).number
 
         if (lineNum === currentLine) {
-          return getMarker(String(lineNum), true)
+          return new RelativeNumberMarker(String(lineNum), true)
         } else {
           const relativeNum = Math.abs(currentLine - lineNum)
-          return getMarker(String(relativeNum), false)
+          return new RelativeNumberMarker(String(relativeNum), false)
         }
       },
       lineMarkerChange(update) {
@@ -81,7 +63,7 @@ export function relativeLineNumbers() {
         )
       },
       initialSpacer() {
-        return getMarker('999', false)
+        return new RelativeNumberMarker('999', false)
       }
     })
   ]

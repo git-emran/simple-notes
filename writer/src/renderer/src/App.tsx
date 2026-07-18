@@ -381,7 +381,6 @@ const App = () => {
               <button
                 className="obsidian-ribbon-btn"
                 onClick={() => {
-                  setCollapsed(false)
                   setAppMode('editor')
                   void createDailyNote()
                 }}
@@ -393,7 +392,6 @@ const App = () => {
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'kanban' ? 'is-active' : ''}`}
                 onClick={() => {
-                  setCollapsed(false)
                   createKanbanTab()
                 }}
               >
@@ -404,7 +402,6 @@ const App = () => {
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'spreadsheet' ? 'is-active' : ''}`}
                 onClick={() => {
-                  setCollapsed(false)
                   createSpreadsheetTab()
                 }}
               >
@@ -415,7 +412,6 @@ const App = () => {
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'terminal' ? 'is-active' : ''}`}
                 onClick={() => {
-                  setCollapsed(false)
                   createTerminalTab()
                 }}
               >
