@@ -2,8 +2,9 @@ import { aiApiKeyAtom, fileTreeIndexAtom } from '@renderer/store'
 import type { FileNode } from '@shared/models'
 import type { AiModelInfo } from '@shared/types'
 import { useAtomValue } from 'jotai'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { SelectedNote, ViewRef } from './types'
+import { EditorView } from '@codemirror/view'
 
 interface UseAiGenerationParams {
   viewRef: ViewRef
@@ -21,41 +22,17 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
   const [selectedAiModel, setSelectedAiModel] = useState('')
   const [isLoadingAiModels, setIsLoadingAiModels] = useState(false)
   const [isGeneratingWithAi, setIsGeneratingWithAi] = useState(false)
-  const [aiProgress, setAiProgress] = useState(0)
   const [aiError, setAiError] = useState<string | null>(null)
+  
+  const cancelRef = useRef<(() => void) | null>(null)
 
-  // Progress bar simulation
-  useEffect(() => {
-    if (!isGeneratingWithAi) {
-      setAiProgress(0)
-      return
+  const stopGeneration = useCallback(() => {
+    if (cancelRef.current) {
+      cancelRef.current()
+      cancelRef.current = null
     }
-
-    setAiProgress(8)
-    const timer = window.setInterval(() => {
-      setAiProgress((prev) => {
-        if (prev >= 92) return prev
-        return prev + Math.max(1, Math.round((100 - prev) / 12))
-      })
-    }, 280)
-
-    return () => window.clearInterval(timer)
-  }, [isGeneratingWithAi])
-
-  const insertAiText = useCallback(
-    (text: string) => {
-      const view = viewRef.current
-      if (!view) return
-
-      const selection = view.state.selection.main
-      view.dispatch({
-        changes: { from: selection.from, to: selection.to, insert: text },
-        selection: { anchor: selection.from + text.length }
-      })
-      view.focus()
-    },
-    [viewRef]
-  )
+    setIsGeneratingWithAi(false)
+  }, [])
 
   const openAiModal = useCallback(async () => {
     setIsAiModalOpen(true)
@@ -91,7 +68,8 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
       setAiError(null)
 
       try {
-        const currentContent = viewRef.current.state.doc.toString()
+        const view = viewRef.current
+        const currentContent = view.state.doc.toString()
 
         const normalizePath = (p: string) => p.replace(/\\/g, '/')
         const rootDirNormalized = normalizePath(rootDir || '').replace(/\/+$/, '')
@@ -181,7 +159,7 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
               used += block.length
               addedFiles++
             } catch {
-              /* Silently skip files that can't be read */
+              // Silently skip files that can't be read
             }
           }
 
@@ -199,28 +177,55 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
           ? `${noteLine}I am providing some file context below to help with your task.\n\nContext:\n${fullContext}\n\nTask:\n${prompt}`
           : `${noteLine}${prompt}`
 
-        const result = await window.context.generateWithAi({
-          model: selectedAiModel,
-          prompt: finalPrompt,
-          content: contentForAi,
-          apiKey: aiApiKey.trim() || undefined
-        })
-
-        if ('error' in result) {
-          setAiError(result.error)
-          return
+        // If there's a selection, remove it first so the AI replaces it.
+        const selection = view.state.selection.main
+        if (!selection.empty) {
+          view.dispatch({
+            changes: { from: selection.from, to: selection.to, insert: '' },
+            selection: { anchor: selection.from }
+          })
         }
 
-        insertAiText(result.text)
-        setIsAiModalOpen(false)
-        setAiPrompt('')
+        const stream = window.context.streamWithAi(
+          {
+            model: selectedAiModel,
+            prompt: finalPrompt,
+            content: contentForAi,
+            apiKey: aiApiKey.trim() || undefined
+          },
+          {
+            onChunk: (chunk) => {
+              const v = viewRef.current
+              if (v) {
+                const sel = v.state.selection.main
+                v.dispatch({
+                  changes: { from: sel.from, insert: chunk },
+                  selection: { anchor: sel.from + chunk.length },
+                  effects: EditorView.scrollIntoView(sel.from + chunk.length)
+                })
+              }
+            },
+            onDone: () => {
+              setIsGeneratingWithAi(false)
+              cancelRef.current = null
+              setIsAiModalOpen(false)
+              setAiPrompt('')
+            },
+            onError: (err) => {
+              setAiError(err)
+              setIsGeneratingWithAi(false)
+              cancelRef.current = null
+            }
+          }
+        )
+
+        cancelRef.current = stream.cancel
       } catch {
         setAiError('Failed to generate text.')
-      } finally {
         setIsGeneratingWithAi(false)
       }
     },
-    [aiApiKey, aiPrompt, insertAiText, selectedAiModel, fileTreeIndex, rootDir, selectedNote?.path, viewRef]
+    [aiApiKey, aiPrompt, selectedAiModel, fileTreeIndex, rootDir, selectedNote?.path, viewRef]
   )
 
   return {
@@ -233,9 +238,9 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
     setSelectedAiModel,
     isLoadingAiModels,
     isGeneratingWithAi,
-    aiProgress,
     aiError,
     openAiModal,
     handleGenerateWithAi,
+    stopGeneration
   }
 }

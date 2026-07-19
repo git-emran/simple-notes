@@ -19,7 +19,8 @@ import {
   ImportImageToRootImageFolder,
   GetRootDir,
   ListFreeAiModels,
-  GenerateWithAi
+  GenerateWithAi,
+  StreamWithAi
 } from '@shared/types'
 
 declare global {
@@ -47,6 +48,7 @@ declare global {
       getRootDir: GetRootDir
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi
+      streamWithAi: StreamWithAi
     }
   }
 }

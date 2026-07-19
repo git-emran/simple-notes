@@ -61,6 +61,36 @@ contextBridge.exposeInMainWorld('context', {
   getRootDir: (...args: Parameters<GetRootDir>) => ipcRenderer.invoke('getRootDir', ...args),
   listFreeAiModels: (...args: Parameters<ListFreeAiModels>) => ipcRenderer.invoke('listFreeAiModels', ...args),
   generateWithAi: (...args: Parameters<GenerateWithAi>) => ipcRenderer.invoke('generateWithAi', ...args),
+  streamWithAi: (
+    params: Parameters<GenerateWithAi>[0],
+    callbacks: {
+      onChunk: (chunk: string) => void
+      onDone: () => void
+      onError: (error: string) => void
+    }
+  ) => {
+    const reqId = crypto.randomUUID()
+    const listener = (_event: IpcRendererEvent, payload: any) => {
+      if (payload.reqId !== reqId) return
+      if (payload.type === 'chunk') callbacks.onChunk(payload.chunk)
+      if (payload.type === 'done') {
+        callbacks.onDone()
+        ipcRenderer.removeListener('ai-stream-event', listener)
+      }
+      if (payload.type === 'error') {
+        callbacks.onError(payload.error)
+        ipcRenderer.removeListener('ai-stream-event', listener)
+      }
+    }
+    ipcRenderer.on('ai-stream-event', listener)
+    ipcRenderer.send('start-ai-stream', { ...params, reqId })
+    return {
+      cancel: () => {
+        ipcRenderer.send('cancel-ai-stream', { reqId })
+        ipcRenderer.removeListener('ai-stream-event', listener)
+      }
+    }
+  },
   createTerminalSession: (...args: Parameters<CreateTerminalSession>) =>
     ipcRenderer.invoke('terminal:create', ...args),
   getTerminalSnapshot: (...args: Parameters<GetTerminalSnapshot>) => ipcRenderer.invoke('terminal:snapshot', ...args),

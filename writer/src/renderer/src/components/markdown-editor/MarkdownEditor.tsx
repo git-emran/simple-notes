@@ -302,9 +302,9 @@ export const MarkdownEditor = () => {
         aiPrompt={ai.aiPrompt}
         setAiPrompt={ai.setAiPrompt}
         isGeneratingWithAi={ai.isGeneratingWithAi}
-        aiProgress={ai.aiProgress}
         aiError={ai.aiError}
         onGenerate={(paths) => void ai.handleGenerateWithAi(paths)}
+        onStop={ai.stopGeneration}
         fileTree={fileTree ?? []}
         currentNotePath={selectedNote?.path ?? null}
       />

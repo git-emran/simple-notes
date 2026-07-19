@@ -849,3 +849,106 @@ export const generateWithAi: GenerateWithAi = async ({ model, prompt, content, a
     return { error: 'AI generation failed. Please try again.' }
   }
 }
+
+export const streamWithAiMain = async (
+  params: { model: string; prompt: string; content: string; apiKey?: string },
+  onChunk: (chunk: string) => void,
+  onDone: () => void,
+  onError: (error: string) => void,
+  signal: AbortSignal
+) => {
+  try {
+    const trimmedKey = params.apiKey?.trim() || ''
+    if (!trimmedKey) return onError('OpenRouter API key is required to generate text.')
+
+    const finalPrompt = params.prompt.trim()
+    if (!finalPrompt) return onError('Prompt cannot be empty.')
+
+    const safeModel = params.model?.trim()
+    if (!safeModel) return onError('Model is required.')
+
+    const requestBody = {
+      model: safeModel,
+      temperature: 0.7,
+      max_tokens: OPENROUTER_MAX_OUTPUT_TOKENS,
+      stream: true,
+      messages: [
+        {
+          role: 'system' as const,
+          content: 'You are a writing assistant. Return only polished markdown text based on the instruction. If provided context is truncated, do your best with what you have. Do not output conversational filler.'
+        },
+        {
+          role: 'user' as const,
+          content: `Instruction:\n${finalPrompt}\n\nCurrent content:\n${params.content || '(empty)'}`
+        }
+      ]
+    }
+
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${trimmedKey}`,
+        'HTTP-Referer': 'https://github.com/writr-app/writr',
+        'X-Title': 'Writer App'
+      },
+      body: JSON.stringify(requestBody)
+    })
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '')
+      let msg = text
+      try {
+        const parsed = JSON.parse(text) as any
+        if (parsed.error?.message) msg = parsed.error.message
+      } catch {}
+      return onError(`AI request failed: ${response.status} ${msg}`)
+    }
+
+    if (!response.body) {
+      return onError('No response body from AI provider.')
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      
+      let newlineIdx
+      while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newlineIdx).trim()
+        buffer = buffer.slice(newlineIdx + 1)
+        
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6)
+          if (data === '[DONE]') {
+            onDone()
+            return
+          }
+          try {
+            const parsed = JSON.parse(data) as any
+            const chunk = parsed.choices?.[0]?.delta?.content
+            if (chunk) {
+              onChunk(chunk)
+            }
+          } catch (e) {
+            // ignore JSON parse errors
+          }
+        }
+      }
+    }
+    
+    onDone()
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      onDone()
+    } else {
+      onError(`AI generation failed: ${error.message}`)
+    }
+  }
+}

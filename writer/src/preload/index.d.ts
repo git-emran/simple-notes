@@ -20,6 +20,7 @@ import {
   GetRootDir,
   ListFreeAiModels,
   GenerateWithAi,
+  StreamWithAi,
   CreateTerminalSession,
   GetTerminalSnapshot,
   CloseTerminalSession,
@@ -52,6 +53,7 @@ declare global {
       getRootDir: GetRootDir
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi
+      streamWithAi: StreamWithAi
       createTerminalSession: CreateTerminalSession
       getTerminalSnapshot: GetTerminalSnapshot
       closeTerminalSession: CloseTerminalSession

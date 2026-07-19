@@ -25,7 +25,8 @@ import {
   importImageToRootImageFolder,
   getRootDir,
   listFreeAiModels,
-  generateWithAi
+  generateWithAi,
+  streamWithAiMain
 } from '@/lib'
 import {
   closeTerminalSession,
@@ -209,6 +210,46 @@ app.whenReady().then(() => {
     listFreeAiModels(...args)
   )
   ipcMain.handle('generateWithAi', (_, ...args: Parameters<GenerateWithAi>) => generateWithAi(...args))
+  
+  const aiStreamControllers = new Map<string, AbortController>()
+  ipcMain.on('start-ai-stream', (event, params: any) => {
+    const { reqId } = params
+    const controller = new AbortController()
+    aiStreamControllers.set(reqId, controller)
+    
+    const sender = event.sender
+    
+    streamWithAiMain(
+      params,
+      (chunk) => {
+        if (!sender.isDestroyed()) {
+          sender.send('ai-stream-event', { type: 'chunk', reqId, chunk })
+        }
+      },
+      () => {
+        if (!sender.isDestroyed()) {
+          sender.send('ai-stream-event', { type: 'done', reqId })
+        }
+        aiStreamControllers.delete(reqId)
+      },
+      (error) => {
+        if (!sender.isDestroyed()) {
+          sender.send('ai-stream-event', { type: 'error', reqId, error })
+        }
+        aiStreamControllers.delete(reqId)
+      },
+      controller.signal
+    )
+  })
+
+  ipcMain.on('cancel-ai-stream', (_, { reqId }: { reqId: string }) => {
+    const controller = aiStreamControllers.get(reqId)
+    if (controller) {
+      controller.abort()
+      aiStreamControllers.delete(reqId)
+    }
+  })
+
   ipcMain.handle('terminal:create', (event, ...args: Parameters<CreateTerminalSession>) =>
     createTerminalSession(event.sender, ...args)
   )

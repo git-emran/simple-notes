@@ -50,6 +50,24 @@ export type GenerateWithAi = (
   params: GenerateWithAiParams
 ) => Promise<{ text: string } | { error: string }>
 
+export type StreamWithAiParams = GenerateWithAiParams & {
+  reqId: string
+}
+
+export type StreamWithAiEvent =
+  | { type: 'chunk'; reqId: string; chunk: string }
+  | { type: 'done'; reqId: string }
+  | { type: 'error'; reqId: string; error: string }
+
+export type StreamWithAi = (
+  params: GenerateWithAiParams,
+  callbacks: {
+    onChunk: (chunk: string) => void
+    onDone: () => void
+    onError: (error: string) => void
+  }
+) => { cancel: () => void }
+
 export type CreateTerminalSessionParams = {
   cwd?: string
   cols?: number
