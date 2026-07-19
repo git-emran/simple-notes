@@ -167,6 +167,8 @@ export const getFileTree: GetFileTree = async () => {
 
     const nodesWithPotentialDuplicates = await Promise.all(
       dirents.map(async (dirent) => {
+        if (dirent.name.startsWith('.')) return null
+
         const res = path.resolve(currentDir, dirent.name)
         const isDirectory = dirent.isDirectory()
 
