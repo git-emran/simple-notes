@@ -239,9 +239,9 @@ export const readFileNew: ReadFile = async (filePath) => {
   try {
     const safePath = ensurePathWithinRoot(filePath)
     return await readFile(safePath, { encoding: fileEncoding })
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
-      return undefined as any
+  } catch (error) {
+    if ((error as { code?: string }).code === 'ENOENT') {
+      return undefined as unknown as string
     }
     throw error
   }
@@ -786,7 +786,7 @@ export const generateWithAi: GenerateWithAi = async ({ model, prompt, content, a
           },
           body: JSON.stringify(requestBody)
         })
-      ).catch((e: any) => {
+      ).catch((e: Error) => {
         const message = e?.name === 'AbortError' ? 'Request timed out.' : e?.message || String(e)
         lastError = { status: 0, message }
         return null
@@ -900,9 +900,11 @@ export const streamWithAiMain = async (
       const text = await response.text().catch(() => '')
       let msg = text
       try {
-        const parsed = JSON.parse(text) as any
+        const parsed = JSON.parse(text) as { error?: { message?: string } }
         if (parsed.error?.message) msg = parsed.error.message
-      } catch {}
+      } catch {
+        // Not valid JSON; use raw text as message
+      }
       return onError(`AI request failed: ${response.status} ${msg}`)
     }
 
@@ -914,7 +916,7 @@ export const streamWithAiMain = async (
     const decoder = new TextDecoder()
     let buffer = ''
 
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       buffer += decoder.decode(value, { stream: true })
@@ -931,24 +933,24 @@ export const streamWithAiMain = async (
             return
           }
           try {
-            const parsed = JSON.parse(data) as any
+            const parsed = JSON.parse(data) as { choices?: Array<{ delta?: { content?: string } }> }
             const chunk = parsed.choices?.[0]?.delta?.content
             if (chunk) {
               onChunk(chunk)
             }
-          } catch (e) {
-            // ignore JSON parse errors
+          } catch {
+            // ignore malformed SSE JSON
           }
         }
       }
     }
     
     onDone()
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
+  } catch (error) {
+    if ((error as Error).name === 'AbortError') {
       onDone()
     } else {
-      onError(`AI generation failed: ${error.message}`)
+      onError(`AI generation failed: ${(error as Error).message}`)
     }
   }
 }

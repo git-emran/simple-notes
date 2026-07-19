@@ -212,7 +212,7 @@ app.whenReady().then(() => {
   ipcMain.handle('generateWithAi', (_, ...args: Parameters<GenerateWithAi>) => generateWithAi(...args))
   
   const aiStreamControllers = new Map<string, AbortController>()
-  ipcMain.on('start-ai-stream', (event, params: any) => {
+  ipcMain.on('start-ai-stream', (event, params: { model: string; prompt: string; content: string; apiKey?: string; reqId: string }) => {
     const { reqId } = params
     const controller = new AbortController()
     aiStreamControllers.set(reqId, controller)
@@ -327,11 +327,11 @@ app.whenReady().then(() => {
       const { createReadStream } = await import('fs')
       const stream = createReadStream(resolvedFilePath)
       
-      return new Response(Readable.toWeb(stream) as any)
-	    } catch (e) {
-	      return new Response('Not Found', { status: 404 })
-	    }
-	  })
+      return new Response(Readable.toWeb(stream) as ReadableStream)
+    } catch {
+      return new Response('Not Found', { status: 404 })
+    }
+  })
 
   createWindow()
 
