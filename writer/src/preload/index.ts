@@ -70,7 +70,7 @@ contextBridge.exposeInMainWorld('context', {
     }
   ) => {
     const reqId = crypto.randomUUID()
-    const listener = (_event: IpcRendererEvent, payload: any) => {
+    const listener = (_event: IpcRendererEvent, payload: { reqId: string; type: string; chunk: string; error: string }) => {
       if (payload.reqId !== reqId) return
       if (payload.type === 'chunk') callbacks.onChunk(payload.chunk)
       if (payload.type === 'done') {
@@ -113,8 +113,8 @@ contextBridge.exposeInMainWorld('context', {
   getUpdateConfig: () => ipcRenderer.invoke('updater:get-config'),
   getAppVersion: () => ipcRenderer.invoke('updater:get-version'),
   dismissWelcome: (version: string) => ipcRenderer.invoke('updater:dismiss-welcome', version),
-  onUpdaterStatus: (callback: (data: { event: string; payload?: any }) => void) => {
-    const listener = (_event: IpcRendererEvent, data: { event: string; payload?: any }) => callback(data)
+  onUpdaterStatus: (callback: (data: { event: string; payload?: unknown }) => void) => {
+    const listener = (_event: IpcRendererEvent, data: { event: string; payload?: unknown }) => callback(data)
     ipcRenderer.on('updater:status', listener)
     return () => ipcRenderer.removeListener('updater:status', listener)
   }

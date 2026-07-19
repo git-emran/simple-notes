@@ -66,7 +66,7 @@ declare global {
       getUpdateConfig: () => Promise<{ uuid: string; bucket: number; lastPromptedVersion?: string }>
       getAppVersion: () => Promise<string>
       dismissWelcome: (version: string) => Promise<boolean>
-      onUpdaterStatus: (callback: (data: { event: string; payload?: any }) => void) => () => void
+      onUpdaterStatus: (callback: (data: { event: string; payload?: unknown }) => void) => () => void
     }
   }
 }

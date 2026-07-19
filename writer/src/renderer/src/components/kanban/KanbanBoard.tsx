@@ -36,7 +36,6 @@ export const KanbanBoard = () => {
   const [columnContextMenu, setColumnContextMenu] = useState<{ x: number; y: number; columnId: string } | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [pendingDeleteColumnId, setPendingDeleteColumnId] = useState<string | null>(null);
-  const [pendingDeleteWorkspaceId, setPendingDeleteWorkspaceId] = useState<string | null>(null);
   const [editingWorkspaceId, setEditingWorkspaceId] = useState<string | null>(null);
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
 
