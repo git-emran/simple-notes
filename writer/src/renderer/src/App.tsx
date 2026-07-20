@@ -6,7 +6,8 @@ import {
   EditorTabs,
   ErrorBoundary,
   FileExplorer,
-  SidebarSearch
+  SidebarSearch,
+  FolderNotesPanel
 } from './components'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
@@ -41,6 +42,7 @@ import {
   rememberLastStateAtom,
   isDarkModeAtom,
   accentColorAtom,
+  showFolderNotesInSeparatePanelAtom,
   type EditorFontOption
 } from '@renderer/store'
 import {
@@ -92,7 +94,9 @@ const App = () => {
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(240) // default width for FileExplorer
+  const [notesPanelWidth, setNotesPanelWidth] = useState(240) // default width for FolderNotesPanel
   const isDragging = useRef(false)
+  const isDraggingNotes = useRef(false)
   const previousBodyCursor = useRef('')
   const previousBodyUserSelect = useRef('')
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -113,6 +117,7 @@ const App = () => {
   const editorFontSize = useAtomValue(editorFontSizeAtom)
   const accentColor = useAtomValue(accentColorAtom)
   const fileTree = useAtomValue(fileTreeAtom)
+  const showFolderNotesInSeparatePanel = useAtomValue(showFolderNotesInSeparatePanelAtom)
   const openTab = useSetAtom(openTabAtom)
   const [tabs, setTabs] = useAtom(tabsAtom)
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
@@ -239,26 +244,35 @@ const App = () => {
 
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null
-      if (!target?.closest('[data-sidebar-resize-handle="true"]')) return
-
-      e.preventDefault()
-      e.stopPropagation()
-      isDragging.current = true
-      lockResizeInteraction()
+      if (target?.closest('[data-notes-resize-handle="true"]')) {
+        e.preventDefault()
+        e.stopPropagation()
+        isDraggingNotes.current = true
+        lockResizeInteraction()
+      } else if (target?.closest('[data-sidebar-resize-handle="true"]')) {
+        e.preventDefault()
+        e.stopPropagation()
+        isDragging.current = true
+        lockResizeInteraction()
+      }
     }
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) return
-
-      e.preventDefault()
-      setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, e.clientX))
+      if (isDragging.current) {
+        e.preventDefault()
+        setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, e.clientX))
+      } else if (isDraggingNotes.current) {
+        e.preventDefault()
+        setNotesPanelWidth(Math.max(150, e.clientX - sidebarWidth))
+      }
     }
 
     const handleMouseUp = () => {
-      if (!isDragging.current) return
-
-      isDragging.current = false
-      unlockResizeInteraction()
+      if (isDragging.current || isDraggingNotes.current) {
+        isDragging.current = false
+        isDraggingNotes.current = false
+        unlockResizeInteraction()
+      }
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -321,12 +335,13 @@ const App = () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
       window.removeEventListener('keydown', handleKeyDown, true)
-      if (isDragging.current) {
+      if (isDragging.current || isDraggingNotes.current) {
         isDragging.current = false
+        isDraggingNotes.current = false
         unlockResizeInteraction()
       }
     }
-  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, sidebarView, switchTabByIndex])
+  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, sidebarView, switchTabByIndex, sidebarWidth])
 
   return (
     <ErrorBoundary>
@@ -459,6 +474,10 @@ const App = () => {
               />
             )}
           </Sidebar>
+
+          {!collapsed && showFolderNotesInSeparatePanel && sidebarView === 'files' && (
+            <FolderNotesPanel style={{ width: notesPanelWidth }} className="shrink-0" />
+          )}
 
           <Content
             ref={contentContainerRef}

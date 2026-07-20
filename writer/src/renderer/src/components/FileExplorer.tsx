@@ -14,7 +14,8 @@ import {
     openTabAtom,
     reindexTodoStatsAtom,
     selectedNodeAtom,
-    showFolderIconsAtom
+    showFolderIconsAtom,
+    showFolderNotesInSeparatePanelAtom
 } from '@renderer/store'
 import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
 import { FileNode } from '@shared/models'
@@ -64,6 +65,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteTags = useAtomValue(noteTagByPathAtom)
   const showFolderIcons = useAtomValue(showFolderIconsAtom)
+  const showFolderNotesInSeparatePanel = useAtomValue(showFolderNotesInSeparatePanelAtom)
   const createNote = useSetAtom(createNoteAtom)
   const createDirectory = useSetAtom(createDirectoryAtom)
   const deleteNode = useSetAtom(deleteNodeAtom)
@@ -399,8 +401,11 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
     const rows: Row[] = []
     const roots = fileTree ?? []
+    const initialNodes = showFolderNotesInSeparatePanel
+      ? roots.filter((node) => node.type === 'folder')
+      : roots
     const stack: Array<{ nodes: FileNode[]; index: number; depth: number }> = [
-      { nodes: roots, index: 0, depth: 0 }
+      { nodes: initialNodes, index: 0, depth: 0 }
     ]
 
     while (stack.length) {
@@ -429,12 +434,15 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
       rows.push({ node, depth: frame.depth, isExpanded, noteStatus, noteTag, rowHeight })
 
       if (node.type === 'folder' && isExpanded && node.children?.length) {
-        stack.push({ nodes: node.children, index: 0, depth: frame.depth + 1 })
+        const children = showFolderNotesInSeparatePanel
+          ? node.children.filter((child) => child.type === 'folder')
+          : node.children
+        stack.push({ nodes: children, index: 0, depth: frame.depth + 1 })
       }
     }
 
     return rows
-  }, [expandedNodes, fileTree, noteStatuses, noteTags])
+  }, [expandedNodes, fileTree, noteStatuses, noteTags, showFolderNotesInSeparatePanel])
 
   /* Virtualization: windowed rendering for large vaults */
   const overscan = 8
