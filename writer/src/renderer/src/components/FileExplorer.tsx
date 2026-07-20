@@ -397,6 +397,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
       noteStatus?: string
       noteTag?: string
       rowHeight: number
+      hideChevron: boolean
     }
 
     const rows: Row[] = []
@@ -431,7 +432,15 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
               : FILE_TREE_FOLDER_ROW_HEIGHT
       const rowHeight = baseRowHeight
 
-      rows.push({ node, depth: frame.depth, isExpanded, noteStatus, noteTag, rowHeight })
+      // When the separate notes panel is active, files live there — the main tree
+      // only expands to reveal sub-folders. Hide the chevron for folders that have
+      // no child folders so users don't click an arrow that does nothing.
+      const hideChevron =
+        showFolderNotesInSeparatePanel &&
+        node.type === 'folder' &&
+        !node.children?.some((c) => c.type === 'folder')
+
+      rows.push({ node, depth: frame.depth, isExpanded, noteStatus, noteTag, rowHeight, hideChevron })
 
       if (node.type === 'folder' && isExpanded && node.children?.length) {
         const children = showFolderNotesInSeparatePanel
@@ -607,7 +616,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
               <li aria-hidden style={{ height: windowing.beforeHeight, pointerEvents: 'none' }} />
             )}
             {windowing.windowedRows.map(
-              ({ node, depth, isExpanded, noteStatus, noteTag, rowHeight }) => (
+              ({ node, depth, isExpanded, noteStatus, noteTag, rowHeight, hideChevron }) => (
                 <FileTreeItem
                   key={node.path}
                   node={node}
@@ -625,6 +634,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
                   showFolderIcons={showFolderIcons}
                   isRenaming={renamingPath === node.path}
                   onRenameComplete={() => setRenamingPath(null)}
+                  hideChevron={hideChevron}
                 />
               )
             )}

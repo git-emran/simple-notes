@@ -8,12 +8,16 @@ import {
   selectedNodeAtom,
 } from '@renderer/store'
 import { FileNode } from '@shared/models'
-import { ComponentProps, useCallback, useMemo } from 'react'
+import { ComponentProps, useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
 
 const FILE_TREE_FILE_ROW_HEIGHT = 46
 const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 56
+
+/** True when a folder has at least one direct child that is itself a folder. */
+const hasFolderChildren = (node: FileNode): boolean =>
+  !!node.children?.some((child) => child.type === 'folder')
 
 export const FolderNotesPanel = ({
   className,
@@ -25,6 +29,21 @@ export const FolderNotesPanel = ({
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteTags = useAtomValue(noteTagByPathAtom)
   const openTab = useSetAtom(openTabAtom)
+
+  /** Set of folder paths currently expanded within this panel. */
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
+
+  const handleToggleExpand = useCallback((path: string) => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev)
+      if (next.has(path)) {
+        next.delete(path)
+      } else {
+        next.add(path)
+      }
+      return next
+    })
+  }, [])
 
   const getParentDir = useCallback((fullPath: string) => {
     const lastSlash = fullPath.lastIndexOf('/')
@@ -41,11 +60,6 @@ export const FolderNotesPanel = ({
     return fileTreeIndex.get(parentDir) ?? null
   }, [selectedNode, fileTreeIndex, getParentDir])
 
-  const visibleFiles = useMemo(() => {
-    if (!activeFolder || !activeFolder.children) return []
-    return activeFolder.children.filter((child) => child.type === 'file')
-  }, [activeFolder])
-
   const handleNodeSelect = useCallback(
     (node: FileNode) => {
       setSelectedNode(node)
@@ -53,6 +67,53 @@ export const FolderNotesPanel = ({
     },
     [openTab, setSelectedNode]
   )
+
+  /**
+   * Flattened visible rows of the active folder: sub-folders first, then files.
+   * Both types are included so the panel is a complete view of the folder.
+   * Flattening ensures a single, valid <ul> without nested lists, preventing layout shifts.
+   */
+  const visibleRows = useMemo(() => {
+    type Row = {
+      node: FileNode
+      depth: number
+      isExpanded: boolean
+      hideChevron: boolean
+    }
+
+    const rows: Row[] = []
+    if (!activeFolder || !activeFolder.children) return rows
+
+    const folders = activeFolder.children.filter((c) => c.type === 'folder')
+    const files = activeFolder.children.filter((c) => c.type === 'file')
+    const initialNodes = [...folders, ...files]
+
+    const stack: Array<{ nodes: FileNode[]; index: number; depth: number }> = [
+      { nodes: initialNodes, index: 0, depth: 0 }
+    ]
+
+    while (stack.length) {
+      const frame = stack[stack.length - 1]
+      if (frame.index >= frame.nodes.length) {
+        stack.pop()
+        continue
+      }
+
+      const node = frame.nodes[frame.index++]
+      const isExpanded = node.type === 'folder' && expandedPaths.has(node.path)
+      const hideChevron = node.type === 'folder' && !hasFolderChildren(node)
+
+      rows.push({ node, depth: frame.depth, isExpanded, hideChevron })
+
+      if (node.type === 'folder' && isExpanded && node.children?.length) {
+        const childFolders = node.children.filter((c) => c.type === 'folder')
+        const childFiles = node.children.filter((c) => c.type === 'file')
+        stack.push({ nodes: [...childFolders, ...childFiles], index: 0, depth: frame.depth + 1 })
+      }
+    }
+
+    return rows
+  }, [activeFolder, expandedPaths])
 
   if (!activeFolder) {
     return (
@@ -81,47 +142,54 @@ export const FolderNotesPanel = ({
       {...props}
     >
       <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-[var(--obsidian-border-soft)] select-none">
-        <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85 truncate" title={activeFolder.name}>
+        <span
+          className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85 truncate"
+          title={activeFolder.name}
+        >
           {activeFolder.name}
         </span>
       </div>
 
       <div className="flex-1 overflow-auto py-1 filetree-scroll">
-        <ul>
-          {visibleFiles.map((node) => {
-            const noteStatus = noteStatuses[node.path]
-            const noteTag = noteTags[node.path]
-            const todoTotal = node.todoTotal ?? 0
-            const hasMeta = !!node.lastEditTime || !!noteStatus || !!noteTag
-            const rowHeight =
-              todoTotal > 0
-                ? FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS
-                : hasMeta
-                  ? FILE_TREE_FILE_ROW_HEIGHT
-                  : 26
-
-            return (
-              <FileTreeItem
-                key={node.path}
-                className="mt-3"
-                node={node}
-                depth={0}
-                rowHeight={rowHeight}
-                onNodeSelect={handleNodeSelect}
-                selectedPath={activeTabPath}
-                isExpanded={false}
-                onToggleExpand={() => {}}
-                noteStatus={noteStatus}
-                noteTag={noteTag}
-                showFolderIcons={false}
-              />
-            )
-          })}
-        </ul>
-        {visibleFiles.length === 0 && (
+        {visibleRows.length === 0 ? (
           <div className="p-4 text-center text-[11px] text-[var(--obsidian-text-muted)] opacity-70">
             No notes in this folder.
           </div>
+        ) : (
+          <ul className="list-none p-0 m-0">
+            {visibleRows.map(({ node, depth, isExpanded, hideChevron }) => {
+              const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
+              const noteTag = node.type === 'file' ? noteTags[node.path] : undefined
+              const todoTotal = node.todoTotal ?? 0
+              const hasMeta = node.type === 'file' && (!!node.lastEditTime || !!noteStatus || !!noteTag)
+              
+              const rowHeight = node.type === 'folder' 
+                ? 26 
+                : todoTotal > 0
+                  ? FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS
+                  : hasMeta
+                    ? FILE_TREE_FILE_ROW_HEIGHT
+                    : 26
+
+              return (
+                <FileTreeItem
+                  key={node.path}
+                  node={node}
+                  depth={depth}
+                  rowHeight={rowHeight}
+                  onNodeSelect={handleNodeSelect}
+                  selectedPath={activeTabPath}
+                  isExpanded={isExpanded}
+                  onToggleExpand={handleToggleExpand}
+                  hideChevron={hideChevron}
+                  showFolderIcons={false}
+                  noteStatus={noteStatus}
+                  noteTag={noteTag}
+                  renderChildren={false}
+                />
+              )
+            })}
+          </ul>
         )}
       </div>
 

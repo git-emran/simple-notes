@@ -67,6 +67,8 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   noteStatus?: string
   noteTag?: string
   showFolderIcons?: boolean
+  /** When true, the chevron icon is hidden for folder nodes (e.g. folders with no sub-folders). */
+  hideChevron?: boolean
 }
 
 const FileTreeItemComponent = ({
@@ -86,6 +88,7 @@ const FileTreeItemComponent = ({
   noteStatus,
   noteTag,
   showFolderIcons = false,
+  hideChevron = false,
   className,
   ...props
 }: FileTreeItemProps) => {
@@ -422,7 +425,7 @@ const FileTreeItemComponent = ({
           ))}
 
         <span className="flex-shrink-0 w-4 flex justify-center z-10">
-          {node.type === 'folder' &&
+          {node.type === 'folder' && !hideChevron &&
             (isExpanded ? (
               <VscChevronDown className="w-3.5 h-3.5" />
             ) : (
@@ -475,7 +478,8 @@ const propsAreEqual = (prev: FileTreeItemProps, next: FileTreeItemProps) => {
     prev.onToggleExpand === next.onToggleExpand &&
     prev.onDropNode === next.onDropNode &&
     prev.onNodeContextMenu === next.onNodeContextMenu &&
-    prev.className === next.className
+    prev.className === next.className &&
+    prev.hideChevron === next.hideChevron
   )
 }
 
