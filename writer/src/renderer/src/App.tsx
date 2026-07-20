@@ -95,10 +95,14 @@ const App = () => {
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(240) // default width for FileExplorer
   const [notesPanelWidth, setNotesPanelWidth] = useState(240) // default width for FolderNotesPanel
+  // Keep a ref in sync with sidebarWidth so drag handlers always read the latest value
+  // without needing to be re-registered on every resize (which broke mid-drag)
+  useEffect(() => { sidebarWidthRef.current = sidebarWidth }, [sidebarWidth])
   const isDragging = useRef(false)
   const isDraggingNotes = useRef(false)
   const previousBodyCursor = useRef('')
   const previousBodyUserSelect = useRef('')
+  const sidebarWidthRef = useRef(240)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
@@ -263,7 +267,7 @@ const App = () => {
         setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, e.clientX))
       } else if (isDraggingNotes.current) {
         e.preventDefault()
-        setNotesPanelWidth(Math.max(150, e.clientX - sidebarWidth))
+        setNotesPanelWidth(Math.max(150, e.clientX - sidebarWidthRef.current))
       }
     }
 
@@ -341,7 +345,7 @@ const App = () => {
         unlockResizeInteraction()
       }
     }
-  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, sidebarView, switchTabByIndex, sidebarWidth])
+  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, sidebarView, switchTabByIndex])
 
   return (
     <ErrorBoundary>
