@@ -249,8 +249,15 @@ const FileTreeItemComponent = ({
     )
   }
 
+  const getNoteCount = (n: FileNode): number => {
+    if (!n.children) return 0
+    return n.children.reduce((acc, child) => {
+      return acc + (child.type === 'file' ? 1 : getNoteCount(child))
+    }, 0)
+  }
+
   const renderTitleRow = () => (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex flex-1 min-w-0 items-center justify-between gap-2 pr-2">
       <span
         className={twMerge(
           'truncate',
@@ -259,20 +266,28 @@ const FileTreeItemComponent = ({
       >
         {node.name}
       </span>
+      {node.type === 'folder' && (
+        <span className="shrink-0 text-[10px] tabular-nums font-medium text-[var(--obsidian-text-muted)] opacity-60">
+          {getNoteCount(node)}
+        </span>
+      )}
     </div>
   )
 
   const renderProgressRow = () => {
     if (!showProgress) return null
     return (
-      <div className="mt-[1.5px] flex items-center gap-1.5 pr-2">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full transition-colors duration-200 bg-[var(--obsidian-border-soft)]">
+      <div className="mt-[1.5px] flex items-center gap-2 pr-2">
+        <div className="h-[4px] flex-1 overflow-hidden rounded-full transition-colors duration-200 bg-[var(--obsidian-border-soft)]">
           <div
-            className="h-full rounded-full transition-all duration-300 ease-out bg-[var(--obsidian-accent)]"
-            style={{ width: `${todoProgress}%` }}
+            className="h-full rounded-full transition-all duration-300 ease-out"
+            style={{ 
+              width: `${todoProgress}%`,
+              backgroundColor: '#007AFF'
+            }}
           />
         </div>
-        <span className="shrink-0 text-[9px] tabular-nums transition-colors duration-200 text-[var(--obsidian-text-muted)]">
+        <span className="shrink-0 text-[9px] tabular-nums font-medium transition-colors duration-200 text-[var(--obsidian-text-muted)]">
           {todoCompleted}/{todoTotal}
         </span>
       </div>
