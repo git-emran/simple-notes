@@ -209,10 +209,19 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                     type="number"
                     min={1}
                     max={8}
-                    value={tabIndentUnit}
+                    value={tabIndentUnit === 0 ? '' : tabIndentUnit}
                     onChange={(e) => {
-                      const next = Number(e.target.value)
-                      if (Number.isFinite(next)) setTabIndentUnit(Math.min(8, Math.max(1, next)))
+                      const val = e.target.value
+                      if (val === '') {
+                        setTabIndentUnit(0 as any)
+                        return
+                      }
+                      const next = Number(val)
+                      if (Number.isFinite(next)) setTabIndentUnit(Math.min(8, next))
+                    }}
+                    onBlur={() => {
+                      const current = Number(tabIndentUnit)
+                      if (!current || current < 1) setTabIndentUnit(1)
                     }}
                     className="w-20 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                   />
@@ -227,12 +236,23 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                     <input
                       type="number"
                       min={9}
-                      max={32}
-                      value={fontSize}
+                      max={50}
+                      value={fontSize === 0 ? '' : fontSize}
                       onChange={(e) => {
-                        const next = Number(e.target.value)
+                        const val = e.target.value
+                        if (val === '') {
+                          setFontSize(0 as any)
+                          return
+                        }
+                        const next = Number(val)
                         if (!Number.isFinite(next)) return
-                        setFontSize(Math.min(32, Math.max(9, Math.floor(next))))
+                        setFontSize(Math.min(50, Math.floor(next)))
+                      }}
+                      onBlur={() => {
+                        const current = Number(fontSize)
+                        if (!current || current < 9) {
+                          setFontSize(9)
+                        }
                       }}
                       className="w-20 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                     />
