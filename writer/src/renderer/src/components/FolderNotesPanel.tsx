@@ -6,18 +6,19 @@ import {
   noteTagByPathAtom,
   openTabAtom,
   selectedNodeAtom,
+  renamingPathAtom,
+  createNoteAtom,
+  deleteNodeAtom,
 } from '@renderer/store'
 import { FileNode } from '@shared/models'
-import { ComponentProps, useCallback, useMemo, useState } from 'react'
+import { ComponentProps, useCallback, useMemo, useState, type MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
+import { ContextMenu, ContextMenuItem } from './ContextMenu'
+import { VscNewFile, VscEdit, VscTrash } from 'react-icons/vsc'
 
 const FILE_TREE_FILE_ROW_HEIGHT = 46
 const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 56
-
-/** True when a folder has at least one direct child that is itself a folder. */
-const hasFolderChildren = (node: FileNode): boolean =>
-  !!node.children?.some((child) => child.type === 'folder')
 
 export const FolderNotesPanel = ({
   className,
@@ -26,23 +27,19 @@ export const FolderNotesPanel = ({
   const fileTreeIndex = useAtomValue(fileTreeIndexAtom)
   const activeTabPath = useAtomValue(activeTabPathAtom)
   const [selectedNode, setSelectedNode] = useAtom(selectedNodeAtom)
+  const [renamingPath, setRenamingPath] = useAtom(renamingPathAtom)
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteTags = useAtomValue(noteTagByPathAtom)
   const openTab = useSetAtom(openTabAtom)
+  const createNote = useSetAtom(createNoteAtom)
+  const deleteNode = useSetAtom(deleteNodeAtom)
 
-  /** Set of folder paths currently expanded within this panel. */
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
 
-  const handleToggleExpand = useCallback((path: string) => {
-    setExpandedPaths((prev) => {
-      const next = new Set(prev)
-      if (next.has(path)) {
-        next.delete(path)
-      } else {
-        next.add(path)
-      }
-      return next
-    })
+  const handleToggleExpand = useCallback(() => {}, [])
+
+  const handleNodeContextMenu = useCallback((node: FileNode, e: MouseEvent) => {
+    setContextMenu({ x: e.clientX, y: e.clientY, node })
   }, [])
 
   const getParentDir = useCallback((fullPath: string) => {
@@ -60,6 +57,16 @@ export const FolderNotesPanel = ({
     return fileTreeIndex.get(parentDir) ?? null
   }, [selectedNode, fileTreeIndex, getParentDir])
 
+  const handleCreateFile = useCallback(() => {
+    void (async () => {
+      if (!activeFolder) return
+      const createdPath = await createNote(activeFolder.path)
+      if (createdPath) {
+        setRenamingPath(createdPath)
+      }
+    })()
+  }, [activeFolder, createNote, setRenamingPath])
+
   const handleNodeSelect = useCallback(
     (node: FileNode) => {
       setSelectedNode(node)
@@ -69,9 +76,7 @@ export const FolderNotesPanel = ({
   )
 
   /**
-   * Flattened visible rows of the active folder: sub-folders first, then files.
-   * Both types are included so the panel is a complete view of the folder.
-   * Flattening ensures a single, valid <ul> without nested lists, preventing layout shifts.
+   * Visible rows of the active folder: only files.
    */
   const visibleRows = useMemo(() => {
     type Row = {
@@ -84,36 +89,14 @@ export const FolderNotesPanel = ({
     const rows: Row[] = []
     if (!activeFolder || !activeFolder.children) return rows
 
-    const folders = activeFolder.children.filter((c) => c.type === 'folder')
     const files = activeFolder.children.filter((c) => c.type === 'file')
-    const initialNodes = [...folders, ...files]
 
-    const stack: Array<{ nodes: FileNode[]; index: number; depth: number }> = [
-      { nodes: initialNodes, index: 0, depth: 0 }
-    ]
-
-    while (stack.length) {
-      const frame = stack[stack.length - 1]
-      if (frame.index >= frame.nodes.length) {
-        stack.pop()
-        continue
-      }
-
-      const node = frame.nodes[frame.index++]
-      const isExpanded = node.type === 'folder' && expandedPaths.has(node.path)
-      const hideChevron = node.type === 'folder' && !hasFolderChildren(node)
-
-      rows.push({ node, depth: frame.depth, isExpanded, hideChevron })
-
-      if (node.type === 'folder' && isExpanded && node.children?.length) {
-        const childFolders = node.children.filter((c) => c.type === 'folder')
-        const childFiles = node.children.filter((c) => c.type === 'file')
-        stack.push({ nodes: [...childFolders, ...childFiles], index: 0, depth: frame.depth + 1 })
-      }
+    for (const file of files) {
+      rows.push({ node: file, depth: 0, isExpanded: false, hideChevron: false })
     }
 
     return rows
-  }, [activeFolder, expandedPaths])
+  }, [activeFolder])
 
   if (!activeFolder) {
     return (
@@ -148,6 +131,15 @@ export const FolderNotesPanel = ({
         >
           {activeFolder.name}
         </span>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            onClick={() => handleCreateFile()}
+            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+            title="New File"
+          >
+            <VscNewFile className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto py-1 filetree-scroll">
@@ -186,6 +178,13 @@ export const FolderNotesPanel = ({
                   noteStatus={noteStatus}
                   noteTag={noteTag}
                   renderChildren={false}
+                  isRenaming={renamingPath === node.path}
+                  onRenameComplete={() => setRenamingPath(null)}
+                  onNodeContextMenu={handleNodeContextMenu}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation()
+                    setRenamingPath(node.path)
+                  }}
                 />
               )
             })}
@@ -198,6 +197,33 @@ export const FolderNotesPanel = ({
         id="notes-resize-handle"
         data-notes-resize-handle="true"
       />
+
+      {contextMenu && (
+        <ContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}>
+          <ContextMenuItem
+            onClick={() => {
+              setRenamingPath(contextMenu.node.path)
+              setContextMenu(null)
+            }}
+          >
+            <VscEdit className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>Rename</span>
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => { handleCreateFile(); setContextMenu(null) }}>
+            <VscNewFile className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>New File</span>
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={() => {
+              void deleteNode(contextMenu.node.path)
+              setContextMenu(null)
+            }}
+          >
+            <VscTrash className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>Delete</span>
+          </ContextMenuItem>
+        </ContextMenu>
+      )}
     </aside>
   )
 }

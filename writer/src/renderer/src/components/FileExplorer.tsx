@@ -15,7 +15,8 @@ import {
     reindexTodoStatsAtom,
     selectedNodeAtom,
     showFolderIconsAtom,
-    showFolderNotesInSeparatePanelAtom
+    showFolderNotesInSeparatePanelAtom,
+    renamingPathAtom
 } from '@renderer/store'
 import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
 import { FileNode } from '@shared/models'
@@ -103,7 +104,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(
     null
   )
-  const [renamingPath, setRenamingPath] = useState<string | null>(null)
+  const [renamingPath, setRenamingPath] = useAtom(renamingPathAtom)
   const [isDraggingOverRoot, setIsDraggingOverRoot] = useState(false)
 
   useEffect(() => {
@@ -319,7 +320,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
         setContextMenu(null)
       })()
     },
-    [createNote, getCreationParent, setExpandedNodes]
+    [createNote, getCreationParent, setExpandedNodes, setRenamingPath]
   )
 
   const handleCreateFolder = useCallback(
@@ -352,7 +353,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
         setContextMenu(null)
       })()
     },
-    [createDirectory, getCreationParent, setExpandedNodes, setSelectedNode]
+    [createDirectory, getCreationParent, setExpandedNodes, setSelectedNode, setRenamingPath]
   )
 
   const handleCollapseAll = useCallback(() => {
@@ -518,7 +519,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
     >
       <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-[var(--obsidian-border-soft)] select-none">
         <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85">
-          Notes
+          Notebooks
         </span>
         <div className="flex items-center gap-0.5 shrink-0">
           <button
@@ -531,14 +532,15 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
             <VscSearch className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={() => handleCreateFile()}
-            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
-            title="New File"
-          >
-            <VscNewFile className="w-4 h-4" />
-          </button>
-
+          {!showFolderNotesInSeparatePanel && (
+            <button
+              onClick={() => handleCreateFile()}
+              className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+              title="New File"
+            >
+              <VscNewFile className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={() => handleCreateFolder()}
             className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"

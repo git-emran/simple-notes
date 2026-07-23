@@ -1065,3 +1065,4 @@ export const createDailyNoteAtom = atom(null, async (get, set) => {
   set(openTabAtom, createFileNodeFromPath(finalPath))
   return finalPath
 })
+export const renamingPathAtom = atom<string | null>(null)

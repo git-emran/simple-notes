@@ -213,7 +213,7 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                     onChange={(e) => {
                       const val = e.target.value
                       if (val === '') {
-                        setTabIndentUnit(0 as any)
+                        setTabIndentUnit(0)
                         return
                       }
                       const next = Number(val)
@@ -241,7 +241,7 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                       onChange={(e) => {
                         const val = e.target.value
                         if (val === '') {
-                          setFontSize(0 as any)
+                          setFontSize(0)
                           return
                         }
                         const next = Number(val)
