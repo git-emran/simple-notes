@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { VscChevronDown, VscChromeClose } from 'react-icons/vsc'
+import { VscChevronDown, VscChromeClose, VscAdd } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { NOTE_STATUS_META, NOTE_STATUS_VALUES } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
@@ -24,6 +24,15 @@ interface EditorHeaderProps {
   isExportingPdf: boolean
 }
 
+const POPULAR_EMOJIS = [
+  '📝', '💡', '🚀', '🔥', '✨', '🐛', 
+  '🍎', '⭐', '📌', '📅', '✅', '❌', 
+  '❤️', '🤔', '🎉', '🌟', '💻', '📖', 
+  '📁', '📊', '🛠️', '⚙️', '🔍', '🎨', 
+  '📚', '🏆', '🎯', '⚡', '🎧', '☕', 
+  '🎵', '🔒', '🔑', '🌍', '🌞', '🌙'
+]
+
 export const EditorHeader = ({
   title,
   path,
@@ -41,13 +50,29 @@ export const EditorHeader = ({
   onRename,
   isExportingPdf
 }: EditorHeaderProps) => {
+  const titleEmojiMatch = title.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}])/u)
+  const currentEmoji = titleEmojiMatch ? titleEmojiMatch[1] : null
+  const displayTitle = currentEmoji ? title.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*/u, '') : title
+
   const [isEditing, setIsEditing] = React.useState(false)
-  const [editValue, setEditValue] = React.useState(title)
+  const [editValue, setEditValue] = React.useState(displayTitle)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
+  const emojiPickerRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
-    setEditValue(title)
-  }, [title, isEditing])
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setIsEmojiPickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  React.useEffect(() => {
+    setEditValue(displayTitle)
+  }, [displayTitle, isEditing])
 
   React.useEffect(() => {
     if (isEditing) {
@@ -58,8 +83,23 @@ export const EditorHeader = ({
 
   const handleRename = () => {
     setIsEditing(false)
-    if (editValue.trim() && editValue !== title) {
-      onRename?.(editValue.trim())
+    if (editValue.trim() && editValue !== displayTitle) {
+      const finalName = currentEmoji ? `${currentEmoji} ${editValue.trim()}` : editValue.trim()
+      onRename?.(finalName)
+    }
+  }
+
+  const handleEmojiSelect = (emoji: string) => {
+    const currentBaseName = isEditing ? editValue.trim() : displayTitle
+    const finalName = `${emoji} ${currentBaseName}`
+    
+    if (isEditing) {
+      // Keep editValue as the base name, since emoji is shown in the button
+      // But we need to trigger a rename to save the new emoji immediately.
+      onRename?.(finalName)
+      inputRef.current?.focus()
+    } else {
+      onRename?.(finalName)
     }
   }
 
@@ -75,28 +115,57 @@ export const EditorHeader = ({
   return (
     <div className="flex flex-col px-6 py-4 bg-[var(--obsidian-workspace)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
       <div className="flex items-start justify-between mb-2">
-        {isEditing ? (
-          <input
-            ref={inputRef}
-            type="text"
-            className="text-2xl font-semibold bg-transparent border-b border-[var(--obsidian-accent)] outline-none text-[var(--obsidian-text)] flex-1 mr-4"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleRename}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleRename()
-              if (e.key === 'Escape') setIsEditing(false)
-            }}
-          />
-        ) : (
-          <h1
-            className="text-2xl font-semibold text-[var(--obsidian-text)] truncate flex-1 cursor-text"
-            onDoubleClick={() => setIsEditing(true)}
-          >
-            {title}
-          </h1>
-        )}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center flex-1 mr-4 min-w-0">
+          <div className="relative group mr-2 shrink-0" ref={emojiPickerRef}>
+            <button
+              className="text-xl w-7 h-7 flex items-center justify-center hover:bg-[var(--obsidian-hover)] rounded transition-colors text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]"
+              onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+              title={currentEmoji ? "Change emoji" : "Add emoji"}
+            >
+              {currentEmoji ? currentEmoji : <VscAdd className="w-4 h-4" />}
+            </button>
+            {isEmojiPickerOpen && (
+              <div className="absolute top-full left-0 mt-1 bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] rounded-md shadow-lg p-2 z-50 w-max">
+                <div className="grid grid-cols-6 gap-1">
+                  {POPULAR_EMOJIS.map(emoji => (
+                    <button
+                      key={emoji}
+                      className="text-xl w-8 h-8 flex items-center justify-center hover:bg-[var(--obsidian-hover)] rounded transition-colors"
+                      onClick={() => {
+                        handleEmojiSelect(emoji)
+                        setIsEmojiPickerOpen(false)
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              className="text-2xl font-semibold bg-transparent border-b border-[var(--obsidian-accent)] outline-none text-[var(--obsidian-text)] flex-1 min-w-0"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleRename}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRename()
+                if (e.key === 'Escape') setIsEditing(false)
+              }}
+            />
+          ) : (
+            <h1
+              className="text-2xl font-semibold text-[var(--obsidian-text)] truncate flex-1 min-w-0 cursor-text"
+              onDoubleClick={() => setIsEditing(true)}
+            >
+              {displayTitle}
+            </h1>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           <MoreActionsMenu
             notePath={path}
             onExportPdf={handleExportPdf}
