@@ -84,24 +84,55 @@ export const FolderNotesPanel = ({
     [openTab, setSelectedNode]
   )
 
+  const getTimelineGroup = (timeMs?: number) => {
+    if (!timeMs) return 'Older'
+    const diffMs = Date.now() - timeMs
+    const day = 24 * 60 * 60 * 1000
+    if (diffMs < day) return 'Recent'
+    if (diffMs < 7 * day) return '1 week'
+    if (diffMs < 21 * day) return '3 weeks'
+    if (diffMs < 30 * day) return '1 month'
+    
+    const months = Math.floor(diffMs / (30 * day))
+    if (months < 12) return `${months + 1} months`
+    return 'Older'
+  }
+
   /**
-   * Visible rows of the active folder: only files.
+   * Visible rows of the active folder: files sorted by edit time, separated by timeline groups.
    */
   const visibleRows = useMemo(() => {
     type Row = {
+      type: 'file'
       node: FileNode
       depth: number
       isExpanded: boolean
       hideChevron: boolean
+    } | {
+      type: 'header'
+      label: string
     }
 
     const rows: Row[] = []
     if (!activeFolder || !activeFolder.children) return rows
 
     const files = activeFolder.children.filter((c) => c.type === 'file')
+    
+    files.sort((a, b) => {
+      const timeA = a.lastEditTime ?? 0
+      const timeB = b.lastEditTime ?? 0
+      return timeB - timeA
+    })
+
+    let currentGroup = ''
 
     for (const file of files) {
-      rows.push({ node: file, depth: 0, isExpanded: false, hideChevron: false })
+      const group = getTimelineGroup(file.lastEditTime)
+      if (group !== currentGroup) {
+        rows.push({ type: 'header', label: group })
+        currentGroup = group
+      }
+      rows.push({ type: 'file', node: file, depth: 0, isExpanded: false, hideChevron: false })
     }
 
     return rows
@@ -158,11 +189,22 @@ export const FolderNotesPanel = ({
           </div>
         ) : (
           <ul className="list-none p-0 m-0">
-            {visibleRows.map(({ node, depth, isExpanded, hideChevron }) => {
+            {visibleRows.map((row) => {
+              if (row.type === 'header') {
+                return (
+                  <li key={`header-${row.label}`} className="pt-4 pb-1.5 px-4 select-none">
+                    <div className="text-[10px] font-semibold text-[var(--obsidian-text-muted)] opacity-50 uppercase tracking-widest pb-1 border-b border-[var(--obsidian-border-soft)] mb-0.5">
+                      {row.label}
+                    </div>
+                  </li>
+                )
+              }
+
+              const { node, depth, isExpanded, hideChevron } = row
               const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
               const noteTag = node.type === 'file' ? noteTags[node.path] : undefined
               const todoTotal = node.todoTotal ?? 0
-              const hasMeta = node.type === 'file' && (!!node.lastEditTime || !!noteStatus || !!noteTag)
+              const hasMeta = node.type === 'file' && (!!noteStatus || !!noteTag) // lastEditTime is hidden here, so it shouldn't expand height unnecessarily
               
               const rowHeight = node.type === 'folder' 
                 ? 26 
@@ -183,6 +225,7 @@ export const FolderNotesPanel = ({
                   isExpanded={isExpanded}
                   onToggleExpand={handleToggleExpand}
                   hideChevron={hideChevron}
+                  hideRelativeTime={true}
                   showFolderIcons={false}
                   noteStatus={noteStatus}
                   noteTag={noteTag}

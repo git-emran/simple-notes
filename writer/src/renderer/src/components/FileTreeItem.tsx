@@ -69,6 +69,7 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   showFolderIcons?: boolean
   /** When true, the chevron icon is hidden for folder nodes (e.g. folders with no sub-folders). */
   hideChevron?: boolean
+  hideRelativeTime?: boolean
 }
 
 const FileTreeItemComponent = ({
@@ -89,6 +90,7 @@ const FileTreeItemComponent = ({
   noteTag,
   showFolderIcons = false,
   hideChevron = false,
+  hideRelativeTime = false,
   className,
   ...props
 }: FileTreeItemProps) => {
@@ -229,7 +231,7 @@ const FileTreeItemComponent = ({
     if (!showMeta) return null
     return (
       <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
-        {node.lastEditTime && (
+        {node.lastEditTime && !hideRelativeTime && (
           <span className="shrink-0 whitespace-nowrap tabular-nums text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
             {formatRelativeEditedTime(node.lastEditTime)}
           </span>
@@ -479,7 +481,8 @@ const propsAreEqual = (prev: FileTreeItemProps, next: FileTreeItemProps) => {
     prev.onDropNode === next.onDropNode &&
     prev.onNodeContextMenu === next.onNodeContextMenu &&
     prev.className === next.className &&
-    prev.hideChevron === next.hideChevron
+    prev.hideChevron === next.hideChevron &&
+    prev.hideRelativeTime === next.hideRelativeTime
   )
 }
 
