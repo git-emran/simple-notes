@@ -843,7 +843,21 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   }
 
   set(fileTreeAtom, removeNodeFromTree([...currentTree], path))
-  set(selectedNodeAtom, null)
+  
+  const currentSelected = get(selectedNodeAtom)
+  if (currentSelected && (currentSelected.path === path || currentSelected.path.startsWith(path + '/'))) {
+    if (currentSelected.path === path && currentSelected.type === 'file') {
+      const parentDir = path.substring(0, Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')))
+      const parentNode = get(fileTreeIndexAtom).get(parentDir)
+      if (parentNode) {
+        set(selectedNodeAtom, parentNode)
+      } else {
+        set(selectedNodeAtom, null)
+      }
+    } else {
+      set(selectedNodeAtom, null)
+    }
+  }
 
   /* Close tab if it was open */
   const tabs = get(tabsAtom)

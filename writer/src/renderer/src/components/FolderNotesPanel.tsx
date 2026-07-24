@@ -9,6 +9,7 @@ import {
   renamingPathAtom,
   createNoteAtom,
   deleteNodeAtom,
+  movePathAtom,
 } from '@renderer/store'
 import { FileNode } from '@shared/models'
 import { ComponentProps, useCallback, useMemo, useState, type MouseEvent } from 'react'
@@ -33,8 +34,16 @@ export const FolderNotesPanel = ({
   const openTab = useSetAtom(openTabAtom)
   const createNote = useSetAtom(createNoteAtom)
   const deleteNode = useSetAtom(deleteNodeAtom)
+  const movePath = useSetAtom(movePathAtom)
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: FileNode } | null>(null)
+
+  const handleDropNode = useCallback(
+    (src: string, dest: string) => {
+      void movePath({ src, dest })
+    },
+    [movePath]
+  )
 
   const handleToggleExpand = useCallback(() => {}, [])
 
@@ -181,6 +190,7 @@ export const FolderNotesPanel = ({
                   isRenaming={renamingPath === node.path}
                   onRenameComplete={() => setRenamingPath(null)}
                   onNodeContextMenu={handleNodeContextMenu}
+                  onDropNode={handleDropNode}
                   onDoubleClick={(e) => {
                     e.stopPropagation()
                     setRenamingPath(node.path)
