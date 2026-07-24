@@ -70,6 +70,7 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   /** When true, the chevron icon is hidden for folder nodes (e.g. folders with no sub-folders). */
   hideChevron?: boolean
   hideRelativeTime?: boolean
+  inlineMeta?: boolean
 }
 
 const FileTreeItemComponent = ({
@@ -91,6 +92,7 @@ const FileTreeItemComponent = ({
   showFolderIcons = false,
   hideChevron = false,
   hideRelativeTime = false,
+  inlineMeta = false,
   className,
   ...props
 }: FileTreeItemProps) => {
@@ -263,14 +265,39 @@ const FileTreeItemComponent = ({
 
   const renderTitleRow = () => (
     <div className="flex flex-1 min-w-0 items-center justify-between gap-2 pr-2">
-      <span
-        className={twMerge(
-          'truncate',
-          node.type === 'folder' ? 'font-medium text-[var(--obsidian-text)] text-[12px]' : 'text-[11.5px]'
+      <div className="flex items-center justify-between gap-1.5 min-w-0 flex-1">
+        <span
+          className={twMerge(
+            'truncate',
+            node.type === 'folder' ? 'font-medium text-[var(--obsidian-text)] text-[12px]' : 'text-[11.5px]'
+          )}
+        >
+          {node.name}
+        </span>
+        {inlineMeta && showMeta && (
+          <div className="flex min-w-0 shrink-0 flex-nowrap items-center gap-1.5 overflow-hidden">
+            {node.lastEditTime && !hideRelativeTime && (
+              <span className="shrink-0 whitespace-nowrap tabular-nums text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
+                {formatRelativeEditedTime(node.lastEditTime)}
+              </span>
+            )}
+            {noteStatus && (
+              <span
+                className={`shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-[1.1] ${NOTE_STATUS_META[noteStatus].className}`}
+              >
+                {NOTE_STATUS_META[noteStatus].label}
+              </span>
+            )}
+            {noteTag && (
+              <span
+                className={`shrink-0 inline-flex items-center max-w-[140px] truncate whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-[1.1] ${CUSTOM_TAG_STYLE}`}
+              >
+                {noteTag}
+              </span>
+            )}
+          </div>
         )}
-      >
-        {node.name}
-      </span>
+      </div>
       {node.type === 'folder' && (
         <span className="shrink-0 text-[10px] tabular-nums font-medium text-[var(--obsidian-text-muted)] opacity-60">
           {getNoteCount(node)}
@@ -375,7 +402,7 @@ const FileTreeItemComponent = ({
       )
     }
 
-    if (showMeta) {
+    if (showMeta && !inlineMeta) {
       return (
         <div
           className={twMerge(
@@ -482,7 +509,8 @@ const propsAreEqual = (prev: FileTreeItemProps, next: FileTreeItemProps) => {
     prev.onNodeContextMenu === next.onNodeContextMenu &&
     prev.className === next.className &&
     prev.hideChevron === next.hideChevron &&
-    prev.hideRelativeTime === next.hideRelativeTime
+    prev.hideRelativeTime === next.hideRelativeTime &&
+    prev.inlineMeta === next.inlineMeta
   )
 }
 

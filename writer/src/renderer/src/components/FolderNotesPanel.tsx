@@ -210,9 +210,7 @@ export const FolderNotesPanel = ({
                 ? 26 
                 : todoTotal > 0
                   ? FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS
-                  : hasMeta
-                    ? FILE_TREE_FILE_ROW_HEIGHT
-                    : 26
+                  : 26
 
               return (
                 <FileTreeItem
@@ -226,6 +224,7 @@ export const FolderNotesPanel = ({
                   onToggleExpand={handleToggleExpand}
                   hideChevron={hideChevron}
                   hideRelativeTime={true}
+                  inlineMeta={true}
                   showFolderIcons={false}
                   noteStatus={noteStatus}
                   noteTag={noteTag}
