@@ -62,6 +62,15 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
     { label: 'Dark', value: 'dark' },
   ]
 
+  const customThemeOptions: Array<{ label: string; value: ThemeMode }> = [
+    { label: 'Gruvbox Dark', value: 'gruvbox-dark' },
+    { label: 'Gruvbox Light', value: 'gruvbox-light' },
+    { label: 'Solarized Dark', value: 'solarized-dark' },
+    { label: 'Solarized Light', value: 'solarized-light' },
+    { label: 'Catppuccin Dark (Mocha)', value: 'catppuccin-dark' },
+    { label: 'Catppuccin Light (Latte)', value: 'catppuccin-light' },
+  ]
+
   return (
     <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4">
       <div className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-xl">
@@ -114,11 +123,20 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                   onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
                   className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                 >
-                  {themeOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
+                  <optgroup label="Base">
+                    {themeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Color Schemes">
+                    {customThemeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 

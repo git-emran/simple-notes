@@ -88,6 +88,29 @@ const getEditorFontStack = (font: EditorFontOption) => {
   return [font, 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier', 'monospace']
 }
 
+const DARK_THEMES = new Set(['dark', 'gruvbox-dark', 'solarized-dark', 'catppuccin-dark'])
+const THEME_CLASS_MAP: Record<string, string> = {
+  'gruvbox-dark':    'theme-gruvbox-dark',
+  'gruvbox-light':   'theme-gruvbox-light',
+  'solarized-dark':  'theme-solarized-dark',
+  'solarized-light': 'theme-solarized-light',
+  'catppuccin-dark': 'theme-catppuccin-dark',
+  'catppuccin-light':'theme-catppuccin-light',
+}
+const ALL_THEME_CLASSES = Object.values(THEME_CLASS_MAP)
+
+const applyTheme = (resolvedMode: string) => {
+  const isDark = DARK_THEMES.has(resolvedMode)
+  // base dark / light class
+  document.documentElement.classList.toggle('dark', isDark && !THEME_CLASS_MAP[resolvedMode])
+  document.documentElement.classList.toggle('light', !isDark && !THEME_CLASS_MAP[resolvedMode])
+  // remove all custom theme classes, then apply the right one
+  ALL_THEME_CLASSES.forEach((cls) => document.documentElement.classList.remove(cls))
+  if (THEME_CLASS_MAP[resolvedMode]) {
+    document.documentElement.classList.add(THEME_CLASS_MAP[resolvedMode])
+  }
+}
+
 const App = () => {
   const contentContainerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
@@ -187,18 +210,13 @@ const App = () => {
     setAppMode('canvas')
   }
 
-  const applyTheme = (mode: 'light' | 'dark') => {
-    document.documentElement.classList.toggle('dark', mode === 'dark')
-    document.documentElement.classList.toggle('light', mode === 'light')
-  }
-
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const applyCurrentTheme = () => {
       const resolvedMode =
         themeMode === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : themeMode
       applyTheme(resolvedMode)
-      setIsDarkMode(resolvedMode === 'dark')
+      setIsDarkMode(DARK_THEMES.has(resolvedMode))
     }
 
     applyCurrentTheme()

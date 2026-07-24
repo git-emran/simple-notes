@@ -4,6 +4,7 @@ import {
   relativeLineNumbersEnabledAtom,
   tabIndentUnitAtom,
   vimModeEnabledAtom,
+  themeModeAtom,
 } from '@renderer/store'
 import { syntaxHighlighting } from '@codemirror/language'
 import { Compartment } from '@codemirror/state'
@@ -20,6 +21,9 @@ import {
   markdownHighlightStyle,
   markdownHighlightStyleDark,
 } from '../editorTheme'
+import { gruvboxDark, gruvboxLight } from '../../../themes/gruvbox'
+import { catppuccinDark, catppuccinLight } from '../../../themes/catppuccin'
+import { solarizedDark, solarizedLight } from '../../../themes/solarized'
 import type { LanguageSupport } from '@codemirror/language'
 
 import type { ViewRef } from './types'
@@ -36,6 +40,7 @@ export function useEditorCompartments({
   rootDir,
 }: UseEditorCompartmentsParams) {
   const isDarkMode = useAtomValue(isDarkModeAtom)
+  const themeMode = useAtomValue(themeModeAtom)
   const relativeLineNumbersEnabled = useAtomValue(relativeLineNumbersEnabledAtom)
   const lineWrappingEnabled = useAtomValue(lineWrappingEnabledAtom)
   const tabIndentUnit = useAtomValue(tabIndentUnitAtom)
@@ -65,13 +70,37 @@ export function useEditorCompartments({
     const view = viewRef.current
     if (!view) return
 
+    const resolvedThemeExtension = (() => {
+      switch (themeMode) {
+        case 'gruvbox-dark':    return gruvboxDark
+        case 'gruvbox-light':   return gruvboxLight
+        case 'solarized-dark':  return solarizedDark
+        case 'solarized-light': return solarizedLight
+        case 'catppuccin-dark': return catppuccinDark
+        case 'catppuccin-light':return catppuccinLight
+        default: return getEditorTheme(isDarkMode)
+      }
+    })()
+
+    const resolvedHighlightExtension = (() => {
+      switch (themeMode) {
+        case 'gruvbox-dark':
+        case 'gruvbox-light':
+        case 'solarized-dark':
+        case 'solarized-light':
+        case 'catppuccin-dark':
+        case 'catppuccin-light':
+          return [] as const
+        default:
+          return syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
+      }
+    })()
+
     view.dispatch({
       effects: [
         vimCompartment.reconfigure(vimModeEnabled ? vim() : []),
-        themeCompartment.reconfigure(getEditorTheme(isDarkMode)),
-        highlightCompartment.reconfigure(
-          syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
-        ),
+        themeCompartment.reconfigure(resolvedThemeExtension),
+        highlightCompartment.reconfigure(resolvedHighlightExtension),
         relativeLineNumbersCompartment.reconfigure(
           relativeLineNumbersEnabled ? relativeLineNumbers() : []
         ),
@@ -87,6 +116,7 @@ export function useEditorCompartments({
     viewRef,
     highlightCompartment,
     isDarkMode,
+    themeMode,
     lineWrappingCompartment,
     lineWrappingEnabled,
     livePreviewImagesCompartment,

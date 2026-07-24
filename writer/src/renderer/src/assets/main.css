@@ -109,6 +109,198 @@
     color-scheme: dark;
   }
 
+  /* ── Gruvbox Dark ────────────────────────────────────────── */
+  .theme-gruvbox-dark {
+    --obsidian-base: #1d2021;
+    --obsidian-titlebar: #282828;
+    --obsidian-ribbon: #282828;
+    --obsidian-sidebar: #282828;
+    --obsidian-workspace: #282828;
+    --obsidian-pane: #32302f;
+    --obsidian-border: rgba(146, 131, 116, 0.25);
+    --obsidian-border-soft: rgba(146, 131, 116, 0.14);
+    --obsidian-text: #ebdbb2;
+    --obsidian-text-muted: #a89984;
+    --obsidian-accent: #fabd2f;
+    --obsidian-accent-dim: rgba(250, 189, 47, 0.18);
+    --obsidian-hover: rgba(235, 219, 178, 0.08);
+    --obsidian-hover-soft: rgba(235, 219, 178, 0.05);
+    --obsidian-table-head: rgba(0, 0, 0, 0.2);
+    --obsidian-table-row: rgba(0, 0, 0, 0.1);
+    --obsidian-inline-code-bg: #3c3836;
+    --obsidian-inline-code-text: #8ec07c;
+    --obsidian-quote-text: #83a598;
+    --obsidian-quote-border: #458588;
+    --obsidian-ribbon-active-fg: #ebdbb2;
+    --writr-nav-active-bg: rgba(250, 189, 47, 0.12);
+    --writr-folders-glass-bg: rgba(40, 40, 40, 0.72);
+    --writr-sidebar-selection-bg: rgba(250, 189, 47, 0.1);
+    --writr-filetree-indent-guide: rgba(146, 131, 116, 0.2);
+    --writr-scrollbar-thumb: rgba(235, 219, 178, 0.2);
+    --writr-scrollbar-thumb-hover: rgba(235, 219, 178, 0.32);
+    color-scheme: dark;
+  }
+
+  /* ── Gruvbox Light ───────────────────────────────────────── */
+  .theme-gruvbox-light {
+    --obsidian-base: #f9f5d7;
+    --obsidian-titlebar: #fbf1c7;
+    --obsidian-ribbon: #fbf1c7;
+    --obsidian-sidebar: #f2e5bc;
+    --obsidian-workspace: #fbf1c7;
+    --obsidian-pane: #ebdbb2;
+    --obsidian-border: rgba(102, 92, 84, 0.2);
+    --obsidian-border-soft: rgba(102, 92, 84, 0.12);
+    --obsidian-text: #3c3836;
+    --obsidian-text-muted: #7c6f64;
+    --obsidian-accent: #b57614;
+    --obsidian-accent-dim: rgba(181, 118, 20, 0.14);
+    --obsidian-hover: rgba(60, 56, 54, 0.07);
+    --obsidian-hover-soft: rgba(60, 56, 54, 0.04);
+    --obsidian-table-head: rgba(60, 56, 54, 0.08);
+    --obsidian-table-row: rgba(60, 56, 54, 0.04);
+    --obsidian-inline-code-bg: #ebdbb2;
+    --obsidian-inline-code-text: #427b58;
+    --obsidian-quote-text: #427b58;
+    --obsidian-quote-border: #689d6a;
+    --obsidian-ribbon-active-fg: #3c3836;
+    --writr-nav-active-bg: rgba(60, 56, 54, 0.07);
+    --writr-folders-glass-bg: rgba(251, 241, 199, 0.8);
+    --writr-sidebar-selection-bg: rgba(181, 118, 20, 0.1);
+    --writr-filetree-indent-guide: rgba(102, 92, 84, 0.18);
+    --writr-scrollbar-thumb: rgba(60, 56, 54, 0.22);
+    --writr-scrollbar-thumb-hover: rgba(60, 56, 54, 0.35);
+    color-scheme: light;
+  }
+
+  /* ── Solarized Dark ──────────────────────────────────────── */
+  .theme-solarized-dark {
+    --obsidian-base: #002b36;
+    --obsidian-titlebar: #073642;
+    --obsidian-ribbon: #073642;
+    --obsidian-sidebar: #073642;
+    --obsidian-workspace: #002b36;
+    --obsidian-pane: #073642;
+    --obsidian-border: rgba(101, 123, 131, 0.3);
+    --obsidian-border-soft: rgba(101, 123, 131, 0.15);
+    --obsidian-text: #839496;
+    --obsidian-text-muted: #586e75;
+    --obsidian-accent: #268bd2;
+    --obsidian-accent-dim: rgba(38, 139, 210, 0.18);
+    --obsidian-hover: rgba(131, 148, 150, 0.08);
+    --obsidian-hover-soft: rgba(131, 148, 150, 0.05);
+    --obsidian-table-head: rgba(0, 0, 0, 0.2);
+    --obsidian-table-row: rgba(0, 0, 0, 0.1);
+    --obsidian-inline-code-bg: #073642;
+    --obsidian-inline-code-text: #2aa198;
+    --obsidian-quote-text: #859900;
+    --obsidian-quote-border: #657b83;
+    --obsidian-ribbon-active-fg: #93a1a1;
+    --writr-nav-active-bg: rgba(38, 139, 210, 0.12);
+    --writr-folders-glass-bg: rgba(7, 54, 66, 0.72);
+    --writr-sidebar-selection-bg: rgba(38, 139, 210, 0.1);
+    --writr-filetree-indent-guide: rgba(101, 123, 131, 0.22);
+    --writr-scrollbar-thumb: rgba(131, 148, 150, 0.22);
+    --writr-scrollbar-thumb-hover: rgba(131, 148, 150, 0.36);
+    color-scheme: dark;
+  }
+
+  /* ── Solarized Light ─────────────────────────────────────── */
+  .theme-solarized-light {
+    --obsidian-base: #fdf6e3;
+    --obsidian-titlebar: #eee8d5;
+    --obsidian-ribbon: #eee8d5;
+    --obsidian-sidebar: #eee8d5;
+    --obsidian-workspace: #fdf6e3;
+    --obsidian-pane: #eee8d5;
+    --obsidian-border: rgba(147, 161, 161, 0.3);
+    --obsidian-border-soft: rgba(147, 161, 161, 0.18);
+    --obsidian-text: #657b83;
+    --obsidian-text-muted: #93a1a1;
+    --obsidian-accent: #268bd2;
+    --obsidian-accent-dim: rgba(38, 139, 210, 0.14);
+    --obsidian-hover: rgba(101, 123, 131, 0.07);
+    --obsidian-hover-soft: rgba(101, 123, 131, 0.04);
+    --obsidian-table-head: rgba(101, 123, 131, 0.08);
+    --obsidian-table-row: rgba(101, 123, 131, 0.04);
+    --obsidian-inline-code-bg: #eee8d5;
+    --obsidian-inline-code-text: #2aa198;
+    --obsidian-quote-text: #859900;
+    --obsidian-quote-border: #93a1a1;
+    --obsidian-ribbon-active-fg: #586e75;
+    --writr-nav-active-bg: rgba(101, 123, 131, 0.07);
+    --writr-folders-glass-bg: rgba(238, 232, 213, 0.8);
+    --writr-sidebar-selection-bg: rgba(38, 139, 210, 0.1);
+    --writr-filetree-indent-guide: rgba(147, 161, 161, 0.22);
+    --writr-scrollbar-thumb: rgba(101, 123, 131, 0.22);
+    --writr-scrollbar-thumb-hover: rgba(101, 123, 131, 0.36);
+    color-scheme: light;
+  }
+
+  /* ── Catppuccin Dark (Mocha) ─────────────────────────────── */
+  .theme-catppuccin-dark {
+    --obsidian-base: #1e1e2e;
+    --obsidian-titlebar: #181825;
+    --obsidian-ribbon: #181825;
+    --obsidian-sidebar: #181825;
+    --obsidian-workspace: #1e1e2e;
+    --obsidian-pane: #313244;
+    --obsidian-border: rgba(108, 112, 134, 0.28);
+    --obsidian-border-soft: rgba(108, 112, 134, 0.15);
+    --obsidian-text: #cdd6f4;
+    --obsidian-text-muted: #6c7086;
+    --obsidian-accent: #cba6f7;
+    --obsidian-accent-dim: rgba(203, 166, 247, 0.16);
+    --obsidian-hover: rgba(205, 214, 244, 0.06);
+    --obsidian-hover-soft: rgba(205, 214, 244, 0.04);
+    --obsidian-table-head: rgba(0, 0, 0, 0.18);
+    --obsidian-table-row: rgba(0, 0, 0, 0.1);
+    --obsidian-inline-code-bg: #313244;
+    --obsidian-inline-code-text: #a6e3a1;
+    --obsidian-quote-text: #94e2d5;
+    --obsidian-quote-border: #74c7ec;
+    --obsidian-ribbon-active-fg: #cdd6f4;
+    --writr-nav-active-bg: rgba(203, 166, 247, 0.1);
+    --writr-folders-glass-bg: rgba(30, 30, 46, 0.72);
+    --writr-sidebar-selection-bg: rgba(203, 166, 247, 0.1);
+    --writr-filetree-indent-guide: rgba(108, 112, 134, 0.2);
+    --writr-scrollbar-thumb: rgba(205, 214, 244, 0.18);
+    --writr-scrollbar-thumb-hover: rgba(205, 214, 244, 0.3);
+    color-scheme: dark;
+  }
+
+  /* ── Catppuccin Light (Latte) ────────────────────────────── */
+  .theme-catppuccin-light {
+    --obsidian-base: #eff1f5;
+    --obsidian-titlebar: #e6e9ef;
+    --obsidian-ribbon: #e6e9ef;
+    --obsidian-sidebar: #e6e9ef;
+    --obsidian-workspace: #eff1f5;
+    --obsidian-pane: #ccd0da;
+    --obsidian-border: rgba(156, 160, 176, 0.3);
+    --obsidian-border-soft: rgba(156, 160, 176, 0.18);
+    --obsidian-text: #4c4f69;
+    --obsidian-text-muted: #9ca0b0;
+    --obsidian-accent: #8839ef;
+    --obsidian-accent-dim: rgba(136, 57, 239, 0.14);
+    --obsidian-hover: rgba(76, 79, 105, 0.07);
+    --obsidian-hover-soft: rgba(76, 79, 105, 0.04);
+    --obsidian-table-head: rgba(76, 79, 105, 0.08);
+    --obsidian-table-row: rgba(76, 79, 105, 0.04);
+    --obsidian-inline-code-bg: #ccd0da;
+    --obsidian-inline-code-text: #40a02b;
+    --obsidian-quote-text: #179299;
+    --obsidian-quote-border: #209fb5;
+    --obsidian-ribbon-active-fg: #4c4f69;
+    --writr-nav-active-bg: rgba(76, 79, 105, 0.07);
+    --writr-folders-glass-bg: rgba(239, 241, 245, 0.82);
+    --writr-sidebar-selection-bg: rgba(136, 57, 239, 0.1);
+    --writr-filetree-indent-guide: rgba(156, 160, 176, 0.22);
+    --writr-scrollbar-thumb: rgba(76, 79, 105, 0.22);
+    --writr-scrollbar-thumb-hover: rgba(76, 79, 105, 0.36);
+    color-scheme: light;
+  }
+
   #root {
     @apply h-full;
   }

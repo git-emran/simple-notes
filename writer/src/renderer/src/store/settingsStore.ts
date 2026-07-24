@@ -1,6 +1,15 @@
 import { atomWithStorage } from 'jotai/utils'
 
-export type ThemeMode = 'system' | 'light' | 'dark'
+export type ThemeMode =
+  | 'system'
+  | 'light'
+  | 'dark'
+  | 'gruvbox-dark'
+  | 'gruvbox-light'
+  | 'solarized-dark'
+  | 'solarized-light'
+  | 'catppuccin-dark'
+  | 'catppuccin-light'
 
 export const themeModeAtom = atomWithStorage<ThemeMode>('writr-theme-mode', 'system')
 
