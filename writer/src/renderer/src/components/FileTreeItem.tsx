@@ -230,7 +230,7 @@ const FileTreeItemComponent = ({
     node.type === 'folder' || isMarkdownOrCanvas || !showFolderIcons ? 'ml-0' : 'ml-1'
 
   const renderMetaRow = () => {
-    if (!showMeta) return null
+    if (!showMeta || inlineMeta) return null
     return (
       <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
         {node.lastEditTime && !hideRelativeTime && (
