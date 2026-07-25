@@ -18,7 +18,6 @@ import { FileTreeItem } from './FileTreeItem'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 import { VscNewFile, VscEdit, VscTrash } from 'react-icons/vsc'
 
-const FILE_TREE_FILE_ROW_HEIGHT = 46
 const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 56
 
 export const FolderNotesPanel = ({
@@ -204,7 +203,6 @@ export const FolderNotesPanel = ({
               const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
               const noteTag = node.type === 'file' ? noteTags[node.path] : undefined
               const todoTotal = node.todoTotal ?? 0
-              const hasMeta = node.type === 'file' && (!!noteStatus || !!noteTag) // lastEditTime is hidden here, so it shouldn't expand height unnecessarily
               
               const rowHeight = node.type === 'folder' 
                 ? 26 
