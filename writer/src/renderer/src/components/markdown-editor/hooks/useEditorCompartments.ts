@@ -23,7 +23,6 @@ import {
 } from '../editorTheme'
 import { gruvboxDark, gruvboxLight } from '../../../themes/gruvbox'
 import { catppuccinDark, catppuccinLight } from '../../../themes/catppuccin'
-import { solarizedDark, solarizedLight } from '../../../themes/solarized'
 import type { LanguageSupport } from '@codemirror/language'
 
 import type { ViewRef } from './types'
@@ -71,14 +70,13 @@ export function useEditorCompartments({
     if (!view) return
 
     const resolvedThemeExtension = (() => {
+      const baseTheme = getEditorTheme(isDarkMode)
       switch (themeMode) {
-        case 'gruvbox-dark':    return gruvboxDark
-        case 'gruvbox-light':   return gruvboxLight
-        case 'solarized-dark':  return solarizedDark
-        case 'solarized-light': return solarizedLight
-        case 'catppuccin-dark': return catppuccinDark
-        case 'catppuccin-light':return catppuccinLight
-        default: return getEditorTheme(isDarkMode)
+        case 'gruvbox-dark':    return [baseTheme, gruvboxDark]
+        case 'gruvbox-light':   return [baseTheme, gruvboxLight]
+        case 'catppuccin-dark': return [baseTheme, catppuccinDark]
+        case 'catppuccin-light':return [baseTheme, catppuccinLight]
+        default: return baseTheme
       }
     })()
 
@@ -86,8 +84,6 @@ export function useEditorCompartments({
       switch (themeMode) {
         case 'gruvbox-dark':
         case 'gruvbox-light':
-        case 'solarized-dark':
-        case 'solarized-light':
         case 'catppuccin-dark':
         case 'catppuccin-light':
           return [] as const

@@ -338,7 +338,7 @@ export const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.heading4, color: 'var(--obsidian-accent)', fontWeight: '700', fontSize: '1.1em' },
   { tag: tags.heading5, color: 'var(--obsidian-accent)', fontWeight: '680' },
   { tag: tags.heading6, color: 'var(--obsidian-text-muted)', fontWeight: '680' },
-  { tag: tags.strong, fontWeight: '700', color: 'var(--obsidian-text)' },
+  { tag: tags.strong, fontWeight: '700' },
   { tag: tags.emphasis, fontStyle: 'italic', fontWeight: '500', color: '#DA8267' },
   { tag: tags.strikethrough, textDecoration: 'line-through', color: '#6b7280' },
   {
@@ -435,7 +435,7 @@ export const markdownHighlightStyleDark = HighlightStyle.define([
   { tag: tags.meta, color: '#9abce6', opacity: '0.85' },
   { tag: tags.contentSeparator, color: '#ffffff' },
   { tag: tags.content, color: '#D6D6D6' },
-  { tag: tags.strong, fontWeight: '700', color: 'var(--obsidian-text)' },
+  { tag: tags.strong, fontWeight: '700' },
   { tag: tags.emphasis, fontStyle: 'italic', fontWeight: '500', color: '#DA8267' },
   { tag: tags.processingInstruction, color: '#9abce6', opacity: '0.85' }
 ])

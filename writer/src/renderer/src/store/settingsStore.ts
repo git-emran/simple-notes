@@ -6,8 +6,6 @@ export type ThemeMode =
   | 'dark'
   | 'gruvbox-dark'
   | 'gruvbox-light'
-  | 'solarized-dark'
-  | 'solarized-light'
   | 'catppuccin-dark'
   | 'catppuccin-light'
 

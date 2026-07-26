@@ -88,12 +88,10 @@ const getEditorFontStack = (font: EditorFontOption) => {
   return [font, 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier', 'monospace']
 }
 
-const DARK_THEMES = new Set(['dark', 'gruvbox-dark', 'solarized-dark', 'catppuccin-dark'])
+const DARK_THEMES = new Set(['dark', 'gruvbox-dark', 'catppuccin-dark'])
 const THEME_CLASS_MAP: Record<string, string> = {
   'gruvbox-dark':    'theme-gruvbox-dark',
   'gruvbox-light':   'theme-gruvbox-light',
-  'solarized-dark':  'theme-solarized-dark',
-  'solarized-light': 'theme-solarized-light',
   'catppuccin-dark': 'theme-catppuccin-dark',
   'catppuccin-light':'theme-catppuccin-light',
 }

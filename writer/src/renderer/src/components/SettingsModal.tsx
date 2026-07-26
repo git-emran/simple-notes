@@ -65,8 +65,6 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const customThemeOptions: Array<{ label: string; value: ThemeMode }> = [
     { label: 'Gruvbox Dark', value: 'gruvbox-dark' },
     { label: 'Gruvbox Light', value: 'gruvbox-light' },
-    { label: 'Solarized Dark', value: 'solarized-dark' },
-    { label: 'Solarized Light', value: 'solarized-light' },
     { label: 'Catppuccin Dark (Mocha)', value: 'catppuccin-dark' },
     { label: 'Catppuccin Light (Latte)', value: 'catppuccin-light' },
   ]

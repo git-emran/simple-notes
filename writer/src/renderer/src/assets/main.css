@@ -173,69 +173,6 @@
     color-scheme: light;
   }
 
-  /* ── Solarized Dark ──────────────────────────────────────── */
-  .theme-solarized-dark {
-    --obsidian-base: #002b36;
-    --obsidian-titlebar: #073642;
-    --obsidian-ribbon: #073642;
-    --obsidian-sidebar: #073642;
-    --obsidian-workspace: #002b36;
-    --obsidian-pane: #073642;
-    --obsidian-border: rgba(101, 123, 131, 0.3);
-    --obsidian-border-soft: rgba(101, 123, 131, 0.15);
-    --obsidian-text: #839496;
-    --obsidian-text-muted: #586e75;
-    --obsidian-accent: #268bd2;
-    --obsidian-accent-dim: rgba(38, 139, 210, 0.18);
-    --obsidian-hover: rgba(131, 148, 150, 0.08);
-    --obsidian-hover-soft: rgba(131, 148, 150, 0.05);
-    --obsidian-table-head: rgba(0, 0, 0, 0.2);
-    --obsidian-table-row: rgba(0, 0, 0, 0.1);
-    --obsidian-inline-code-bg: #073642;
-    --obsidian-inline-code-text: #2aa198;
-    --obsidian-quote-text: #859900;
-    --obsidian-quote-border: #657b83;
-    --obsidian-ribbon-active-fg: #93a1a1;
-    --writr-nav-active-bg: rgba(38, 139, 210, 0.12);
-    --writr-folders-glass-bg: rgba(7, 54, 66, 0.72);
-    --writr-sidebar-selection-bg: rgba(38, 139, 210, 0.1);
-    --writr-filetree-indent-guide: rgba(101, 123, 131, 0.22);
-    --writr-scrollbar-thumb: rgba(131, 148, 150, 0.22);
-    --writr-scrollbar-thumb-hover: rgba(131, 148, 150, 0.36);
-    color-scheme: dark;
-  }
-
-  /* ── Solarized Light ─────────────────────────────────────── */
-  .theme-solarized-light {
-    --obsidian-base: #fdf6e3;
-    --obsidian-titlebar: #eee8d5;
-    --obsidian-ribbon: #eee8d5;
-    --obsidian-sidebar: #eee8d5;
-    --obsidian-workspace: #fdf6e3;
-    --obsidian-pane: #eee8d5;
-    --obsidian-border: rgba(147, 161, 161, 0.3);
-    --obsidian-border-soft: rgba(147, 161, 161, 0.18);
-    --obsidian-text: #657b83;
-    --obsidian-text-muted: #93a1a1;
-    --obsidian-accent: #268bd2;
-    --obsidian-accent-dim: rgba(38, 139, 210, 0.14);
-    --obsidian-hover: rgba(101, 123, 131, 0.07);
-    --obsidian-hover-soft: rgba(101, 123, 131, 0.04);
-    --obsidian-table-head: rgba(101, 123, 131, 0.08);
-    --obsidian-table-row: rgba(101, 123, 131, 0.04);
-    --obsidian-inline-code-bg: #eee8d5;
-    --obsidian-inline-code-text: #2aa198;
-    --obsidian-quote-text: #859900;
-    --obsidian-quote-border: #93a1a1;
-    --obsidian-ribbon-active-fg: #586e75;
-    --writr-nav-active-bg: rgba(101, 123, 131, 0.07);
-    --writr-folders-glass-bg: rgba(238, 232, 213, 0.8);
-    --writr-sidebar-selection-bg: rgba(38, 139, 210, 0.1);
-    --writr-filetree-indent-guide: rgba(147, 161, 161, 0.22);
-    --writr-scrollbar-thumb: rgba(101, 123, 131, 0.22);
-    --writr-scrollbar-thumb-hover: rgba(101, 123, 131, 0.36);
-    color-scheme: light;
-  }
 
   /* ── Catppuccin Dark (Mocha) ─────────────────────────────── */
   .theme-catppuccin-dark {
