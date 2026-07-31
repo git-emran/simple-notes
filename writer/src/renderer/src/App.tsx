@@ -25,6 +25,8 @@ import {
   activeTabAtom,
   createDailyNoteAtom, 
   switchTabByIndexAtom, 
+  switchTabNextAtom,
+  switchTabPrevAtom,
   closeActiveTabAtom, 
   restoreClosedTabAtom,
   createCanvasAtom,
@@ -116,17 +118,25 @@ const App = () => {
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(240) // default width for FileExplorer
   const [notesPanelWidth, setNotesPanelWidth] = useState(240) // default width for FolderNotesPanel
-  // Keep a ref in sync with sidebarWidth so drag handlers always read the latest value
-  // without needing to be re-registered on every resize (which broke mid-drag)
-  useEffect(() => { sidebarWidthRef.current = sidebarWidth }, [sidebarWidth])
+  
   const isDragging = useRef(false)
   const isDraggingNotes = useRef(false)
   const previousBodyCursor = useRef('')
   const previousBodyUserSelect = useRef('')
   const sidebarWidthRef = useRef(240)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const isSettingsOpenRef = useRef(false)
+  const sidebarViewRef = useRef<'files' | 'search'>('files')
+
+  // Keep a ref in sync with state so handlers always read the latest value
+  // without needing to be re-registered (which breaks mid-interaction)
+  useEffect(() => { sidebarWidthRef.current = sidebarWidth }, [sidebarWidth])
+  useEffect(() => { isSettingsOpenRef.current = isSettingsOpen }, [isSettingsOpen])
+  useEffect(() => { sidebarViewRef.current = sidebarView }, [sidebarView])
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
+  const switchTabNext = useSetAtom(switchTabNextAtom)
+  const switchTabPrev = useSetAtom(switchTabPrevAtom)
   const createDailyNote = useSetAtom(createDailyNoteAtom)
   const closeActiveTab = useSetAtom(closeActiveTabAtom)
   const restoreClosedTab = useSetAtom(restoreClosedTabAtom)
@@ -304,14 +314,14 @@ const App = () => {
       }
 
       /* Esc closes settings */
-      if (e.key === 'Escape' && isSettingsOpen) {
+      if (e.key === 'Escape' && isSettingsOpenRef.current) {
         e.preventDefault()
         setIsSettingsOpen(false)
         return
       }
 
       /* Esc closes sidebar search */
-      if (e.key === 'Escape' && sidebarView === 'search') {
+      if (e.key === 'Escape' && sidebarViewRef.current === 'search') {
         e.preventDefault()
         setSidebarView('files')
         setAppMode('editor')
@@ -342,6 +352,26 @@ const App = () => {
         e.preventDefault()
         const index = parseInt(e.key) - 1
         switchTabByIndex(index)
+        return
+      }
+
+      /* Tab Cycling */
+      if (
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === '[' || e.key === '{')) ||
+        ((e.ctrlKey) && e.shiftKey && e.key === 'Tab')
+      ) {
+        e.preventDefault()
+        switchTabPrev()
+        return
+      }
+
+      if (
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === ']' || e.key === '}')) ||
+        ((e.ctrlKey) && !e.shiftKey && e.key === 'Tab')
+      ) {
+        e.preventDefault()
+        switchTabNext()
+        return
       }
     }
 
@@ -361,7 +391,7 @@ const App = () => {
         unlockResizeInteraction()
       }
     }
-  }, [closeActiveTab, isSettingsOpen, restoreClosedTab, sidebarView, switchTabByIndex])
+  }, [closeActiveTab, restoreClosedTab, switchTabByIndex, switchTabNext, switchTabPrev])
 
   return (
     <ErrorBoundary>
@@ -504,18 +534,85 @@ const App = () => {
             className="relative h-full flex flex-col obsidian-workspace"
           >
             <div className="flex-1 min-h-0 h-full">
-              {activeTab?.kind === 'terminal' ? (
-                <TerminalTab
-                  key={activeTab.id}
-                  tab={activeTab as typeof activeTab & { kind: 'terminal' }}
-                />
-              ) : activeTab?.kind === 'kanban' ? (
-                <KanbanBoard />
-              ) : activeTab?.kind === 'spreadsheet' ? (
-                <SpreadsheetPanel />
-              ) : (
-                (appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />)
-              )}
+              {/* ── Always-mounted tab panels ──────────────────────────────────
+                  Singleton panels (kanban, spreadsheet, terminal) stay in the
+                  DOM after first open and are toggled with CSS display so their
+                  state (scroll, data, PTY session) is preserved across switches.
+                  File / canvas / empty tabs still use a single MarkdownEditor /
+                  CanvasEditor because those components read from a shared global
+                  atom and cannot safely run in parallel.
+              ──────────────────────────────────────────────────────────────── */}
+
+              {/* Markdown / Canvas / Empty — single shared instance */}
+              <div
+                className="h-full w-full flex flex-col"
+                style={{
+                  display:
+                    activeTab?.kind === 'file' ||
+                    activeTab?.kind === 'empty' ||
+                    activeTab == null
+                      ? 'flex'
+                      : 'none'
+                }}
+              >
+                {appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />}
+              </div>
+
+              {/* Kanban — mounted once the tab has been opened */}
+              {(() => {
+                const kanbanTab = tabs.find((t) => t.kind === 'kanban')
+                if (!kanbanTab) return null
+                return (
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      display: activeTab?.kind === 'kanban' ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <KanbanBoard />
+                  </div>
+                )
+              })()}
+
+              {/* Spreadsheet — mounted once the tab has been opened */}
+              {(() => {
+                const sheetTab = tabs.find((t) => t.kind === 'spreadsheet')
+                if (!sheetTab) return null
+                return (
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      display: activeTab?.kind === 'spreadsheet' ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <SpreadsheetPanel />
+                  </div>
+                )
+              })()}
+
+              {/* Terminal — mounted once the tab has been opened; receives
+                  isActive so xterm re-fits when revealed */}
+              {(() => {
+                const termTab = tabs.find((t) => t.kind === 'terminal')
+                if (!termTab) return null
+                const isTermActive = activeTab?.kind === 'terminal'
+                return (
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      display: isTermActive ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <TerminalTab
+                      tab={termTab as typeof termTab & { kind: 'terminal' }}
+                      isActive={isTermActive}
+                    />
+                  </div>
+                )
+              })()}
             </div>
             {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
             <KanbanReminderHost />

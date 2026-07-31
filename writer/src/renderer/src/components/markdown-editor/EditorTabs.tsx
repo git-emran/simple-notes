@@ -20,6 +20,12 @@ export const EditorTabs = () => {
       style={{ 
           fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       } as CSSProperties}
+      onWheel={(e) => {
+        // Prevent default vertical scrolling and scroll horizontally instead
+        if (e.deltaY !== 0) {
+          e.currentTarget.scrollLeft += e.deltaY;
+        }
+      }}
     >
       {tabs.map((tab) => {
         const isActive = activeTabId === tab.id

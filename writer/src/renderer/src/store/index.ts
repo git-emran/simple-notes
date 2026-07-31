@@ -134,12 +134,93 @@ const canLeaveActiveFileTab = (get: Getter) => {
   )
 }
 
+/* Navigation History State */
+export type NavigationHistoryEntry = { tabId: string; path: string | null }
+export const navigationHistoryAtom = atom<NavigationHistoryEntry[]>([])
+export const navigationHistoryIndexAtom = atom<number>(-1)
+export const isNavigatingHistoryAtom = atom<boolean>(false)
+const MAX_HISTORY_LIMIT = 50
+
+export const pushToNavigationHistoryAtom = atom(
+  null,
+  (get, set, payload: NavigationHistoryEntry) => {
+    if (get(isNavigatingHistoryAtom)) return
+    
+    const history = get(navigationHistoryAtom)
+    const index = get(navigationHistoryIndexAtom)
+    
+    // Don't push if it's the exact same as current
+    if (index >= 0 && history[index]?.tabId === payload.tabId && history[index]?.path === payload.path) {
+      return
+    }
+
+    const newHistory = [...history.slice(0, index + 1), payload].slice(-MAX_HISTORY_LIMIT)
+    set(navigationHistoryAtom, newHistory)
+    set(navigationHistoryIndexAtom, newHistory.length - 1)
+  }
+)
+
+export const navigateBackAtom = atom(null, (get, set) => {
+  const history = get(navigationHistoryAtom)
+  const index = get(navigationHistoryIndexAtom)
+  
+  if (history.length <= 1) return
+  
+  const targetIndex = index > 0 ? index - 1 : history.length - 1
+  const targetEntry = history[targetIndex]
+  set(isNavigatingHistoryAtom, true)
+  
+  // Find if tab still exists
+  const tabs = get(tabsAtom)
+  const existingTab = tabs.find(t => t.id === targetEntry.tabId)
+  
+  if (existingTab) {
+    set(setActiveTabAtom, targetEntry.tabId)
+  } else if (targetEntry.path) {
+    // Reopen file if closed
+    const node = createFileNodeFromPath(targetEntry.path)
+    set(openTabAtom, node)
+  }
+  
+  set(navigationHistoryIndexAtom, targetIndex)
+  set(isNavigatingHistoryAtom, false)
+})
+
+export const navigateForwardAtom = atom(null, (get, set) => {
+  const history = get(navigationHistoryAtom)
+  const index = get(navigationHistoryIndexAtom)
+  
+  if (history.length <= 1) return
+  
+  const targetIndex = index < history.length - 1 ? index + 1 : 0
+  const targetEntry = history[targetIndex]
+  set(isNavigatingHistoryAtom, true)
+  
+  const tabs = get(tabsAtom)
+  const existingTab = tabs.find(t => t.id === targetEntry.tabId)
+  
+  if (existingTab) {
+    set(setActiveTabAtom, targetEntry.tabId)
+  } else if (targetEntry.path) {
+    const node = createFileNodeFromPath(targetEntry.path)
+    set(openTabAtom, node)
+  }
+  
+  set(navigationHistoryIndexAtom, targetIndex)
+  set(isNavigatingHistoryAtom, false)
+})
+
 export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
   if (get(activeTabIdAtom) === tabId) return
   if (!canLeaveActiveFileTab(get)) return
   set(activeTabIdAtom, tabId)
   const tabs = get(tabsAtom)
   const next = tabs.find((t) => t.id === tabId) ?? tabs[0]
+  
+  if (next) {
+    set(pushToNavigationHistoryAtom, { tabId: next.id, path: next.path })
+  }
+
   if (!next || next.kind !== 'file' || !next.path) {
     set(selectedNodeAtom, null)
     return
@@ -151,6 +232,26 @@ export const switchTabByIndexAtom = atom(null, (get, set, index: number) => {
   const tabs = get(tabsAtom)
   if (index >= 0 && index < tabs.length) {
     set(setActiveTabAtom, tabs[index].id)
+  }
+})
+
+export const switchTabNextAtom = atom(null, (get, set) => {
+  const tabs = get(tabsAtom)
+  const activeId = get(activeTabIdAtom)
+  const currentIndex = tabs.findIndex(t => t.id === activeId)
+  if (currentIndex !== -1) {
+    const nextIndex = (currentIndex + 1) % tabs.length
+    set(setActiveTabAtom, tabs[nextIndex].id)
+  }
+})
+
+export const switchTabPrevAtom = atom(null, (get, set) => {
+  const tabs = get(tabsAtom)
+  const activeId = get(activeTabIdAtom)
+  const currentIndex = tabs.findIndex(t => t.id === activeId)
+  if (currentIndex !== -1) {
+    const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length
+    set(setActiveTabAtom, tabs[prevIndex].id)
   }
 })
 
@@ -277,6 +378,7 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
     set(tabsAtom, [onlyTab])
     set(activeTabIdAtom, onlyTab.id)
     set(selectedNodeAtom, node)
+    set(pushToNavigationHistoryAtom, { tabId: onlyTab.id, path: onlyTab.path })
     return
   }
 
@@ -298,6 +400,7 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
       set(tabsAtom, [...tabs, nextTab])
       set(activeTabIdAtom, nextTab.id)
       set(selectedNodeAtom, node)
+      set(pushToNavigationHistoryAtom, { tabId: nextTab.id, path: nextTab.path })
       return
     }
 
@@ -310,6 +413,7 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
       })
     )
     set(selectedNodeAtom, node)
+    set(pushToNavigationHistoryAtom, { tabId: reusableTab.id, path: node.path })
     return
   }
 
@@ -321,6 +425,7 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
     })
   )
   set(selectedNodeAtom, node)
+  set(pushToNavigationHistoryAtom, { tabId: activeId, path: node.path })
 })
 
 export const openInNewTabAtom = atom(null, (get, set, node: FileNode) => {

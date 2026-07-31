@@ -101,6 +101,9 @@ export function useEditorLifecycle({
   const lastPersistedContentRef = useRef('')
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryAttemptRef = useRef(0)
+  // Per-path scroll position cache — preserves editor position across tab switches
+  const scrollTopByPathRef = useRef<Map<string, number>>(new Map())
+  const scrollRestoreRafRef = useRef<number | null>(null)
 
   const debouncedSetContent = useMemo(
     () => debounce((content: string) => setDebouncedContent(content), 300),
@@ -585,6 +588,13 @@ export function useEditorLifecycle({
 
       debouncedSave.flush()
 
+      // Save scroll position of the note we're leaving
+      const leavingPath = currentNotePathRef.current
+      const view = viewRef.current
+      if (leavingPath && view?.scrollDOM) {
+        scrollTopByPathRef.current.set(leavingPath, view.scrollDOM.scrollTop)
+      }
+
       currentNoteTitleRef.current = newTitle
       currentNotePathRef.current = selectedNote.path
       lastPersistedContentRef.current = newContent
@@ -599,11 +609,28 @@ export function useEditorLifecycle({
       debouncedSetContent.cancel()
       setDebouncedContent(newContent)
 
-      const view = viewRef.current
       if (view) {
         view.setState(buildState(newContent))
       }
       isSwitchingRef.current = false
+
+      // Restore scroll position for the newly-activated note.
+      // We use two rAF passes so CodeMirror finishes its initial render
+      // (which resets scrollTop to 0) before we apply the saved value.
+      const incomingPath = selectedNote.path
+      const savedScroll = scrollTopByPathRef.current.get(incomingPath) ?? 0
+      if (scrollRestoreRafRef.current !== null) {
+        cancelAnimationFrame(scrollRestoreRafRef.current)
+      }
+      scrollRestoreRafRef.current = requestAnimationFrame(() => {
+        scrollRestoreRafRef.current = requestAnimationFrame(() => {
+          scrollRestoreRafRef.current = null
+          const currentView = viewRef.current
+          if (currentView?.scrollDOM && currentNotePathRef.current === incomingPath) {
+            currentView.scrollDOM.scrollTop = savedScroll
+          }
+        })
+      })
     }
 
     switchNote()
@@ -658,6 +685,10 @@ export function useEditorLifecycle({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (scrollRestoreRafRef.current !== null) {
+        cancelAnimationFrame(scrollRestoreRafRef.current)
+        scrollRestoreRafRef.current = null
+      }
       if (viewRef.current) {
         viewRef.current.destroy()
         viewRef.current = null

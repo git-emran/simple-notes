@@ -20,6 +20,7 @@ import { VscTerminal } from 'react-icons/vsc'
 
 type TerminalTabProps = {
   tab: EditorTab & { kind: 'terminal' }
+  isActive?: boolean
 }
 
 const MIN_FONT_SIZE = 12
@@ -93,7 +94,7 @@ const getShellLabel = (shellPath: string) => {
   return lastSlash === -1 ? normalized : normalized.slice(lastSlash + 1)
 }
 
-export const TerminalTab = ({ tab }: TerminalTabProps) => {
+export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
   const themeMode = useAtomValue(themeModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
@@ -204,6 +205,22 @@ export const TerminalTab = ({ tab }: TerminalTabProps) => {
       scheduleFitRef.current?.()
     })
   }, [editorFont, editorFontSize, isDarkMode])
+
+  // When this terminal tab becomes visible again (after being hidden via CSS display:none),
+  // xterm's internal size may be stale — trigger a fit to recalculate.
+  useEffect(() => {
+    if (!isActive) return
+    // Two rAF passes to ensure the browser has fully painted the newly-visible container
+    // before we ask xterm to measure its dimensions.
+    const raf1 = window.requestAnimationFrame(() => {
+      const raf2 = window.requestAnimationFrame(() => {
+        scheduleFitRef.current?.()
+        terminalRef.current?.focus()
+      })
+      return () => window.cancelAnimationFrame(raf2)
+    })
+    return () => window.cancelAnimationFrame(raf1)
+  }, [isActive])
 
   useEffect(() => {
     const element = containerRef.current
