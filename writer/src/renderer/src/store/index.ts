@@ -1,6 +1,6 @@
 import { NoteContent, FileNode } from '@shared/models'
 import { atom, type Getter } from 'jotai'
-import { atomWithStorage, unwrap } from 'jotai/utils'
+import { atomWithStorage, unwrap, atomFamily } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
 export * from './settingsStore'
 export * from './kanbanStore'
@@ -51,6 +51,16 @@ const inferRootDirFromTree = (nodes: FileNode[]) => {
 export const notesRootDirAtom = atom<string | null>((get) =>
   inferRootDirFromTree(get(fileTreeAtom) ?? [])
 )
+
+export const vaultRootDirAtomAsync = atom(async () => {
+  if (!window.context) return ''
+  try {
+    return await window.context.getRootDir()
+  } catch {
+    return ''
+  }
+})
+export const vaultRootDirAtom = unwrap(vaultRootDirAtomAsync, (prev) => prev ?? '')
 
 export const fileTreeIndexAtom = atom<Map<string, FileNode>>((get) => {
   const tree = get(fileTreeAtom) ?? []
@@ -121,6 +131,10 @@ export type EditorSaveState = {
 }
 
 export const editorSaveStateByPathAtom = atom<Record<string, EditorSaveState>>({})
+
+/* Renderer-side content cache: avoids re-reading unchanged files from disk on tab re-visits.
+   Max 30 entries (LRU-evict oldest). Updated on save, populated on first read. */
+export const noteContentCacheAtom = atom<Map<string, string>>(new Map())
 
 const canLeaveActiveFileTab = (get: Getter) => {
   const activePath = get(activeTabPathAtom)
@@ -226,6 +240,30 @@ export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
     return
   }
   set(selectedNodeAtom, createFileNodeFromPath(next.path))
+
+  // Prefetch adjacent file tabs in the background so they're cache-warm
+  const activeIndex = tabs.findIndex((t) => t.id === tabId)
+  const neighbors = [tabs[activeIndex - 1], tabs[activeIndex + 1]]
+  for (const neighbor of neighbors) {
+    if (neighbor?.kind === 'file' && neighbor.path) {
+      const cache = get(noteContentCacheAtom)
+      if (!cache.has(neighbor.path) && window.context) {
+        void window.context.readFileNew(neighbor.path).then((text) => {
+          if (text === undefined) return
+          set(noteContentCacheAtom, (prev) => {
+            const next = new Map(prev)
+            next.set(neighbor.path!, text)
+            // Evict oldest if over 30 entries
+            if (next.size > 30) {
+              const firstKey = next.keys().next().value
+              if (firstKey) next.delete(firstKey)
+            }
+            return next
+          })
+        }).catch(() => {})
+      }
+    }
+  }
 })
 
 export const switchTabByIndexAtom = atom(null, (get, set, index: number) => {
@@ -737,16 +775,25 @@ export const selectedNoteAtomAsync = atom(async (get) => {
     }
   }
 
+  /* Check renderer-side cache first — avoids IPC roundtrip on tab re-visits */
+  const cache = get(noteContentCacheAtom)
+  const cached = cache.get(activeTabPath)
+
   let content = ''
   let readError: string | null = null
-  try {
-    const text = await window.context.readFileNew(activeTabPath)
-    if (text === undefined) {
-      throw new Error('Not found')
+
+  if (cached !== undefined) {
+    content = cached
+  } else {
+    try {
+      const text = await window.context.readFileNew(activeTabPath)
+      if (text === undefined) {
+        throw new Error('Not found')
+      }
+      content = text
+    } catch (error) {
+      readError = error instanceof Error ? error.message : 'Unable to read this note.'
     }
-    content = text
-  } catch (error) {
-    readError = error instanceof Error ? error.message : 'Unable to read this note.'
   }
 
   if (get(activeTabPathAtom) !== activeTabPath) return null
@@ -774,6 +821,62 @@ export const selectedNoteAtom = unwrap(
     }
 )
 
+export const noteByPathAtomFamilyAsync = atomFamily((path: string | null) => atom(async (get) => {
+  if (!path) return null
+
+  if (!window.context) {
+    return {
+      title: path.split('/').pop()?.replace(/\.md$/, '') || 'Untitled',
+      lastEditTime: Date.now(),
+      content: '',
+      path: path
+    }
+  }
+
+  /* Check renderer-side cache first */
+  const cache = get(noteContentCacheAtom)
+  const cached = cache.get(path)
+
+  let content = ''
+  let readError: string | null = null
+
+  if (cached !== undefined) {
+    content = cached
+  } else {
+    try {
+      const text = await window.context.readFileNew(path)
+      if (text === undefined) {
+        throw new Error('Not found')
+      }
+      content = text
+    } catch (error) {
+      readError = error instanceof Error ? error.message : 'Unable to read this note.'
+    }
+  }
+
+  /* Extract name for title */
+  const name = path.split('/').pop()?.split('\\').pop() || 'Untitled'
+
+  return {
+    title: name.replace(/\.(md|canvas)$/, ''),
+    lastEditTime: Date.now(),
+    content: content,
+    path: path,
+    readError
+  }
+}))
+
+export const noteByPathAtomFamily = atomFamily((path: string | null) => unwrap(
+  noteByPathAtomFamilyAsync(path),
+  (prev) =>
+    prev ?? {
+      title: '',
+      content: '',
+      lastEditTime: Date.now(),
+      path: path ?? ''
+    }
+))
+
 export const saveNoteAtom = atom(
   null,
   async (get, set, payload: { path: string; newContent: NoteContent }) => {
@@ -782,6 +885,14 @@ export const saveNoteAtom = atom(
     if (!path) return
 
     await window.context.writeFileNew(path, newContent)
+
+    /* Keep renderer cache in sync so the next tab-switch is instant */
+    set(noteContentCacheAtom, (prev) => {
+      const next = new Map(prev)
+      next.set(path, newContent)
+      return next
+    })
+
     const currentTree = get(fileTreeAtom) ?? []
     if (currentTree.length > 0) {
       const todoStats = getTodoStats(newContent)

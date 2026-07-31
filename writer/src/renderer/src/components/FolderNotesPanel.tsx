@@ -231,6 +231,7 @@ export const FolderNotesPanel = ({
                   onRenameComplete={() => setRenamingPath(null)}
                   onNodeContextMenu={handleNodeContextMenu}
                   onDropNode={handleDropNode}
+                  textSize="default"
                   onDoubleClick={(e) => {
                     e.stopPropagation()
                     setRenamingPath(node.path)

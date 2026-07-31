@@ -42,7 +42,7 @@ import { quoteLineStyling } from '../quoteLineStyling'
 import { tabAsSpaces } from '../tabAsSpaces'
 import { tripleBacktickExtension } from '../tripleBacktick'
 import { statusBarExtension } from '../statusbar'
-import { editorSaveStateByPathAtom, saveNoteAtom } from '@renderer/store'
+import { editorSaveStateByPathAtom, noteContentCacheAtom, saveNoteAtom } from '@renderer/store'
 import { useSetAtom } from 'jotai'
 import type { SelectedNote, ViewRef, DivRef } from './types'
 
@@ -86,6 +86,7 @@ export function useEditorLifecycle({
 }: UseEditorLifecycleParams) {
   const saveNote = useSetAtom(saveNoteAtom)
   const setEditorSaveStateByPath = useSetAtom(editorSaveStateByPathAtom)
+  const setNoteContentCache = useSetAtom(noteContentCacheAtom)
 
   const [debouncedContent, setDebouncedContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -94,16 +95,12 @@ export function useEditorLifecycle({
 
   const currentNotePathRef = useRef<string>('')
   const currentNoteTitleRef = useRef<string>('')
-  const isSwitchingRef = useRef(false)
   const lastLanguageRef = useRef<string | null>(null)
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
   const suppressNativeFormatUntilRef = useRef({ bold: 0, italic: 0 })
   const lastPersistedContentRef = useRef('')
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const retryAttemptRef = useRef(0)
-  // Per-path scroll position cache — preserves editor position across tab switches
-  const scrollTopByPathRef = useRef<Map<string, number>>(new Map())
-  const scrollRestoreRafRef = useRef<number | null>(null)
 
   const debouncedSetContent = useMemo(
     () => debounce((content: string) => setDebouncedContent(content), 300),
@@ -326,7 +323,7 @@ export function useEditorLifecycle({
   )
 
   const handleBlurSave = useCallback(async () => {
-    if (!currentNotePathRef.current || !viewRef.current || isSwitchingRef.current) return
+    if (!currentNotePathRef.current || !viewRef.current) return
     debouncedSave.flush()
   }, [debouncedSave, viewRef])
 
@@ -520,7 +517,7 @@ export function useEditorLifecycle({
                 }
               }
             }
-            if (update.docChanged && !isSwitchingRef.current) {
+            if (update.docChanged) {
               const content = update.state.doc.toString()
               const notePath = currentNotePathRef.current
               const dirty = content !== lastPersistedContentRef.current
@@ -574,30 +571,18 @@ export function useEditorLifecycle({
         ]
       })
 
-    const ensureView = () => {
-      if (viewRef.current) return
-      viewRef.current = new EditorView({ state: buildState(''), parent: editorRef.current! })
-    }
+    const initEditor = () => {
+      if (viewRef.current || !editorRef.current) return
 
-    const switchNote = () => {
-      isSwitchingRef.current = true
-      ensureView()
+      const initialContent = selectedNote.content
+      viewRef.current = new EditorView({ 
+        state: buildState(initialContent), 
+        parent: editorRef.current 
+      })
 
-      const newTitle = selectedNote.title
-      const newContent = selectedNote.content
-
-      debouncedSave.flush()
-
-      // Save scroll position of the note we're leaving
-      const leavingPath = currentNotePathRef.current
-      const view = viewRef.current
-      if (leavingPath && view?.scrollDOM) {
-        scrollTopByPathRef.current.set(leavingPath, view.scrollDOM.scrollTop)
-      }
-
-      currentNoteTitleRef.current = newTitle
+      currentNoteTitleRef.current = selectedNote.title
       currentNotePathRef.current = selectedNote.path
-      lastPersistedContentRef.current = newContent
+      lastPersistedContentRef.current = initialContent
       lastLanguageRef.current = null
       clearRetryTimer()
       retryAttemptRef.current = 0
@@ -605,44 +590,18 @@ export function useEditorLifecycle({
       setSaveStatus('saved')
       setSaveError(null)
       updateTrackedSaveState(selectedNote.path, { hasUnsavedChanges: false, hasSaveError: false })
-
-      debouncedSetContent.cancel()
-      setDebouncedContent(newContent)
-
-      if (view) {
-        view.setState(buildState(newContent))
-      }
-      isSwitchingRef.current = false
-
-      // Restore scroll position for the newly-activated note.
-      // We use two rAF passes so CodeMirror finishes its initial render
-      // (which resets scrollTop to 0) before we apply the saved value.
-      const incomingPath = selectedNote.path
-      const savedScroll = scrollTopByPathRef.current.get(incomingPath) ?? 0
-      if (scrollRestoreRafRef.current !== null) {
-        cancelAnimationFrame(scrollRestoreRafRef.current)
-      }
-      scrollRestoreRafRef.current = requestAnimationFrame(() => {
-        scrollRestoreRafRef.current = requestAnimationFrame(() => {
-          scrollRestoreRafRef.current = null
-          const currentView = viewRef.current
-          if (currentView?.scrollDOM && currentNotePathRef.current === incomingPath) {
-            currentView.scrollDOM.scrollTop = savedScroll
-          }
-        })
-      })
+      setDebouncedContent(initialContent)
     }
 
-    switchNote()
+    initEditor()
     return () => {
       debouncedSave.cancel()
     }
-    // Intentionally only re-runs on note path change; compartments/settings
-    // are reconfigured separately by applyEditorSettings.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selectedNote?.path,
     selectedNote?.readError,
+    selectedNote?.content,
     baseExtensions,
     debouncedSave,
     handleBlurSave,
@@ -651,11 +610,10 @@ export function useEditorLifecycle({
     updateTrackedSaveState
   ])
 
-  // Sync editor when selectedNote content resolves asynchronously
+  // Sync editor when selectedNote content changes asynchronously (e.g. external edits)
   useEffect(() => {
     if (!selectedNote?.path || selectedNote.readError) return
     if (selectedNote.path !== currentNotePathRef.current) return
-    if (isSwitchingRef.current) return
 
     const view = viewRef.current
     if (!view) return
@@ -663,12 +621,11 @@ export function useEditorLifecycle({
     const editorContent = view.state.doc.toString()
     const incomingContent = selectedNote.content
 
-    if (editorContent === '' && incomingContent !== '') {
+    if (editorContent !== incomingContent && incomingContent !== undefined) {
       debouncedSetContent.cancel()
       setDebouncedContent(incomingContent)
       view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: incomingContent },
-        selection: { anchor: 0 }
+        changes: { from: 0, to: view.state.doc.length, insert: incomingContent }
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -685,10 +642,6 @@ export function useEditorLifecycle({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (scrollRestoreRafRef.current !== null) {
-        cancelAnimationFrame(scrollRestoreRafRef.current)
-        scrollRestoreRafRef.current = null
-      }
       if (viewRef.current) {
         viewRef.current.destroy()
         viewRef.current = null

@@ -22,6 +22,7 @@ interface EditorHeaderProps {
   handleExportPdf: () => void
   onRename?: (newName: string) => void
   isExportingPdf: boolean
+  isActive: boolean
 }
 
 const POPULAR_EMOJIS = [
@@ -66,7 +67,8 @@ export const EditorHeader = ({
   handleTagChange,
   handleExportPdf,
   onRename,
-  isExportingPdf
+  isExportingPdf,
+  isActive
 }: EditorHeaderProps) => {
   const titleEmojiMatch = title.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}])/u)
   const currentEmoji = titleEmojiMatch ? titleEmojiMatch[1] : null
@@ -80,6 +82,7 @@ export const EditorHeader = ({
 
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (!isActive) return
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
         setIsEmojiPickerOpen(false)
       }

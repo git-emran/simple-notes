@@ -18,6 +18,7 @@ interface UseCommandPaletteParams {
   isFullPreview: boolean
   isAiModalOpen: boolean
   openAiModal: () => void
+  isActive: boolean
 }
 
 export function useCommandPalette({
@@ -26,6 +27,7 @@ export function useCommandPalette({
   isFullPreview,
   isAiModalOpen,
   openAiModal,
+  isActive
 }: UseCommandPaletteParams) {
   const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
@@ -43,6 +45,7 @@ export function useCommandPalette({
   // Keyboard shortcuts: Mod+P (command palette) and Ctrl+Alt+T (toolbar toggle)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (!isActive) return
       const key = e.key.toLowerCase()
 
       const isToggleToolbar = key === 't' && e.ctrlKey && e.altKey
@@ -67,7 +70,7 @@ export function useCommandPalette({
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [isAiModalOpen, isFullPreview, selectedNote?.path, setShowToolbar])
+  }, [isAiModalOpen, isFullPreview, selectedNote?.path, setShowToolbar, isActive])
 
   const editorMenuEntries: EditorMenuEntry[] = useMemo(
     () => getEditorMenuEntries(openAiModal),

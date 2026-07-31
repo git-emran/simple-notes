@@ -60,9 +60,11 @@ const Sep = () => (
 export const MarkdownToolbar = ({
   view,
   onWriteWithAi,
+  isActive
 }: {
   view: EditorView | null
   onWriteWithAi: () => void
+  isActive: boolean
 }) => {
   const [showHeaderDropdown, setShowHeaderDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -71,6 +73,7 @@ export const MarkdownToolbar = ({
   /* Keyboard shortcuts */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isActive) return
       if (!view || (!e.ctrlKey && !e.metaKey)) return
       const key = e.key.toLowerCase()
       switch (key) {
@@ -116,7 +119,7 @@ export const MarkdownToolbar = ({
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [view])
+  }, [view, isActive])
 
   /* Close dropdown when clicking outside */
   useEffect(() => {

@@ -1,5 +1,5 @@
 'use client'
-import { createNoteAtom, fileTreeAtom, isDarkModeAtom, selectedNoteAtom } from '@renderer/store'
+import { createNoteAtom, fileTreeAtom, isDarkModeAtom, noteByPathAtomFamily, vaultRootDirAtom } from '@renderer/store'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { isValidElement, memo, useCallback, useEffect, useRef, useState } from 'react'
 import React from 'react'
@@ -23,32 +23,18 @@ import type { EditorView } from '@codemirror/view'
 
 const MarkdownToolbarMemo = memo(MarkdownToolbar)
 
-export const MarkdownEditor = () => {
-  const selectedNote = useAtomValue(selectedNoteAtom)
+export const MarkdownEditor = ({ path, tabId, isActive }: { path: string | null; tabId: string; isActive: boolean }) => {
+  const selectedNote = useAtomValue(noteByPathAtomFamily(path))
   const createNote = useSetAtom(createNoteAtom)
   const fileTree = useAtomValue(fileTreeAtom)
   const isDarkMode = useAtomValue(isDarkModeAtom)
+  const rootDir = useAtomValue(vaultRootDirAtom)
 
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
-  const [rootDir, setRootDir] = useState<string>('')
 
   const previewReadableWidthClass = 'w-full min-w-0 max-w-[860px]'
-
-  // Resolve the vault root directory once on mount
-  useEffect(() => {
-    let cancelled = false
-    void window.context
-      .getRootDir()
-      .then((dir) => {
-        if (!cancelled) setRootDir(dir)
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   // ── Callout / react-node helpers (passed to MarkdownPreview) ──────────────
   const getReactNodeText = useCallback((node: unknown): string => {
@@ -129,7 +115,8 @@ export const MarkdownEditor = () => {
     lineWrappingEnabled: editorSettings.lineWrappingEnabled,
     tabIndentUnit: editorSettings.tabIndentUnit,
     rootDir,
-    reconfigureLanguage
+    reconfigureLanguage,
+    isActive
   })
 
   const splitView = useSplitViewSync({
@@ -149,7 +136,8 @@ export const MarkdownEditor = () => {
     selectedNote: selectedNote as SelectedNote | null,
     isFullPreview: splitView.isFullPreview,
     isAiModalOpen: ai.isAiModalOpen,
-    openAiModal: ai.openAiModal
+    openAiModal: ai.openAiModal,
+    isActive
   })
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -199,6 +187,7 @@ export const MarkdownEditor = () => {
         handleExportPdf={() => void noteMetadata.handleExportPdf()}
         onRename={noteMetadata.handleHeaderRename}
         isExportingPdf={noteMetadata.isExportingPdf}
+        isActive={isActive}
       />
 
       {selectedNote.readError ? (
@@ -229,6 +218,7 @@ export const MarkdownEditor = () => {
               <MarkdownToolbarMemo
                 view={viewRef.current}
                 onWriteWithAi={() => void ai.openAiModal()}
+                isActive={isActive}
               />
             </div>
           )}

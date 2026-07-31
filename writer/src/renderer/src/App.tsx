@@ -116,14 +116,14 @@ const App = () => {
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
-  const [sidebarWidth, setSidebarWidth] = useState(240) // default width for FileExplorer
+  const [sidebarWidth, setSidebarWidth] = useState(MIN_SIDEBAR_WIDTH) // default width for FileExplorer
   const [notesPanelWidth, setNotesPanelWidth] = useState(240) // default width for FolderNotesPanel
   
   const isDragging = useRef(false)
   const isDraggingNotes = useRef(false)
   const previousBodyCursor = useRef('')
   const previousBodyUserSelect = useRef('')
-  const sidebarWidthRef = useRef(240)
+  const sidebarWidthRef = useRef(MIN_SIDEBAR_WIDTH)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const isSettingsOpenRef = useRef(false)
   const sidebarViewRef = useRef<'files' | 'search'>('files')
@@ -543,20 +543,30 @@ const App = () => {
                   atom and cannot safely run in parallel.
               ──────────────────────────────────────────────────────────────── */}
 
-              {/* Markdown / Canvas / Empty — single shared instance */}
-              <div
-                className="h-full w-full flex flex-col"
-                style={{
-                  display:
-                    activeTab?.kind === 'file' ||
-                    activeTab?.kind === 'empty' ||
-                    activeTab == null
-                      ? 'flex'
-                      : 'none'
-                }}
-              >
-                {appMode === 'editor' ? <MarkdownEditor /> : <CanvasEditor />}
-              </div>
+              {/* ── Per-Tab Editor Instances ──────────────────────────────────────
+                  Each file tab gets its own fully mounted Markdown/Canvas editor.
+                  This preserves native CodeMirror state (scroll, history) instantly
+                  when switching tabs via CSS display toggling.
+              ──────────────────────────────────────────────────────────────── */}
+              {tabs.map((tab) => {
+                if (tab.kind !== 'file' && tab.kind !== 'empty') return null
+                const isActive = activeTab?.id === tab.id
+                return (
+                  <div
+                    key={tab.id}
+                    className="h-full w-full flex-col"
+                    style={{
+                      display: isActive ? 'flex' : 'none'
+                    }}
+                  >
+                    {appMode === 'editor' ? (
+                      <MarkdownEditor tabId={tab.id} path={tab.path} isActive={isActive} />
+                    ) : (
+                      <CanvasEditor tabId={tab.id} path={tab.path} isActive={isActive} />
+                    )}
+                  </div>
+                )
+              })}
 
               {/* Kanban — mounted once the tab has been opened */}
               {(() => {

@@ -71,6 +71,8 @@ export type FileTreeItemProps = ComponentProps<'li'> & {
   hideChevron?: boolean
   hideRelativeTime?: boolean
   inlineMeta?: boolean
+  /** Controls font size scale: 'compact' = reduced sizes for FileExplorer, 'default' = original sizes for split panel. */
+  textSize?: 'default' | 'compact'
 }
 
 const FileTreeItemComponent = ({
@@ -93,9 +95,11 @@ const FileTreeItemComponent = ({
   hideChevron = false,
   hideRelativeTime = false,
   inlineMeta = false,
+  textSize = 'compact',
   className,
   ...props
 }: FileTreeItemProps) => {
+  const isDefaultSize = textSize === 'default'
   const isExpanded = isExpandedProp ?? !!expandedNodes?.has(node.path)
   const isSelected = selectedPath === node.path
 
@@ -219,8 +223,10 @@ const FileTreeItemComponent = ({
       ? 'pt-[2px] pb-[2px] flex items-start'
       : 'pt-[2px] pb-0 flex items-center'
 
-  const baseRowClasses =
-    'group cursor-pointer gap-1 transition-colors text-[12px] select-none relative rounded-sm mx-1 overflow-hidden'
+  const baseRowClasses = twMerge(
+    'group cursor-pointer gap-1 transition-colors select-none relative rounded-sm mx-1 overflow-hidden',
+    isDefaultSize ? 'text-[12px]' : 'text-[10px]'
+  )
 
   const interactiveClasses = isSelected
     ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)] rounded-sm'
@@ -234,20 +240,20 @@ const FileTreeItemComponent = ({
     return (
       <div className="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden">
         {node.lastEditTime && !hideRelativeTime && (
-          <span className="shrink-0 whitespace-nowrap tabular-nums text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
+          <span className={`shrink-0 whitespace-nowrap tabular-nums ${isDefaultSize ? 'text-[9px]' : 'text-[7px]'} text-[var(--obsidian-text-muted)] opacity-70`}>
             {formatRelativeEditedTime(node.lastEditTime)}
           </span>
         )}
         {noteStatus && (
           <span
-            className={`shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-[1.1] ${NOTE_STATUS_META[noteStatus].className}`}
+            className={`shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-1.5 py-[1px] ${isDefaultSize ? 'text-[9px]' : 'text-[7px]'} font-semibold leading-[1.1] ${NOTE_STATUS_META[noteStatus].className}`}
           >
             {NOTE_STATUS_META[noteStatus].label}
           </span>
         )}
         {noteTag && (
           <span
-            className={`shrink-0 inline-flex items-center max-w-[140px] truncate whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-[1.1] ${CUSTOM_TAG_STYLE}`}
+            className={`shrink-0 inline-flex items-center max-w-[140px] truncate whitespace-nowrap rounded-full border px-1.5 py-[1px] ${isDefaultSize ? 'text-[9px]' : 'text-[7px]'} font-semibold leading-[1.1] ${CUSTOM_TAG_STYLE}`}
           >
             {noteTag}
           </span>
@@ -269,7 +275,9 @@ const FileTreeItemComponent = ({
         <span
           className={twMerge(
             'truncate',
-            node.type === 'folder' ? 'font-medium text-[var(--obsidian-text)] text-[12px]' : 'text-[11.5px]'
+            node.type === 'folder'
+              ? `font-medium text-[var(--obsidian-text)] ${isDefaultSize ? 'text-[12px]' : 'text-[10px]'}`
+              : isDefaultSize ? 'text-[11.5px]' : 'text-[9.5px]'
           )}
         >
           {node.name}
@@ -277,20 +285,20 @@ const FileTreeItemComponent = ({
         {inlineMeta && showMeta && (
           <div className="flex min-w-0 shrink-0 flex-nowrap items-center gap-1.5 overflow-hidden">
             {node.lastEditTime && !hideRelativeTime && (
-              <span className="shrink-0 whitespace-nowrap tabular-nums text-[9px] text-[var(--obsidian-text-muted)] opacity-70">
+              <span className={`shrink-0 whitespace-nowrap tabular-nums ${isDefaultSize ? 'text-[9px]' : 'text-[7px]'} text-[var(--obsidian-text-muted)] opacity-70`}>
                 {formatRelativeEditedTime(node.lastEditTime)}
               </span>
             )}
             {noteStatus && (
               <span
-                className={`shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-[1.1] ${NOTE_STATUS_META[noteStatus].className}`}
+                className={`shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-1.5 py-[1px] ${isDefaultSize ? 'text-[9px]' : 'text-[7px]'} font-semibold leading-[1.1] ${NOTE_STATUS_META[noteStatus].className}`}
               >
                 {NOTE_STATUS_META[noteStatus].label}
               </span>
             )}
             {noteTag && (
               <span
-                className={`shrink-0 inline-flex items-center max-w-[140px] truncate whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-[1.1] ${CUSTOM_TAG_STYLE}`}
+                className={`shrink-0 inline-flex items-center max-w-[140px] truncate whitespace-nowrap rounded-full border px-1.5 py-[1px] ${isDefaultSize ? 'text-[9px]' : 'text-[7px]'} font-semibold leading-[1.1] ${CUSTOM_TAG_STYLE}`}
               >
                 {noteTag}
               </span>
@@ -299,7 +307,7 @@ const FileTreeItemComponent = ({
         )}
       </div>
       {node.type === 'folder' && (
-        <span className="shrink-0 text-[10px] tabular-nums font-medium text-[var(--obsidian-text-muted)] opacity-60">
+        <span className={`shrink-0 ${isDefaultSize ? 'text-[10px]' : 'text-[8px]'} tabular-nums font-medium text-[var(--obsidian-text-muted)] opacity-60`}>
           {getNoteCount(node)}
         </span>
       )}
@@ -319,7 +327,7 @@ const FileTreeItemComponent = ({
             }}
           />
         </div>
-        <span className="shrink-0 text-[9px] tabular-nums font-medium transition-colors duration-200 text-[var(--obsidian-text-muted)]">
+        <span className={`shrink-0 ${isDefaultSize ? 'text-[9px]' : 'text-[7px]'} tabular-nums font-medium transition-colors duration-200 text-[var(--obsidian-text-muted)]`}>
           {todoCompleted}/{todoTotal}
         </span>
       </div>
@@ -372,13 +380,13 @@ const FileTreeItemComponent = ({
             onKeyDown={handleKeyDown}
             className={twMerge(
               'bg-transparent outline-none px-0 rounded-sm min-w-0 flex-shrink text-[var(--obsidian-text)]',
-              node.type === 'file' ? 'text-[11.5px]' : 'text-[12px]'
+              node.type === 'file' ? (isDefaultSize ? 'text-[11.5px]' : 'text-[9.5px]') : (isDefaultSize ? 'text-[12px]' : 'text-[10px]')
             )}
           />
           <span
             className={twMerge(
               'text-[var(--obsidian-text-muted)] whitespace-pre',
-              node.type === 'file' && 'text-[11.5px]'
+              node.type === 'file' && (isDefaultSize ? 'text-[11.5px]' : 'text-[9.5px]')
             )}
           >
             {editParts.ext}

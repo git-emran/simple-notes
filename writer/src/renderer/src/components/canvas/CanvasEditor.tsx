@@ -13,7 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { selectedNoteAtom, saveCanvasAtom, movePathAtom } from '../../store';
+import { noteByPathAtomFamily, saveCanvasAtom, movePathAtom } from '../../store';
 import { VscTypeHierarchy, VscFilePdf, VscNote, VscSymbolString } from 'react-icons/vsc';
 import { FaRegSquare, FaRegCircle, } from 'react-icons/fa';
 import { TbDiamond } from 'react-icons/tb';
@@ -30,8 +30,8 @@ const nodeTypes = {
   text: TextNode,
 };
 
-export const CanvasEditor = () => {
-  const selectedNote = useAtomValue(selectedNoteAtom);
+export const CanvasEditor = ({ path, tabId, isActive }: { path: string | null; tabId: string; isActive: boolean }) => {
+  const selectedNote = useAtomValue(noteByPathAtomFamily(path));
   const saveCanvas = useSetAtom(saveCanvasAtom);
   const rootRef = useRef<HTMLDivElement>(null)
 
