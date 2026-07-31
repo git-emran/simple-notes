@@ -236,7 +236,6 @@ export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
   }
 
   if (!next || next.kind !== 'file' || !next.path) {
-    set(selectedNodeAtom, null)
     return
   }
   set(selectedNodeAtom, createFileNodeFromPath(next.path))
@@ -299,7 +298,6 @@ export const createNewTabAtom = atom(null, (get, set) => {
   const nextTab = createEmptyTab()
   set(tabsAtom, [...tabs, nextTab])
   set(activeTabIdAtom, nextTab.id)
-  set(selectedNodeAtom, null)
 })
 
 export const reorderTabsAtom = atom(
@@ -333,7 +331,6 @@ export const createKanbanTabAtom = atom(null, (get, set) => {
   const existing = tabs.find((t) => t.kind === 'kanban')
   if (existing) {
     set(activeTabIdAtom, existing.id)
-    set(selectedNodeAtom, null)
     return
   }
   const nextTab: EditorTab = {
@@ -344,7 +341,6 @@ export const createKanbanTabAtom = atom(null, (get, set) => {
   }
   set(tabsAtom, [...tabs, nextTab])
   set(activeTabIdAtom, nextTab.id)
-  set(selectedNodeAtom, null)
 })
 
 export const createTerminalTabAtom = atom(null, (get, set) => {
@@ -352,7 +348,6 @@ export const createTerminalTabAtom = atom(null, (get, set) => {
   const existing = tabs.find((tab) => tab.kind === 'terminal')
   if (existing) {
     set(activeTabIdAtom, existing.id)
-    set(selectedNodeAtom, null)
     return
   }
 
@@ -366,7 +361,6 @@ export const createTerminalTabAtom = atom(null, (get, set) => {
 
   set(tabsAtom, [...tabs, nextTab])
   set(activeTabIdAtom, nextTab.id)
-  set(selectedNodeAtom, null)
 })
 
 export const createSpreadsheetTabAtom = atom(null, (get, set) => {
@@ -374,7 +368,6 @@ export const createSpreadsheetTabAtom = atom(null, (get, set) => {
   const existing = tabs.find((tab) => tab.kind === 'spreadsheet')
   if (existing) {
     set(activeTabIdAtom, existing.id)
-    set(selectedNodeAtom, null)
     return
   }
 
@@ -387,7 +380,6 @@ export const createSpreadsheetTabAtom = atom(null, (get, set) => {
 
   set(tabsAtom, [...tabs, nextTab])
   set(activeTabIdAtom, nextTab.id)
-  set(selectedNodeAtom, null)
 })
 
 export const setTerminalSessionIdAtom = atom(
@@ -543,7 +535,6 @@ export const closeTabAtom = atom(null, (get, set, tabId: string) => {
   if (nextTabs.length === 0) {
     set(tabsAtom, [{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
     set(activeTabIdAtom, 'tab-1')
-    set(selectedNodeAtom, null)
     return
   }
 
@@ -552,7 +543,9 @@ export const closeTabAtom = atom(null, (get, set, tabId: string) => {
 
   const nextActive = nextTabs[Math.max(0, nextTabs.length - 1)]
   set(activeTabIdAtom, nextActive.id)
-  set(selectedNodeAtom, nextActive.path ? createFileNodeFromPath(nextActive.path) : null)
+  if (nextActive.path) {
+    set(selectedNodeAtom, createFileNodeFromPath(nextActive.path))
+  }
 })
 
 export const restoreClosedTabAtom = atom(null, (get, set) => {
@@ -1062,14 +1055,10 @@ export const deleteNodeAtom = atom(null, async (get, set, path: string) => {
   
   const currentSelected = get(selectedNodeAtom)
   if (currentSelected && (currentSelected.path === path || currentSelected.path.startsWith(path + '/'))) {
-    if (currentSelected.path === path && currentSelected.type === 'file') {
-      const parentDir = path.substring(0, Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')))
-      const parentNode = get(fileTreeIndexAtom).get(parentDir)
-      if (parentNode) {
-        set(selectedNodeAtom, parentNode)
-      } else {
-        set(selectedNodeAtom, null)
-      }
+    const parentDir = path.substring(0, Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')))
+    const parentNode = get(fileTreeIndexAtom).get(parentDir)
+    if (parentNode) {
+      set(selectedNodeAtom, parentNode)
     } else {
       set(selectedNodeAtom, null)
     }
