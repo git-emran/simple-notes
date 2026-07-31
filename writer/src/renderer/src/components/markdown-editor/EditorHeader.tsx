@@ -89,7 +89,7 @@ export const EditorHeader = ({
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [isActive])
 
   React.useEffect(() => {
     setEditValue(displayTitle)

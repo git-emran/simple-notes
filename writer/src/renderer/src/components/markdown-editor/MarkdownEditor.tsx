@@ -1,7 +1,7 @@
 'use client'
 import { createNoteAtom, fileTreeAtom, isDarkModeAtom, noteByPathAtomFamily, vaultRootDirAtom } from '@renderer/store'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { isValidElement, memo, useCallback, useEffect, useRef, useState } from 'react'
+import { isValidElement, memo, useCallback, useRef, useState } from 'react'
 import React from 'react'
 import { MdDragIndicator } from 'react-icons/md'
 import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
@@ -23,7 +23,7 @@ import type { EditorView } from '@codemirror/view'
 
 const MarkdownToolbarMemo = memo(MarkdownToolbar)
 
-export const MarkdownEditor = ({ path, tabId, isActive }: { path: string | null; tabId: string; isActive: boolean }) => {
+export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string | null; tabId: string; isActive: boolean }) => {
   const selectedNote = useAtomValue(noteByPathAtomFamily(path))
   const createNote = useSetAtom(createNoteAtom)
   const fileTree = useAtomValue(fileTreeAtom)
@@ -115,8 +115,7 @@ export const MarkdownEditor = ({ path, tabId, isActive }: { path: string | null;
     lineWrappingEnabled: editorSettings.lineWrappingEnabled,
     tabIndentUnit: editorSettings.tabIndentUnit,
     rootDir,
-    reconfigureLanguage,
-    isActive
+    reconfigureLanguage
   })
 
   const splitView = useSplitViewSync({

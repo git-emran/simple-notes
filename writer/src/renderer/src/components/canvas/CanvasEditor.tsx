@@ -10,17 +10,19 @@ import {
   Panel,
   MarkerType,
   reconnectEdge,
+  type Node,
+  type Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { noteByPathAtomFamily, saveCanvasAtom, movePathAtom } from '../../store';
 import { VscTypeHierarchy, VscFilePdf, VscNote, VscSymbolString } from 'react-icons/vsc';
 import { FaRegSquare, FaRegCircle, } from 'react-icons/fa';
 import { TbDiamond } from 'react-icons/tb';
 import { EditableNode, DiamondNode, StickyNoteNode, CircleNode, TextNode } from './CustomNodes';
 
-const initialNodes: any[] = [];
-const initialEdges: any[] = [];
+const initialNodes: Node[] = [];
+const initialEdges: Edge[] = [];
 
 const nodeTypes = {
   editable: EditableNode,
@@ -30,7 +32,7 @@ const nodeTypes = {
   text: TextNode,
 };
 
-export const CanvasEditor = ({ path, tabId, isActive }: { path: string | null; tabId: string; isActive: boolean }) => {
+export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { path: string | null; tabId: string; isActive: boolean }) => {
   const selectedNote = useAtomValue(noteByPathAtomFamily(path));
   const saveCanvas = useSetAtom(saveCanvasAtom);
   const rootRef = useRef<HTMLDivElement>(null)
@@ -62,7 +64,7 @@ export const CanvasEditor = ({ path, tabId, isActive }: { path: string | null; t
     )
   }, [setNodes])
 
-  const hydrateNodes = useCallback((rawNodes: any[]) => {
+  const hydrateNodes = useCallback((rawNodes: Node[]) => {
     return (rawNodes ?? []).map((node) => ({
       ...node,
       data: {
@@ -112,7 +114,7 @@ export const CanvasEditor = ({ path, tabId, isActive }: { path: string | null; t
       }
     }, 500);
     return () => clearTimeout(timeout);
-  }, [nodes, edges, isCanvasFile, isLoaded, saveCanvas]);
+  }, [nodes, edges, isCanvasFile, isLoaded, saveCanvas, selectedNote?.path]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
@@ -129,14 +131,14 @@ export const CanvasEditor = ({ path, tabId, isActive }: { path: string | null; t
     edgeReconnectSuccessful.current = false;
   }, []);
   const onReconnect = useCallback(
-    (oldEdge: any, newConnection: Connection) => {
+    (oldEdge: Edge, newConnection: Connection) => {
       edgeReconnectSuccessful.current = true;
       setEdges((eds) => reconnectEdge(oldEdge, newConnection, eds));
     },
     [setEdges]
   );
   const onReconnectEnd = useCallback(
-    (_: any, edge: any) => {
+    (_: unknown, edge: Edge) => {
       if (!edgeReconnectSuccessful.current) {
         setEdges((eds) => eds.filter((e) => e.id !== edge.id));
       }
@@ -147,7 +149,7 @@ export const CanvasEditor = ({ path, tabId, isActive }: { path: string | null; t
   );
 
   const onNodeDragStart = useCallback(
-    (event: React.MouseEvent, node: any) => {
+    (event: React.MouseEvent, node: Node) => {
       /* If Alt is pressed, duplicate the node */
       if (event.altKey) {
         const newNode = {

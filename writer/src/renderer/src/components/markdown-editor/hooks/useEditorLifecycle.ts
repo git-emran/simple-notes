@@ -42,7 +42,7 @@ import { quoteLineStyling } from '../quoteLineStyling'
 import { tabAsSpaces } from '../tabAsSpaces'
 import { tripleBacktickExtension } from '../tripleBacktick'
 import { statusBarExtension } from '../statusbar'
-import { editorSaveStateByPathAtom, noteContentCacheAtom, saveNoteAtom } from '@renderer/store'
+import { editorSaveStateByPathAtom, saveNoteAtom } from '@renderer/store'
 import { useSetAtom } from 'jotai'
 import type { SelectedNote, ViewRef, DivRef } from './types'
 
@@ -86,7 +86,7 @@ export function useEditorLifecycle({
 }: UseEditorLifecycleParams) {
   const saveNote = useSetAtom(saveNoteAtom)
   const setEditorSaveStateByPath = useSetAtom(editorSaveStateByPathAtom)
-  const setNoteContentCache = useSetAtom(noteContentCacheAtom)
+
 
   const [debouncedContent, setDebouncedContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -434,6 +434,12 @@ export function useEditorLifecycle({
       return
     }
 
+    if (viewRef.current && currentNotePathRef.current !== selectedNote.path) {
+      debouncedSave.flush()
+      viewRef.current.destroy()
+      viewRef.current = null
+    }
+
     const buildState = (doc: string) =>
       EditorState.create({
         doc,
@@ -595,7 +601,7 @@ export function useEditorLifecycle({
 
     initEditor()
     return () => {
-      debouncedSave.cancel()
+      debouncedSave.flush()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [

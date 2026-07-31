@@ -533,7 +533,7 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
       pendingEventsRef.current = []
       lastSequenceRef.current = 0
     }
-  }, [closeTab, sessionId, setTerminalSessionId, tab.id])
+  }, [closeTab, sessionId, setTerminalSessionId, tab.id, editorFont, editorFontSize, isDarkMode])
 
   return (
     <div className="flex h-full flex-col bg-[var(--obsidian-workspace)]">
