@@ -1,5 +1,5 @@
 import { ContextMenu, ContextMenuItem } from "@renderer/components/ContextMenu";
-import type { KanbanCard, KanbanCardPriority } from "@renderer/store/kanbanStore";
+import type { KanbanCard, KanbanCardPriority, KanbanTodo } from "@renderer/store/kanbanStore";
 import {
     createKanbanCard,
     createKanbanColumn,
@@ -12,7 +12,7 @@ import { motion } from "motion/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FaFire } from "react-icons/fa";
 import { FiPlus, FiTrash } from "react-icons/fi";
-import { VscAdd, VscChevronDown, VscTrash } from "react-icons/vsc";
+import { VscAdd, VscChevronDown, VscTrash, VscChecklist } from "react-icons/vsc";
 import { twMerge } from "tailwind-merge";
 import { TaskDetailsPanel } from "./TaskDetailsPanel";
 
@@ -162,6 +162,7 @@ export const KanbanBoard = () => {
     text: string;
     description: string;
     priority: KanbanCardPriority;
+    todos: KanbanTodo[];
     remindAt: string | null;
     reminderFiredAt: string | null;
   }) => {
@@ -550,13 +551,14 @@ interface CardProps {
   column: string;
   priority?: KanbanCardPriority;
   description?: string;
+  todos?: KanbanTodo[];
   // framer-motion onDragStart passes MouseEvent | PointerEvent | TouchEvent
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handleDragStart: (e: any, card: KanbanCardWithColumn) => void;
   onClick?: () => void;
 }
 
-const Card = ({ text, id, column, priority, description, handleDragStart, onClick }: CardProps) => {
+const Card = ({ text, id, column, priority, description, todos, handleDragStart, onClick }: CardProps) => {
   const priorityColors: Record<string, string> = {
     low: "#10B981", // Emerald/Green
     medium: "#F59E0B", // Amber/Yellow
@@ -584,6 +586,12 @@ const Card = ({ text, id, column, priority, description, handleDragStart, onClic
             />
           )}
           <p className="text-sm text-[var(--obsidian-text)] flex-1 break-words font-medium">{text}</p>
+          {todos && todos.length > 0 && (
+            <div className="flex items-center gap-1 text-[10px] shrink-0 font-medium text-[var(--obsidian-text-muted)] bg-[var(--obsidian-workspace)] px-1.5 py-0.5 rounded border border-[var(--obsidian-border-soft)] shadow-sm">
+              <VscChecklist className="w-3 h-3 opacity-70" />
+              <span>{todos.filter(t => t.completed).length}/{todos.length}</span>
+            </div>
+          )}
         </div>
         {description && (
           <p className="mt-1.5 text-xs text-[var(--obsidian-text-muted)] leading-relaxed line-clamp-2 break-words">

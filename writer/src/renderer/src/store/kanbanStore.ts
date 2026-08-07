@@ -2,12 +2,19 @@ import { atomWithStorage } from 'jotai/utils'
 
 export type KanbanCardPriority = 'low' | 'medium' | 'high' | null
 
+export type KanbanTodo = {
+  id: string
+  text: string
+  completed: boolean
+}
+
 export type KanbanCard = {
   id: string
   text: string
   description?: string
   priority?: KanbanCardPriority
   completed?: boolean
+  todos?: KanbanTodo[]
   /**
    * ISO timestamp (UTC) for when to remind inside the app.
    * Null/undefined means no reminder set.
@@ -101,13 +108,14 @@ export const createKanbanColumn = (title: string, color?: string): KanbanColumn 
 
 export const createKanbanCard = (
   text: string,
-  options?: { description?: string; priority?: KanbanCardPriority; remindAt?: string | null }
+  options?: { description?: string; priority?: KanbanCardPriority; remindAt?: string | null; todos?: KanbanTodo[] }
 ): KanbanCard => ({
   id: makeId('card'),
   text,
   description: options?.description ?? '',
   priority: options?.priority ?? 'low',
   completed: false,
+  todos: options?.todos ?? [],
   remindAt: options?.remindAt ?? null,
   reminderFiredAt: null,
 })
@@ -165,11 +173,21 @@ const normalizeCard = (value: unknown): KanbanCard | null => {
   const description = typeof raw.description === 'string' ? raw.description : ''
   const priority: KanbanCardPriority =
     raw.priority == null ? 'low' : isKanbanCardPriority(raw.priority) ? raw.priority : 'low'
+  const todos = Array.isArray(raw.todos)
+    ? raw.todos.map((t: unknown) => {
+        const todo = t as Partial<KanbanTodo>;
+        return {
+          id: typeof todo.id === 'string' && todo.id.trim() ? todo.id : makeId('todo'),
+          text: typeof todo.text === 'string' ? todo.text : '',
+          completed: Boolean(todo.completed)
+        }
+      })
+    : []
   const remindAt = typeof raw.remindAt === 'string' && raw.remindAt.trim() ? raw.remindAt : null
   const reminderFiredAt =
     typeof raw.reminderFiredAt === 'string' && raw.reminderFiredAt.trim() ? raw.reminderFiredAt : null
 
-  return { id, text, description, priority, completed: Boolean(raw.completed), remindAt, reminderFiredAt }
+  return { id, text, description, priority, completed: Boolean(raw.completed), todos, remindAt, reminderFiredAt }
 }
 
 const normalizeColumn = (column: KanbanColumn): KanbanColumn => {

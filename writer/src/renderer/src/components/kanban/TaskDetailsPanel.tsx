@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { VscClose, VscEdit, VscSave, VscDiscard, VscChevronDown } from 'react-icons/vsc'
-import type { KanbanCard, KanbanCardPriority } from '@renderer/store/kanbanStore'
+import { VscClose, VscEdit, VscSave, VscDiscard, VscChevronDown, VscAdd, VscTrash } from 'react-icons/vsc'
+import type { KanbanCard, KanbanCardPriority, KanbanTodo } from '@renderer/store/kanbanStore'
 import { KANBAN_PRIORITY_OPTIONS, getPriorityChipTint } from './kanbanPriority'
 
 
@@ -13,6 +13,7 @@ type TaskDetailsPanelProps = {
     text: string
     description: string
     priority: KanbanCardPriority
+    todos: KanbanTodo[]
     remindAt: string | null
     reminderFiredAt: string | null
   }) => void
@@ -24,6 +25,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
   const [titleDraft, setTitleDraft] = useState('')
   const [descriptionDraft, setDescriptionDraft] = useState('')
   const [priorityDraft, setPriorityDraft] = useState<Exclude<KanbanCardPriority, null>>('low')
+  const [todosDraft, setTodosDraft] = useState<KanbanTodo[]>([])
   const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false)
   const priorityDropdownRef = useRef<HTMLDivElement>(null)
   
@@ -77,6 +79,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
     setTitleDraft(internalCard.text ?? '')
     setDescriptionDraft(internalCard.description ?? '')
     setPriorityDraft(initialPriority)
+    setTodosDraft(internalCard.todos ?? [])
   }, [cardId, internalCard])
 
   const canSave = useMemo(() => Boolean(titleDraft.trim()), [titleDraft])
@@ -93,6 +96,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
       text: titleDraft.trim(),
       description: descriptionDraft.trim(),
       priority: priorityDraft,
+      todos: todosDraft,
       remindAt: internalCard.remindAt ?? null,
       reminderFiredAt: internalCard.reminderFiredAt ?? null,
     })
@@ -106,6 +110,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
     setTitleDraft(internalCard.text ?? '')
     setDescriptionDraft(internalCard.description ?? '')
     setPriorityDraft(initialPriority)
+    setTodosDraft(internalCard.todos ?? [])
   }
 
   return (
@@ -201,6 +206,12 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                 <textarea
                   value={descriptionDraft}
                   onChange={(e) => setDescriptionDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.shiftKey) {
+                      e.preventDefault()
+                      save()
+                    }
+                  }}
                   className="mt-2 w-full resize-none rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm leading-6 text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
                   rows={6}
                   spellCheck={false}
@@ -208,6 +219,80 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                   autoCapitalize="off"
                   placeholder="Add a description"
                 />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">To-do list</div>
+                  <button
+                    type="button"
+                    onClick={() => setTodosDraft([...todosDraft, { id: Date.now().toString(), text: '', completed: false }])}
+                    className="inline-flex items-center gap-1 text-[11px] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] transition-colors"
+                  >
+                    <VscAdd className="h-3 w-3" /> Add item
+                  </button>
+                </div>
+                {todosDraft.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    {todosDraft.map((todo, idx) => (
+                      <div key={todo.id} className="flex items-start gap-2 group">
+                        <input
+                          type="checkbox"
+                          checked={todo.completed}
+                          onChange={(e) => {
+                            const next = [...todosDraft]
+                            next[idx].completed = e.target.checked
+                            setTodosDraft(next)
+                          }}
+                          className="mt-1 shrink-0 accent-[var(--obsidian-accent)]"
+                        />
+                        <input
+                          id={`todo-input-${todo.id}`}
+                          value={todo.text}
+                          onChange={(e) => {
+                            const next = [...todosDraft]
+                            next[idx].text = e.target.value
+                            setTodosDraft(next)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              const newId = Date.now().toString()
+                              const next = [...todosDraft]
+                              next.splice(idx + 1, 0, { id: newId, text: '', completed: false })
+                              setTodosDraft(next)
+                              setTimeout(() => {
+                                document.getElementById(`todo-input-${newId}`)?.focus()
+                              }, 0)
+                            } else if (e.key === 'Backspace' && todo.text === '') {
+                              e.preventDefault()
+                              setTodosDraft(todosDraft.filter((_, i) => i !== idx))
+                              if (idx > 0) {
+                                setTimeout(() => {
+                                  document.getElementById(`todo-input-${todosDraft[idx - 1].id}`)?.focus()
+                                }, 0)
+                              }
+                            }
+                          }}
+                          className={twMerge(
+                            "flex-1 bg-transparent text-sm text-[var(--obsidian-text)] outline-none border-b border-transparent focus:border-[var(--obsidian-border)] transition-colors",
+                            todo.completed ? "line-through opacity-50" : ""
+                          )}
+                          placeholder="Task..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTodosDraft(todosDraft.filter((_, i) => i !== idx))
+                          }}
+                          className="text-[var(--obsidian-text-muted)] opacity-0 group-hover:opacity-100 hover:text-[var(--obsidian-text)] transition-all shrink-0"
+                        >
+                          <VscTrash className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -279,6 +364,41 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                   {internalCard.description ? internalCard.description : <span className="italic opacity-50">No description provided</span>}
                 </div>
               </div>
+
+              {internalCard.todos && internalCard.todos.length > 0 && (
+                <div>
+                  <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">To-do list</div>
+                  <div className="mt-2 space-y-2">
+                    {internalCard.todos.map((todo, idx) => (
+                      <div key={todo.id} className="flex items-start gap-2">
+                        <input
+                          type="checkbox"
+                          checked={todo.completed}
+                          onChange={(e) => {
+                            const nextTodos = [...internalCard.todos!]
+                            nextTodos[idx].completed = e.target.checked
+                            onUpdate({
+                              text: internalCard.text,
+                              description: internalCard.description || '',
+                              priority: internalCard.priority ?? null,
+                              todos: nextTodos,
+                              remindAt: internalCard.remindAt ?? null,
+                              reminderFiredAt: internalCard.reminderFiredAt ?? null,
+                            })
+                          }}
+                          className="mt-1 shrink-0 accent-[var(--obsidian-accent)]"
+                        />
+                        <div className={twMerge(
+                          "text-sm text-[var(--obsidian-text)]",
+                          todo.completed ? "line-through opacity-50" : ""
+                        )}>
+                          {todo.text || <span className="italic opacity-50">Empty task</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
