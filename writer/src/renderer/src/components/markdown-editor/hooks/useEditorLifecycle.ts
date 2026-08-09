@@ -10,7 +10,7 @@ import {
 import { lintGutter } from '@codemirror/lint'
 import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { drawSelection, EditorView, keymap } from '@codemirror/view'
-import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
+import { closeBrackets, completionKeymap } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
 import { autoCloseTags } from '@codemirror/lang-html'
@@ -42,6 +42,7 @@ import { quoteLineStyling } from '../quoteLineStyling'
 import { tabAsSpaces } from '../tabAsSpaces'
 import { tripleBacktickExtension } from '../tripleBacktick'
 import { statusBarExtension } from '../statusbar'
+import { slashCommandExtension, setSlashCommandItems } from '../slashCommandCompletion'
 import { editorSaveStateByPathAtom, saveNoteAtom } from '@renderer/store'
 import { useSetAtom } from 'jotai'
 import type { SelectedNote, ViewRef, DivRef } from './types'
@@ -69,6 +70,7 @@ interface UseEditorLifecycleParams {
   tabIndentUnit: number
   rootDir: string
   reconfigureLanguage: (view: EditorView, support: LanguageSupport | []) => void
+  commandPaletteItems: import('../CommandPaletteModal').CommandPaletteItem[]
 }
 
 export function useEditorLifecycle({
@@ -82,7 +84,8 @@ export function useEditorLifecycle({
   lineWrappingEnabled,
   tabIndentUnit,
   rootDir,
-  reconfigureLanguage
+  reconfigureLanguage,
+  commandPaletteItems
 }: UseEditorLifecycleParams) {
   const saveNote = useSetAtom(saveNoteAtom)
   const setEditorSaveStateByPath = useSetAtom(editorSaveStateByPathAtom)
@@ -355,6 +358,13 @@ export function useEditorLifecycle({
     return () => clearRetryTimer()
   }, [clearRetryTimer])
 
+  // ── Sync slash command items into the editor state ────────────────────────
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view) return
+    view.dispatch({ effects: setSlashCommandItems.of(commandPaletteItems) })
+  }, [commandPaletteItems, viewRef])
+
   // ── Base CodeMirror extensions ────────────────────────────────────────────
   const baseExtensions = useMemo(
     () => [
@@ -383,7 +393,7 @@ export function useEditorLifecycle({
           }
         ])
       ),
-      keymap.of([...searchKeymap, ...defaultKeymap, ...historyKeymap, ...foldKeymap]),
+      keymap.of([...searchKeymap, ...defaultKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap]),
       drawSelection(),
       closeBrackets(),
       autoCloseTags,
@@ -405,7 +415,7 @@ export function useEditorLifecycle({
           activeDark: 'rgba(255, 255, 255, 0.1)'
         }
       }),
-      autocompletion({ activateOnTyping: true, icons: true }),
+      ...slashCommandExtension,
       markdownTableEnhancement,
       checkboxExtension,
       createClipboardExperience({ importImages: handleClipboardImagePaste }),
@@ -597,6 +607,8 @@ export function useEditorLifecycle({
       setSaveError(null)
       updateTrackedSaveState(selectedNote.path, { hasUnsavedChanges: false, hasSaveError: false })
       setDebouncedContent(initialContent)
+      // Seed the slash command items into the new editor instance
+      viewRef.current.dispatch({ effects: setSlashCommandItems.of(commandPaletteItems) })
     }
 
     initEditor()

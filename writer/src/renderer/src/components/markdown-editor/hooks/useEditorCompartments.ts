@@ -36,7 +36,7 @@ interface UseEditorCompartmentsParams {
 export function useEditorCompartments({
   viewRef,
   selectedNotePath,
-  rootDir,
+  rootDir
 }: UseEditorCompartmentsParams) {
   const isDarkMode = useAtomValue(isDarkModeAtom)
   const themeMode = useAtomValue(themeModeAtom)

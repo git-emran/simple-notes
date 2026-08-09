@@ -1,5 +1,5 @@
-import { EditorView } from '@codemirror/view'
 import { HighlightStyle } from '@codemirror/language'
+import { EditorView } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 
 const editorFontFamilyVar = 'var(--writr-editor-font-family, "JetBrains Mono", monospace)'
@@ -169,24 +169,61 @@ export const getEditorTheme = (isDark: boolean) =>
 
     /* Autocomplete Tooltip Styles */
     '.cm-tooltip': {
-      backgroundColor: isDark ? '#252833' : '#ffffff',
-      border: isDark ? '1px solid #333744' : '1px solid #e5e7eb',
-      borderRadius: '4px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+      backgroundColor: 'var(--obsidian-pane)',
+      border: '1px solid var(--obsidian-border)',
+      borderRadius: '8px',
+      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)'
     },
     '.cm-tooltip.cm-tooltip-autocomplete > ul': {
-      fontFamily: editorFontFamilyVar,
-      fontSize: '12px',
-      backgroundColor: isDark ? '#252833' : '#ffffff',
-      color: isDark ? '#d4d7df' : '#000000'
+      fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontSize: '14px',
+      backgroundColor: 'transparent',
+      color: 'var(--obsidian-text-muted)',
+      maxHeight: '400px',
+      padding: '4px' // padding inside the tooltip list
     },
     '.cm-tooltip-autocomplete ul li': {
-      padding: '4px 8px',
-      color: isDark ? '#d4d7df' : '#000000'
+      padding: '8px 12px',
+      color: 'var(--obsidian-text)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      borderRadius: '6px',
+      marginBottom: '2px', // space between items
+      cursor: 'pointer'
     },
     '.cm-tooltip-autocomplete ul li[aria-selected]': {
-      backgroundColor: isDark ? 'rgba(124, 158, 251, 0.16)' : '#eff6ff',
-      color: isDark ? '#ffffff' : '#1d4ed8'
+      backgroundColor: 'var(--obsidian-hover)',
+      color: 'var(--obsidian-text)'
+    },
+    '.cm-completionLabel': {
+      flex: '1', // Take up remaining space so detail is pushed right
+      fontWeight: '500'
+    },
+    '.cm-completionDetail': {
+      fontFamily: editorFontFamilyVar,
+      color: '#A8D08D', // Greenish color matching screenshot
+      fontSize: '13px',
+      fontStyle: 'normal',
+      opacity: '1',
+      marginLeft: 'auto', // Push to right
+      paddingLeft: '16px'
+    },
+    '.cm-completionIcon': {
+      display: 'none !important'
+    },
+    /* Section headers rendered by CodeMirror's native section.header() API */
+    '.cm-slash-section-header': {
+      padding: '8px 4px 6px',
+      fontSize: '12px',
+      fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      color: 'var(--obsidian-text-muted)',
+      fontWeight: '600',
+      borderBottom: '1px solid var(--obsidian-border)',
+      marginBottom: '2px',
+      display: 'block',
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase'
     },
 
     '.cm-cursor, .cm-dropCursor': {

@@ -104,6 +104,21 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     rootDir
   })
 
+  const ai = useAiGeneration({
+    viewRef,
+    rootDir,
+    selectedNote: selectedNote as SelectedNote | null
+  })
+
+  const palette = useCommandPalette({
+    viewRef,
+    selectedNote: selectedNote as SelectedNote | null,
+    isFullPreview: false, // placeholder — splitView not yet defined
+    isAiModalOpen: ai.isAiModalOpen,
+    openAiModal: ai.openAiModal,
+    isActive
+  })
+
   const lifecycle = useEditorLifecycle({
     selectedNote: selectedNote as SelectedNote | null,
     editorRef,
@@ -115,28 +130,14 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     lineWrappingEnabled: editorSettings.lineWrappingEnabled,
     tabIndentUnit: editorSettings.tabIndentUnit,
     rootDir,
-    reconfigureLanguage
+    reconfigureLanguage,
+    commandPaletteItems: palette.commandPaletteItems
   })
 
   const splitView = useSplitViewSync({
     viewRef,
     selectedNote: selectedNote as SelectedNote | null,
     setDebouncedContent: lifecycle.setDebouncedContent
-  })
-
-  const ai = useAiGeneration({
-    viewRef,
-    rootDir,
-    selectedNote: selectedNote as SelectedNote | null
-  })
-
-  const palette = useCommandPalette({
-    viewRef,
-    selectedNote: selectedNote as SelectedNote | null,
-    isFullPreview: splitView.isFullPreview,
-    isAiModalOpen: ai.isAiModalOpen,
-    openAiModal: ai.openAiModal,
-    isActive
   })
 
   // ── Empty state ───────────────────────────────────────────────────────────
