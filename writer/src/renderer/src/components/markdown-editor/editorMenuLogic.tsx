@@ -186,5 +186,46 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     shortcut: 'Ctrl+Shift+`',
     keywords: ['code', 'fence', 'triple backtick'],
     run: (view) => commands.insertCodeBlock(view)
+  },
+  { type: 'separator', id: 'sep-5' },
+  {
+    type: 'item',
+    id: 'alert-note',
+    label: 'Note Alert',
+    shortcut: '> [!NOTE]',
+    keywords: ['github', 'alert', 'note', 'info'],
+    run: (view) => commands.insertGithubAlert(view, 'NOTE')
+  },
+  {
+    type: 'item',
+    id: 'alert-tip',
+    label: 'Tip Alert',
+    shortcut: '> [!TIP]',
+    keywords: ['github', 'alert', 'tip', 'hint'],
+    run: (view) => commands.insertGithubAlert(view, 'TIP')
+  },
+  {
+    type: 'item',
+    id: 'alert-important',
+    label: 'Important Alert',
+    shortcut: '> [!IMPORTANT]',
+    keywords: ['github', 'alert', 'important'],
+    run: (view) => commands.insertGithubAlert(view, 'IMPORTANT')
+  },
+  {
+    type: 'item',
+    id: 'alert-warning',
+    label: 'Warning Alert',
+    shortcut: '> [!WARNING]',
+    keywords: ['github', 'alert', 'warning', 'warn'],
+    run: (view) => commands.insertGithubAlert(view, 'WARNING')
+  },
+  {
+    type: 'item',
+    id: 'alert-caution',
+    label: 'Caution Alert',
+    shortcut: '> [!CAUTION]',
+    keywords: ['github', 'alert', 'caution', 'danger', 'error'],
+    run: (view) => commands.insertGithubAlert(view, 'CAUTION')
   }
 ]

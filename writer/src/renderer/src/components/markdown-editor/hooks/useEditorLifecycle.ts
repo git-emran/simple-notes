@@ -39,6 +39,7 @@ import { createLivePreviewImages } from '../livePreviewImages'
 import { markdownLivePreview } from '../markdownLivePreview'
 import { markdownMarkupColors } from '../markdownMarkupColors'
 import { quoteLineStyling } from '../quoteLineStyling'
+import { githubAlertStyling } from '../githubAlertStyling'
 import { tabAsSpaces } from '../tabAsSpaces'
 import { tripleBacktickExtension } from '../tripleBacktick'
 import { statusBarExtension } from '../statusbar'
@@ -423,6 +424,7 @@ export function useEditorLifecycle({
       codeBlockCopy,
       codeBlockBackground,
       quoteLineStyling,
+      githubAlertStyling,
       tripleBacktickExtension,
       markdownMarkupColors,
       markdownLivePreview,

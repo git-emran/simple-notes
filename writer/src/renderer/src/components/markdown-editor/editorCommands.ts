@@ -260,3 +260,21 @@ export const insertCodeBlock = (view: EditorView | null) => {
 export const insertKbd = (view: EditorView | null) => {
   applyFormat(view, '<kbd>', '</kbd>')
 }
+
+export const insertGithubAlert = (
+  view: EditorView | null,
+  type: 'NOTE' | 'TIP' | 'IMPORTANT' | 'WARNING' | 'CAUTION'
+) => {
+  if (!view) return
+
+  const { from } = view.state.selection.main
+  const line = view.state.doc.lineAt(from)
+
+  const alertText = `\n> [!${type}]\n> `
+  view.dispatch({
+    changes: { from: line.to, to: line.to, insert: alertText },
+    selection: { anchor: line.to + alertText.length }
+  })
+
+  view.focus()
+}

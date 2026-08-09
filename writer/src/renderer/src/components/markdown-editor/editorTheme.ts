@@ -226,6 +226,64 @@ export const getEditorTheme = (isDark: boolean) =>
       textTransform: 'uppercase'
     },
 
+    /* ── GitHub Alert Styling ───────────────────────────────────────────────── */
+    '.cm-github-alert': {
+      borderLeft: '3px solid',
+      paddingLeft: '12px',
+      fontStyle: 'normal'
+    },
+    /* NOTE — blue */
+    '.cm-github-alert-note': {
+      borderLeftColor: '#3b82f6',
+      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.07)' : 'rgba(59, 130, 246, 0.05)',
+      color: isDark ? '#93c5fd' : '#1d4ed8'
+    },
+    '.cm-github-alert-note.cm-github-alert-header': {
+      color: isDark ? '#60a5fa' : '#2563eb',
+      fontWeight: '600'
+    },
+    /* TIP — green */
+    '.cm-github-alert-tip': {
+      borderLeftColor: '#22c55e',
+      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.07)' : 'rgba(34, 197, 94, 0.05)',
+      color: isDark ? '#86efac' : '#15803d'
+    },
+    '.cm-github-alert-tip.cm-github-alert-header': {
+      color: isDark ? '#4ade80' : '#16a34a',
+      fontWeight: '600'
+    },
+    /* IMPORTANT — purple */
+    '.cm-github-alert-important': {
+      borderLeftColor: '#a855f7',
+      backgroundColor: isDark ? 'rgba(168, 85, 247, 0.07)' : 'rgba(168, 85, 247, 0.05)',
+      color: isDark ? '#d8b4fe' : '#7e22ce'
+    },
+    '.cm-github-alert-important.cm-github-alert-header': {
+      color: isDark ? '#c084fc' : '#9333ea',
+      fontWeight: '600'
+    },
+    /* WARNING — amber */
+    '.cm-github-alert-warning': {
+      borderLeftColor: '#f59e0b',
+      backgroundColor: isDark ? 'rgba(245, 158, 11, 0.07)' : 'rgba(245, 158, 11, 0.05)',
+      color: isDark ? '#fcd34d' : '#92400e'
+    },
+    '.cm-github-alert-warning.cm-github-alert-header': {
+      color: isDark ? '#fbbf24' : '#b45309',
+      fontWeight: '600'
+    },
+    /* CAUTION — red */
+    '.cm-github-alert-caution': {
+      borderLeftColor: '#ef4444',
+      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.07)' : 'rgba(239, 68, 68, 0.05)',
+      color: isDark ? '#fca5a5' : '#991b1b'
+    },
+    '.cm-github-alert-caution.cm-github-alert-header': {
+      color: isDark ? '#f87171' : '#dc2626',
+      fontWeight: '600'
+    },
+
+
     '.cm-cursor, .cm-dropCursor': {
       borderLeftColor: isDark ? '#9fb7ff' : '#000000',
       borderLeftWidth: '2px'

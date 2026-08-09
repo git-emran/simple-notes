@@ -51,6 +51,17 @@ const sectionNewTab: CompletionSection = {
   }
 }
 
+const sectionGithubAlerts: CompletionSection = {
+  name: 'GitHub Alerts',
+  rank: 50,
+  header: () => {
+    const el = document.createElement('div')
+    el.className = 'cm-slash-section-header'
+    el.textContent = 'GitHub Alerts'
+    return el
+  }
+}
+
 /**
  * The completion source. Reads items from the StateField.
  */
@@ -79,10 +90,16 @@ function slashCommandSource(context: CompletionContext): CompletionResult | null
     })
     .map(item => {
       const isNewTab = item.id.startsWith('panel-')
+      const isAlert = item.id.startsWith('alert-')
+      const section = isNewTab
+        ? sectionNewTab
+        : isAlert
+          ? sectionGithubAlerts
+          : sectionBasicFormatting
       return {
         label: item.label,
         detail: item.shortcut ?? undefined,
-        section: isNewTab ? sectionNewTab : sectionBasicFormatting,
+        section,
         apply: (view, _completion, _from, to) => {
           // Delete slash + any typed text
           view.dispatch({

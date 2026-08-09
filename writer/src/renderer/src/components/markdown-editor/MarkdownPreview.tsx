@@ -272,7 +272,7 @@ export const MarkdownPreview = memo(
                 <li className="font-sans text-sm text-[var(--obsidian-text)]">{children}</li>
               ),
               strong: ({ children }) => (
-                <strong className="font-semibold">
+                <strong className="font-bold text-[var(--obsidian-text)]">
                   {children}
                 </strong>
               ),
