@@ -3,8 +3,7 @@ import {
   CompletionContext,
   CompletionResult,
   Completion,
-  CompletionSection,
-  autocompletion
+  CompletionSection
 } from '@codemirror/autocomplete'
 import type { CommandPaletteItem } from './CommandPaletteModal'
 
@@ -17,7 +16,7 @@ export const setSlashCommandItems = StateEffect.define<CommandPaletteItem[]>()
  * StateField that holds the current list of slash command items.
  * Updated externally via setSlashCommandItems effect.
  */
-const slashCommandItemsField = StateField.define<CommandPaletteItem[]>({
+export const slashCommandItemsField = StateField.define<CommandPaletteItem[]>({
   create: () => [],
   update(items, tr) {
     for (const effect of tr.effects) {
@@ -65,7 +64,7 @@ const sectionGithubAlerts: CompletionSection = {
 /**
  * The completion source. Reads items from the StateField.
  */
-function slashCommandSource(context: CompletionContext): CompletionResult | null {
+export function slashCommandSource(context: CompletionContext): CompletionResult | null {
   // Match "/" optionally followed by non-newline characters
   const match = context.matchBefore(/\/[^\n]*/)
   if (!match) return null
@@ -125,16 +124,11 @@ function slashCommandSource(context: CompletionContext): CompletionResult | null
 }
 
 /**
- * The complete set of extensions needed for slash command completion.
- * Include this in your editor's extension array.
- *
- * Use `setSlashCommandItems` effect to dynamically update the items.
+ * The state field needed for slash command completion.
+ * The autocompletion extension itself is registered in useEditorLifecycle
+ * together with the code-block language source so there is only one
+ * autocompletion instance active at a time.
  */
 export const slashCommandExtension = [
-  slashCommandItemsField,
-  autocompletion({
-    override: [slashCommandSource],
-    activateOnTyping: true,
-    icons: false
-  })
+  slashCommandItemsField
 ]

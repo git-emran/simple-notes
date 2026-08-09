@@ -10,7 +10,7 @@ import {
 import { lintGutter } from '@codemirror/lint'
 import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { drawSelection, EditorView, keymap } from '@codemirror/view'
-import { closeBrackets, completionKeymap } from '@codemirror/autocomplete'
+import { closeBrackets, completionKeymap, autocompletion } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
 import { autoCloseTags } from '@codemirror/lang-html'
@@ -43,7 +43,8 @@ import { githubAlertStyling } from '../githubAlertStyling'
 import { tabAsSpaces } from '../tabAsSpaces'
 import { tripleBacktickExtension } from '../tripleBacktick'
 import { statusBarExtension } from '../statusbar'
-import { slashCommandExtension, setSlashCommandItems } from '../slashCommandCompletion'
+import { slashCommandExtension, setSlashCommandItems, slashCommandSource } from '../slashCommandCompletion'
+import { codeBlockLanguageSource } from '../codeBlockLanguageCompletion'
 import { editorSaveStateByPathAtom, saveNoteAtom } from '@renderer/store'
 import { useSetAtom } from 'jotai'
 import type { SelectedNote, ViewRef, DivRef } from './types'
@@ -417,6 +418,12 @@ export function useEditorLifecycle({
         }
       }),
       ...slashCommandExtension,
+      autocompletion({
+        activateOnTyping: true,
+        icons: false
+      }),
+      EditorState.languageData.of(() => [{ autocomplete: codeBlockLanguageSource }]),
+      EditorState.languageData.of(() => [{ autocomplete: slashCommandSource }]),
       markdownTableEnhancement,
       checkboxExtension,
       createClipboardExperience({ importImages: handleClipboardImagePaste }),
