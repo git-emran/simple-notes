@@ -68,10 +68,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'local-file', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
-if (process.platform === 'darwin') {
-  // Extra hard-disable to avoid native menu churn warnings on keypress.
-  app.commandLine.appendSwitch('disable-spell-checking')
-}
+
 
 function createWindow(): void {
   /* Create the browser window. */
@@ -92,12 +89,11 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
       contextIsolation: true,
-      spellcheck: false
+      spellcheck: true
     }
   })
 
-  // Work around macOS log spam (triggered by native spellchecker menu churn on keypress).
-  mainWindow.webContents.session.setSpellCheckerEnabled(false)
+
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()

@@ -1,6 +1,12 @@
-import { FileNode } from '@shared/models'
 import { NOTE_STATUS_META } from '@renderer/constants/noteStatus'
 import { CUSTOM_TAG_STYLE } from '@renderer/constants/noteTag'
+import {
+  buildMoveDestination,
+  canMovePathToDirectory,
+  getParentPath,
+  joinPath
+} from '@renderer/utils/fileTreeDrag'
+import { FileNode } from '@shared/models'
 import {
   ComponentProps,
   memo,
@@ -16,15 +22,10 @@ import {
   VscChevronRight,
   VscFile,
   VscFolder,
-  VscFolderOpened
+  VscFolderOpened,
+  VscTasklist
 } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
-import {
-  buildMoveDestination,
-  canMovePathToDirectory,
-  getParentPath,
-  joinPath
-} from '@renderer/utils/fileTreeDrag'
 
 const INDENT_PX = 10
 const BASE_PADDING_LEFT_PX = 4
@@ -395,6 +396,73 @@ const FileTreeItemComponent = ({
       )
     }
 
+    if (inlineMeta && node.type === 'file') {
+      const hasAnyMeta = node.lastEditTime || showProgress || !!noteStatus || !!noteTag;
+      return (
+        <div className="flex flex-col justify-center w-full py-1.5 min-w-0 pr-2">
+          {/* Row 1: Title */}
+          <div className="font-medium text-[13px] text-slate-800 dark:text-slate-200 truncate">
+            {node.name}
+          </div>
+
+          {/* Row 1.5: First line preview */}
+          {node.firstLine && (
+            <div className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5 leading-tight">
+              {node.firstLine}
+            </div>
+          )}
+
+          {/* Row 2: Meta */}
+          {hasAnyMeta && (
+            <div className="flex items-center gap-2 overflow-hidden flex-nowrap mt-1 w-full">
+              {node.lastEditTime && !hideRelativeTime && (!!noteStatus || !!noteTag) && (
+                <span className="shrink-0 whitespace-nowrap text-purple-600 dark:text-purple-400 text-[10.5px]">
+                  {formatRelativeEditedTime(node.lastEditTime)}
+                </span>
+              )}
+
+              {showProgress && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <VscTasklist className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                  <div className="w-8 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shrink-0">
+                    <div className="h-full bg-slate-400 dark:bg-slate-400 transition-all duration-300" style={{ width: `${todoProgress}%` }} />
+                  </div>
+                  <span className="text-slate-500 dark:text-slate-400 text-[10px]">
+                    {todoCompleted} of {todoTotal}
+                  </span>
+                </div>
+              )}
+
+              {noteStatus && (
+                <span className={twMerge('shrink-0 inline-flex items-center whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[9px] font-semibold leading-[1.1]', NOTE_STATUS_META[noteStatus].className)}>
+                  {NOTE_STATUS_META[noteStatus].label}
+                </span>
+              )}
+
+              {noteTag && noteTag.split(',').map((tag) => {
+                const t = tag.trim();
+                if (!t) return null;
+                const isBug = t.toLowerCase() === 'bug';
+                return (
+                  <span
+                    key={t}
+                    className={twMerge(
+                      'shrink-0 inline-flex items-center px-1.5 py-[1px] rounded-full border text-[9px] leading-[1.1]',
+                      isBug
+                        ? 'border-red-200 text-red-600 bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:bg-red-950/20'
+                        : 'border-blue-200 text-blue-600 bg-blue-50 dark:border-cyan-900/50 dark:text-cyan-400 dark:bg-cyan-950/20'
+                    )}
+                  >
+                    {t}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     if (showProgress) {
       return (
         <div
@@ -437,9 +505,13 @@ const FileTreeItemComponent = ({
         className={twMerge(baseRowClasses, layoutClasses, interactiveClasses, className)}
         style={{
           paddingLeft: `${depth * INDENT_PX + BASE_PADDING_LEFT_PX}px`,
-          height: node.type === 'file' ? rowHeight - 2 : rowHeight,
-          minHeight: node.type === 'file' ? rowHeight - 2 : rowHeight,
-          marginTop: node.type === 'file' ? '2px' : undefined
+          ...(inlineMeta
+            ? { minHeight: rowHeight, marginTop: '1px', marginBottom: '1px' }
+            : {
+                height: node.type === 'file' ? rowHeight - 2 : rowHeight,
+                minHeight: node.type === 'file' ? rowHeight - 2 : rowHeight,
+                marginTop: node.type === 'file' ? '2px' : undefined
+              })
         }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}

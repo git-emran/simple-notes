@@ -12,6 +12,7 @@ export type FileNode = {
   lastEditTime?: number
   todoTotal?: number
   todoCompleted?: number
+  firstLine?: string
 
   isExpanded: boolean
 }

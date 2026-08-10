@@ -219,6 +219,42 @@ export const getFileTree: GetFileTree = async () => {
       )
     }
 
+    /* Read the first meaningful content line from each file for preview */
+    for (let i = 0; i < fileNodes.length; i += CHUNK_SIZE) {
+      const chunk = fileNodes.slice(i, i + CHUNK_SIZE)
+      await Promise.all(
+        chunk.map(async (node) => {
+          try {
+            const fd = await import('fs/promises').then((m) => m.open(node.path, 'r'))
+            try {
+              const buf = Buffer.alloc(512)
+              const { bytesRead } = await fd.read(buf, 0, 512, 0)
+              const head = buf.toString('utf-8', 0, bytesRead)
+              const lines = head.split('\n')
+
+              let inFrontmatter = false
+              for (const line of lines) {
+                const trimmed = line.trim()
+                if (trimmed === '---') {
+                  inFrontmatter = !inFrontmatter
+                  continue
+                }
+                if (inFrontmatter) continue
+                if (!trimmed) continue
+                /* Strip leading markdown heading markers */
+                node.firstLine = trimmed.replace(/^#{1,6}\s+/, '')
+                break
+              }
+            } finally {
+              await fd.close()
+            }
+          } catch {
+            return
+          }
+        })
+      )
+    }
+
     return nodes.sort((a, b) => {
       if (a.type === b.type) return a.name.localeCompare(b.name)
       return a.type === 'folder' ? -1 : 1

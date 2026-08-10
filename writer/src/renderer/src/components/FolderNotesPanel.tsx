@@ -203,12 +203,12 @@ export const FolderNotesPanel = ({
               const noteStatus = node.type === 'file' ? noteStatuses[node.path] : undefined
               const noteTag = node.type === 'file' ? noteTags[node.path] : undefined
               const todoTotal = node.todoTotal ?? 0
+              const hasMetaRow = todoTotal > 0 || !!noteStatus || !!noteTag
+              const hasFirstLine = !!node.firstLine
               
               const rowHeight = node.type === 'folder' 
-                ? 26 
-                : todoTotal > 0
-                  ? FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS
-                  : 26
+                ? 30 
+                : (hasMetaRow && hasFirstLine) ? 62 : (hasMetaRow || hasFirstLine) ? 46 : 32
 
               return (
                 <FileTreeItem
@@ -221,7 +221,7 @@ export const FolderNotesPanel = ({
                   isExpanded={isExpanded}
                   onToggleExpand={handleToggleExpand}
                   hideChevron={hideChevron}
-                  hideRelativeTime={true}
+                  hideRelativeTime={false}
                   inlineMeta={true}
                   showFolderIcons={false}
                   noteStatus={noteStatus}
