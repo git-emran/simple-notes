@@ -498,6 +498,22 @@ const getTodoStats = (content: string) => {
   }
 }
 
+const getFirstLine = (content: string): string | undefined => {
+  const lines = content.split('\n')
+  let inFrontmatter = false
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed === '---') {
+      inFrontmatter = !inFrontmatter
+      continue
+    }
+    if (inFrontmatter) continue
+    if (!trimmed) continue
+    return trimmed.replace(/^#{1,6}\s+/, '')
+  }
+  return undefined
+}
+
 const updateFileNodeInTree = (
   nodes: FileNode[],
   targetPath: string,
@@ -712,7 +728,7 @@ export const reindexTodoStatsAtom = atom(null, async (get, set) => {
       slice.map(async ({ path, mtimeMs }) => {
         try {
           const content = await window.context.readFileNew(path)
-          const stats = getTodoStats(content)
+          const stats = { ...getTodoStats(content), firstLine: getFirstLine(content) }
           return { path, mtimeMs, stats }
         } catch {
           return null
@@ -730,7 +746,8 @@ export const reindexTodoStatsAtom = atom(null, async (get, set) => {
 
       pendingPatchMap.set(r.path, {
         todoTotal: r.stats.todoTotal,
-        todoCompleted: r.stats.todoCompleted
+        todoCompleted: r.stats.todoCompleted,
+        firstLine: r.stats.firstLine
       })
     }
 
@@ -902,7 +919,8 @@ export const saveNoteAtom = atom(
         updateFileNodeInTree(currentTree, path, {
           lastEditTime: Date.now(),
           todoTotal: todoStats.todoTotal,
-          todoCompleted: todoStats.todoCompleted
+          todoCompleted: todoStats.todoCompleted,
+          firstLine: getFirstLine(newContent)
         })
       )
       set(todoStatsByPathAtom, nextCache)
