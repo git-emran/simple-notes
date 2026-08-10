@@ -18,8 +18,6 @@ import { FileTreeItem } from './FileTreeItem'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
 import { VscNewFile, VscEdit, VscTrash } from 'react-icons/vsc'
 
-const FILE_TREE_FILE_ROW_HEIGHT_WITH_PROGRESS = 56
-
 export const FolderNotesPanel = ({
   className,
   ...props

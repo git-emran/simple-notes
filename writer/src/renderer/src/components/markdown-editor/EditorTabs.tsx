@@ -16,7 +16,7 @@ export const EditorTabs = () => {
 
   return (
     <div 
-      className="flex overflow-x-auto no-scrollbar bg-[var(--obsidian-pane)] h-full"
+      className="flex h-full min-w-0 items-center gap-1 overflow-x-auto no-scrollbar bg-transparent px-1.5"
       style={{ 
           fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       } as CSSProperties}
@@ -68,10 +68,10 @@ export const EditorTabs = () => {
             }}
             style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
             className={twMerge(
-              'group relative flex items-center min-w-[130px] max-w-[230px] h-9 px-3 cursor-pointer select-none transition-all',
+              'group relative flex h-8 min-w-[128px] max-w-[220px] items-center rounded-md border border-transparent px-2.5 cursor-pointer select-none transition-[background-color,border-color,color,box-shadow]',
               isActive
-                ? 'bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)] z-10'
-                : 'bg-[var(--obsidian-pane)] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]'
+                ? 'bg-[var(--obsidian-workspace)] border-[var(--obsidian-border-soft)] text-[var(--obsidian-text)] shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-10'
+                : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
             )}
           >
             {dropIndicator?.tabId === tab.id && dropIndicator.position === 'before' && (
@@ -79,14 +79,6 @@ export const EditorTabs = () => {
             )}
             {dropIndicator?.tabId === tab.id && dropIndicator.position === 'after' && (
               <div className="absolute right-0 top-1 bottom-1 w-[2px] bg-[var(--obsidian-accent)] rounded" />
-            )}
-
-            {isActive && (
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--obsidian-accent)]" />
-            )}
-
-            {!isActive && (
-                <div className="absolute right-0 top-2 bottom-2 w-[1px] bg-[var(--obsidian-border-soft)]" />
             )}
 
             {tab.kind === 'terminal' ? (
@@ -111,11 +103,12 @@ export const EditorTabs = () => {
               }}
               style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
               className={twMerge(
-                'ml-2 p-1 rounded-md hover:bg-[var(--obsidian-hover)] transition-all invisible group-hover:visible',
-                isActive && 'visible text-[var(--obsidian-text-muted)]'
+                'ml-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded text-[var(--obsidian-text-muted)] pointer-events-none opacity-0 hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] transition-[background-color,color,opacity]',
+                isActive && 'text-[var(--obsidian-text-muted)]',
+                isActive ? 'pointer-events-auto opacity-100' : 'group-hover:pointer-events-auto group-hover:opacity-100'
               )}
             >
-              <VscClose className="w-3.5 h-3.5" />
+              <VscClose className="h-3.5 w-3.5" />
             </button>
           </div>
         )
@@ -123,13 +116,13 @@ export const EditorTabs = () => {
       <button
         onClick={() => createNewTab()}
         style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
-        className="h-9 w-10 flex items-center justify-center text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)] transition-colors"
         title="New tab"
       >
         <VscAdd className="w-4 h-4" />
       </button>
       {/* Fill remaining space */}
-      <div className="flex-1 bg-[var(--obsidian-pane)]" />
+      <div className="h-full flex-1" />
     </div>
   )
 }

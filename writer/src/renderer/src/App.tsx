@@ -398,33 +398,38 @@ const App = () => {
       <RootLayout className="obsidian-shell flex-col">
         {/* Persistent Title Bar */}
         <div 
-          className="h-9 flex shrink-0 bg-[var(--obsidian-pane)] border-b border-[var(--obsidian-border)] z-50"
+          className="h-10 flex shrink-0 bg-[var(--obsidian-titlebar)] border-b border-[var(--obsidian-border-soft)] z-50"
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties & { WebkitAppRegion: string }}
         >
-          {/* macOS traffic lights safe area */}
-          <div className="shrink-0 w-[82px]" />
-          {/* Spacer for Ribbon + Sidebar */}
+          {/* Spacer for Ribbon + Sidebar + Traffic Lights */}
           <div 
-            className="flex shrink-0 border-r border-[var(--obsidian-border)] items-center justify-end pr-2" 
-            style={{ width: 30 + (collapsed ? 0 : sidebarWidth) }}
+            className="flex shrink-0 items-center transition-[width] duration-200 ease-out" 
+            style={{ 
+              width: Math.max(112, 58 + (collapsed ? 0 : sidebarWidth) + (!collapsed && showFolderNotesInSeparatePanel && sidebarView === 'files' ? notesPanelWidth : 0)) 
+            }}
           >
-            <Tooltip content={collapsed ? 'Show sidebar' : 'Hide sidebar'} position="bottom">
-              <button
-                className="writr-titlebar-sidebar-toggle"
-                style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties & { WebkitAppRegion: string }}
-                onClick={() => setCollapsed((prev) => !prev)}
-                aria-label={collapsed ? 'Show sidebar' : 'Hide sidebar'}
-              >
-                {collapsed ? (
-                  <VscLayoutSidebarLeftOff className="w-4 h-4" />
-                ) : (
-                  <VscLayoutSidebarLeft className="w-4 h-4" />
-                )}
-              </button>
-            </Tooltip>
+            {/* macOS traffic lights safe area */}
+            <div className="shrink-0 w-[82px]" />
+            <div className="flex-1" />
+            <div className="flex h-full items-center pr-2">
+              <Tooltip content={collapsed ? 'Show sidebar' : 'Hide sidebar'} position="bottom">
+                <button
+                  className="writr-titlebar-sidebar-toggle"
+                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties & { WebkitAppRegion: string }}
+                  onClick={() => setCollapsed((prev) => !prev)}
+                  aria-label={collapsed ? 'Show sidebar' : 'Hide sidebar'}
+                >
+                  {collapsed ? (
+                    <VscLayoutSidebarLeftOff className="w-4 h-4" />
+                  ) : (
+                    <VscLayoutSidebarLeft className="w-4 h-4" />
+                  )}
+                </button>
+              </Tooltip>
+            </div>
           </div>
           {/* Tabs Area */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-w-0 overflow-hidden">
             <EditorTabs />
           </div>
         </div>
