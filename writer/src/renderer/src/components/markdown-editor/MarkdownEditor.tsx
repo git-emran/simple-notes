@@ -1,7 +1,7 @@
 'use client'
 import { createNoteAtom, fileTreeAtom, isDarkModeAtom, noteByPathAtomFamily, vaultRootDirAtom } from '@renderer/store'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { isValidElement, memo, useCallback, useRef, useState } from 'react'
+import { isValidElement, memo, useCallback, useEffect, useRef, useState } from 'react'
 import React from 'react'
 import { MdDragIndicator } from 'react-icons/md'
 import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
@@ -32,9 +32,25 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
 
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const nativeSpellcheckMenuUntilRef = useRef(0)
+  const contextMenuTimerRef = useRef<number | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   const previewReadableWidthClass = 'w-full min-w-0 max-w-[860px]'
+
+  useEffect(() => {
+    const unsubscribe = window.context.onNativeSpellcheckMenu(() => {
+      nativeSpellcheckMenuUntilRef.current = Date.now() + 500
+      setContextMenu(null)
+    })
+
+    return () => {
+      unsubscribe()
+      if (contextMenuTimerRef.current) {
+        window.clearTimeout(contextMenuTimerRef.current)
+      }
+    }
+  }, [])
 
   // ── Callout / react-node helpers (passed to MarkdownPreview) ──────────────
   const getReactNodeText = useCallback((node: unknown): string => {
@@ -209,7 +225,15 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
           onContextMenu={(e) => {
             if (splitView.isFullPreview) return
             e.preventDefault()
-            setContextMenu({ x: e.clientX, y: e.clientY })
+            const point = { x: e.clientX, y: e.clientY }
+            if (contextMenuTimerRef.current) {
+              window.clearTimeout(contextMenuTimerRef.current)
+            }
+            contextMenuTimerRef.current = window.setTimeout(() => {
+              contextMenuTimerRef.current = null
+              if (Date.now() < nativeSpellcheckMenuUntilRef.current) return
+              setContextMenu(point)
+            }, 160)
           }}
         >
           {/* Floating Format Toolbar */}

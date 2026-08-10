@@ -437,7 +437,9 @@ export function useEditorLifecycle({
       EditorView.contentAttributes.of({
         spellcheck: 'true',
         autocorrect: 'on',
-        autocapitalize: 'sentences'
+        autocapitalize: 'sentences',
+        writingsuggestions: 'true',
+        lang: window.context.locale
       })
     ],
     [handleClipboardImagePaste]

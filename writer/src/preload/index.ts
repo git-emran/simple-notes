@@ -117,5 +117,10 @@ contextBridge.exposeInMainWorld('context', {
     const listener = (_event: IpcRendererEvent, data: { event: string; payload?: unknown }) => callback(data)
     ipcRenderer.on('updater:status', listener)
     return () => ipcRenderer.removeListener('updater:status', listener)
+  },
+  onNativeSpellcheckMenu: (callback: () => void) => {
+    const listener = () => callback()
+    ipcRenderer.on('spellcheck:native-menu', listener)
+    return () => ipcRenderer.removeListener('spellcheck:native-menu', listener)
   }
 })

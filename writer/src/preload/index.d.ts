@@ -67,6 +67,7 @@ declare global {
       getAppVersion: () => Promise<string>
       dismissWelcome: (version: string) => Promise<boolean>
       onUpdaterStatus: (callback: (data: { event: string; payload?: unknown }) => void) => () => void
+      onNativeSpellcheckMenu: (callback: () => void) => () => void
     }
   }
 }

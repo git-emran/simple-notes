@@ -1,4 +1,12 @@
-import { app, shell, BrowserWindow, ipcMain, protocol, Menu, type MenuItemConstructorOptions } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  protocol,
+  Menu,
+  type MenuItemConstructorOptions
+} from 'electron'
 import { join } from 'path'
 import path from 'path'
 import { promises as fs } from 'fs'
@@ -68,7 +76,78 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'local-file', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
+const getPreferredSpellCheckerLanguages = (availableLanguages: readonly string[]) => {
+  const preferred = [
+    app.getLocale(),
+    ...app.getPreferredSystemLanguages(),
+    'en-US',
+    'en-GB'
+  ]
+  const result: string[] = []
 
+  for (const locale of preferred) {
+    const normalized = locale.replace('_', '-')
+    const exactMatch = availableLanguages.find(
+      (language) => language.toLowerCase() === normalized.toLowerCase()
+    )
+
+    if (exactMatch && !result.includes(exactMatch)) {
+      result.push(exactMatch)
+      continue
+    }
+
+    const languageCode = normalized.split('-')[0]?.toLowerCase()
+    const baseMatch = availableLanguages.find((language) =>
+      language.toLowerCase().startsWith(`${languageCode}-`)
+    )
+    if (baseMatch && !result.includes(baseMatch)) {
+      result.push(baseMatch)
+    }
+  }
+
+  return result.slice(0, 3)
+}
+
+const configureSpellChecker = (mainWindow: BrowserWindow) => {
+  const { webContents } = mainWindow
+  const { session } = webContents
+
+  session.setSpellCheckerEnabled(true)
+  const languages = getPreferredSpellCheckerLanguages(session.availableSpellCheckerLanguages)
+  if (languages.length > 0) {
+    session.setSpellCheckerLanguages(languages)
+  }
+
+  webContents.on('context-menu', (event, params) => {
+    if (!params.isEditable || !params.spellcheckEnabled || !params.misspelledWord) return
+
+    event.preventDefault()
+    webContents.send('spellcheck:native-menu')
+
+    const suggestions = params.dictionarySuggestions.slice(0, 8)
+    const template: MenuItemConstructorOptions[] = suggestions.length
+      ? suggestions.map((suggestion) => ({
+          label: suggestion,
+          click: () => webContents.replaceMisspelling(suggestion)
+        }))
+      : [{ label: 'No suggestions', enabled: false }]
+
+    template.push(
+      { type: 'separator' },
+      {
+        label: `Learn "${params.misspelledWord}"`,
+        click: () => session.addWordToSpellCheckerDictionary(params.misspelledWord)
+      },
+      { type: 'separator' },
+      { role: 'cut', enabled: params.editFlags.canCut },
+      { role: 'copy', enabled: params.editFlags.canCopy },
+      { role: 'paste', enabled: params.editFlags.canPaste },
+      { role: 'selectAll', enabled: params.editFlags.canSelectAll }
+    )
+
+    Menu.buildFromTemplate(template).popup({ window: mainWindow })
+  })
+}
 
 function createWindow(): void {
   /* Create the browser window. */
@@ -102,6 +181,8 @@ function createWindow(): void {
   mainWindow.webContents.once('destroyed', () => {
     disposeTerminalSessionsForSender(mainWindow.webContents)
   })
+
+  configureSpellChecker(mainWindow)
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     try {
@@ -155,6 +236,8 @@ const configureApplicationMenu = () => {
         { role: 'copy' },
         { role: 'paste' },
         { role: 'selectAll' },
+        { type: 'separator' },
+        { role: 'toggleSpellChecker' },
       ],
     },
   ]
