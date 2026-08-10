@@ -15,7 +15,6 @@ import {
     reindexTodoStatsAtom,
     selectedNodeAtom,
     showFolderIconsAtom,
-    showFolderNotesInSeparatePanelAtom,
     renamingPathAtom
 } from '@renderer/store'
 import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
@@ -66,7 +65,6 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
   const noteTags = useAtomValue(noteTagByPathAtom)
   const showFolderIcons = useAtomValue(showFolderIconsAtom)
-  const showFolderNotesInSeparatePanel = useAtomValue(showFolderNotesInSeparatePanelAtom)
   const createNote = useSetAtom(createNoteAtom)
   const createDirectory = useSetAtom(createDirectoryAtom)
   const deleteNode = useSetAtom(deleteNodeAtom)
@@ -403,9 +401,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
     const rows: Row[] = []
     const roots = fileTree ?? []
-    const initialNodes = showFolderNotesInSeparatePanel
-      ? roots.filter((node) => node.type === 'folder')
-      : roots
+    const initialNodes = roots.filter((node) => node.type === 'folder')
     const stack: Array<{ nodes: FileNode[]; index: number; depth: number }> = [
       { nodes: initialNodes, index: 0, depth: 0 }
     ]
@@ -433,26 +429,20 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
               : FILE_TREE_FOLDER_ROW_HEIGHT
       const rowHeight = baseRowHeight
 
-      // When the separate notes panel is active, files live there — the main tree
-      // only expands to reveal sub-folders. Hide the chevron for folders that have
-      // no child folders so users don't click an arrow that does nothing.
       const hideChevron =
-        showFolderNotesInSeparatePanel &&
         node.type === 'folder' &&
         !node.children?.some((c) => c.type === 'folder')
 
       rows.push({ node, depth: frame.depth, isExpanded, noteStatus, noteTag, rowHeight, hideChevron })
 
       if (node.type === 'folder' && isExpanded && node.children?.length) {
-        const children = showFolderNotesInSeparatePanel
-          ? node.children.filter((child) => child.type === 'folder')
-          : node.children
+        const children = node.children.filter((child) => child.type === 'folder')
         stack.push({ nodes: children, index: 0, depth: frame.depth + 1 })
       }
     }
 
     return rows
-  }, [expandedNodes, fileTree, noteStatuses, noteTags, showFolderNotesInSeparatePanel])
+  }, [expandedNodes, fileTree, noteStatuses, noteTags])
 
   /* Virtualization: windowed rendering for large vaults */
   const overscan = 8
@@ -532,15 +522,6 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
             <VscSearch className="w-4 h-4" />
           </button>
 
-          {!showFolderNotesInSeparatePanel && (
-            <button
-              onClick={() => handleCreateFile()}
-              className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
-              title="New File"
-            >
-              <VscNewFile className="w-4 h-4" />
-            </button>
-          )}
           <button
             onClick={() => handleCreateFolder()}
             className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"

@@ -18,10 +18,6 @@ export const relativeLineNumbersEnabledAtom = atomWithStorage<boolean>(
   true
 )
 export const lineWrappingEnabledAtom = atomWithStorage<boolean>('writr-line-wrapping', true)
-export const showFolderNotesInSeparatePanelAtom = atomWithStorage<boolean>(
-  'writr-show-folder-notes-in-separate-panel',
-  false
-)
 
 export const tabIndentUnitAtom = atomWithStorage<number>('writr-tab-indent-unit', 2)
 export const editorFontSizeAtom = atomWithStorage<number>('writr-editor-font-size', 13)
@@ -47,4 +43,3 @@ export const aiApiKeyAtom = atomWithStorage<string>('writr-openrouter-api-key', 
 
 /** User-chosen primary accent color (hex). Applied to --obsidian-accent via App.tsx. */
 export const accentColorAtom = atomWithStorage<string>('writr-accent-color', '#3b82f6')
-

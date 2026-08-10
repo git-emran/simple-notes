@@ -45,7 +45,6 @@ import {
   rememberLastStateAtom,
   isDarkModeAtom,
   accentColorAtom,
-  showFolderNotesInSeparatePanelAtom,
   type EditorFontOption
 } from '@renderer/store'
 import {
@@ -151,7 +150,6 @@ const App = () => {
   const editorFontSize = useAtomValue(editorFontSizeAtom)
   const accentColor = useAtomValue(accentColorAtom)
   const fileTree = useAtomValue(fileTreeAtom)
-  const showFolderNotesInSeparatePanel = useAtomValue(showFolderNotesInSeparatePanelAtom)
   const openTab = useSetAtom(openTabAtom)
   const [tabs, setTabs] = useAtom(tabsAtom)
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
@@ -397,7 +395,7 @@ const App = () => {
           <div 
             className="flex shrink-0 items-center transition-[width] duration-200 ease-out" 
             style={{ 
-              width: Math.max(112, 58 + (collapsed ? 0 : sidebarWidth) + (!collapsed && showFolderNotesInSeparatePanel && sidebarView === 'files' ? notesPanelWidth : 0)) 
+              width: Math.max(112, 58 + (collapsed ? 0 : sidebarWidth) + (!collapsed && sidebarView === 'files' ? notesPanelWidth : 0)) 
             }}
           >
             {/* macOS traffic lights safe area */}
@@ -522,7 +520,7 @@ const App = () => {
             )}
           </Sidebar>
 
-          {!collapsed && showFolderNotesInSeparatePanel && sidebarView === 'files' && (
+          {!collapsed && sidebarView === 'files' && (
             <FolderNotesPanel style={{ width: notesPanelWidth }} className="shrink-0" />
           )}
 

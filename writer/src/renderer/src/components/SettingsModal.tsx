@@ -6,7 +6,6 @@ import {
   lineWrappingEnabledAtom,
   relativeLineNumbersEnabledAtom,
   showFolderIconsAtom,
-  showFolderNotesInSeparatePanelAtom,
   showToolbarAtom,
   tabIndentUnitAtom,
   themeModeAtom,
@@ -43,7 +42,6 @@ export const SettingsPanel = () => {
   const [themeMode, setThemeMode] = useAtom(themeModeAtom)
   const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
   const [showFolderIcons, setShowFolderIcons] = useAtom(showFolderIconsAtom)
-  const [showFolderNotesInSeparatePanel, setShowFolderNotesInSeparatePanel] = useAtom(showFolderNotesInSeparatePanelAtom)
   const [vimModeEnabled, setVimModeEnabled] = useAtom(vimModeEnabledAtom)
   const [rememberLastState, setRememberLastState] = useAtom(rememberLastStateAtom)
   const [aiApiKey, setAiApiKey] = useAtom(aiApiKeyAtom)
@@ -165,18 +163,6 @@ export const SettingsPanel = () => {
                     type="checkbox"
                     checked={showFolderIcons}
                     onChange={(e) => setShowFolderIcons(e.target.checked)}
-                  />
-                </label>
-
-                <label className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className={labelClass}>Separate folder notes panel</div>
-                    <div className={helpClass}>Display notes in a separate panel when clicking a folder.</div>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={showFolderNotesInSeparatePanel}
-                    onChange={(e) => setShowFolderNotesInSeparatePanel(e.target.checked)}
                   />
                 </label>
 
