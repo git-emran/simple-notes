@@ -173,5 +173,19 @@ export const codeLanguages = [
       return Promise.resolve(new LanguageSupport(shellLang))
     }
   }),
+  LanguageDescription.of({
+    name: 'markdown',
+    alias: ['md', 'markdown'],
+    extensions: ['md', 'markdown', 'mkd'],
+    async load() {
+      return getLanguageSupport('markdown', () =>
+        import('@codemirror/lang-markdown').then((m) =>
+          import('@lezer/markdown').then((lezerMd) =>
+            m.markdown({ extensions: [lezerMd.GFM] })
+          )
+        )
+      )
+    }
+  }),
   ...languages
 ]

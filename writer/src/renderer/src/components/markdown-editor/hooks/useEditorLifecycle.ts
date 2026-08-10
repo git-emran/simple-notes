@@ -23,8 +23,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { relativeLineNumbers } from '../../code-mirror-ui/relativeLineNumbers'
 import { checkboxExtension } from '../checkboxExtension'
 import { createClipboardExperience } from '../clipboardExperience'
-import { codeBlockBackground } from '../codeBlockBackground'
-import { codeBlockCopy } from '../codeBlockCopy'
+import { codeBlockEnhancements } from '../codeBlockEnhancements'
 import * as commands from '../editorCommands'
 import {
   getEditorTheme,
@@ -428,8 +427,7 @@ export function useEditorLifecycle({
       checkboxExtension,
       createClipboardExperience({ importImages: handleClipboardImagePaste }),
       statusBarExtension,
-      codeBlockCopy,
-      codeBlockBackground,
+      codeBlockEnhancements,
       quoteLineStyling,
       githubAlertStyling,
       tripleBacktickExtension,
