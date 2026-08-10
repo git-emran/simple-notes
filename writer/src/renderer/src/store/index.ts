@@ -81,7 +81,7 @@ export const selectedNodeAtom = atom<FileNode | null>(null)
 /* Tabs State */
 export type EditorTab = {
   id: string
-  kind: 'empty' | 'file' | 'kanban' | 'terminal' | 'spreadsheet'
+  kind: 'empty' | 'file' | 'kanban' | 'terminal' | 'spreadsheet' | 'settings'
   path: string | null
   name: string
   terminalSessionId?: string | null
@@ -382,6 +382,25 @@ export const createSpreadsheetTabAtom = atom(null, (get, set) => {
   set(activeTabIdAtom, nextTab.id)
 })
 
+export const createSettingsTabAtom = atom(null, (get, set) => {
+  const tabs = get(tabsAtom)
+  const existing = tabs.find((tab) => tab.kind === 'settings')
+  if (existing) {
+    set(activeTabIdAtom, existing.id)
+    return
+  }
+
+  const nextTab: EditorTab = {
+    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    kind: 'settings',
+    path: null,
+    name: 'Settings'
+  }
+
+  set(tabsAtom, [...tabs, nextTab])
+  set(activeTabIdAtom, nextTab.id)
+})
+
 export const setTerminalSessionIdAtom = atom(
   null,
   (get, set, payload: { tabId: string; sessionId: string | null }) => {
@@ -416,7 +435,8 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   const activeIsSpecial =
     activeTab?.kind === 'kanban' ||
     activeTab?.kind === 'terminal' ||
-    activeTab?.kind === 'spreadsheet'
+    activeTab?.kind === 'spreadsheet' ||
+    activeTab?.kind === 'settings'
 
   if (activeIsSpecial) {
     const reusableTab = tabs.find((t) => t.kind === 'file' || t.kind === 'empty')

@@ -349,6 +349,126 @@ header {
   background: var(--obsidian-workspace);
 }
 
+.mermaid-container {
+  overflow: hidden;
+}
+
+.mermaid-viewport {
+  min-height: 180px;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  user-select: none;
+  outline: none;
+}
+
+.mermaid-viewport:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--obsidian-accent);
+}
+
+.mermaid-viewport:active {
+  cursor: grabbing;
+}
+
+.mermaid-viewport.is-fullscreen {
+  min-height: 0;
+  padding: 48px;
+}
+
+.mermaid-transform-layer {
+  transform-origin: center center;
+  transition: transform 90ms ease-out;
+  will-change: transform;
+  flex-shrink: 0;
+}
+
+.mermaid-transform-layer svg {
+  display: block;
+  max-width: min(100%, 900px);
+  height: auto;
+}
+
+.mermaid-toolbar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--obsidian-border-soft);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--obsidian-pane) 88%, transparent);
+  padding: 2px;
+  color: var(--obsidian-text-muted);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  transition:
+    opacity 120ms ease,
+    color 120ms ease;
+}
+
+.mermaid-container:hover .mermaid-toolbar,
+.mermaid-container:focus-within .mermaid-toolbar,
+.mermaid-fullscreen .mermaid-toolbar {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mermaid-toolbar button,
+.mermaid-fullscreen-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--obsidian-text-muted);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.mermaid-toolbar button:hover,
+.mermaid-fullscreen-close:hover {
+  color: var(--obsidian-text);
+  background: var(--obsidian-hover-soft);
+}
+
+.mermaid-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  background: var(--obsidian-base);
+  outline: none;
+}
+
+.mermaid-fullscreen-topbar {
+  height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--obsidian-border-soft);
+  background: var(--obsidian-pane);
+}
+
+.mermaid-fullscreen .mermaid-toolbar {
+  position: static;
+  box-shadow: none;
+  background: transparent;
+}
+
 .obsidian-tree-drop {
   background: var(--obsidian-accent-dim);
 }
@@ -591,6 +711,35 @@ header {
 }
 
 @media print {
+  .no-print,
+  .mermaid-toolbar,
+  .mermaid-fullscreen {
+    display: none !important;
+  }
+
+  .mermaid-container {
+    overflow: visible !important;
+  }
+
+  .mermaid-viewport {
+    min-height: 0;
+    overflow: visible !important;
+    padding: 0;
+    cursor: default;
+    pointer-events: none;
+    user-select: text;
+  }
+
+  .mermaid-transform-layer {
+    transform: none !important;
+    transition: none !important;
+    will-change: auto;
+  }
+
+  .mermaid-transform-layer svg {
+    max-width: 100% !important;
+  }
+
   @page {
     margin: 0;
     size: landscape;

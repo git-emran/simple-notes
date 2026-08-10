@@ -11,7 +11,7 @@ import {
 } from './components'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { CanvasEditor } from './components/canvas/CanvasEditor'
-import { SettingsModal } from './components/SettingsModal'
+import { SettingsPanel } from './components/SettingsModal'
 import { KanbanBoard } from './components/kanban/KanbanBoard'
 import { KanbanReminderHost } from './components/kanban/KanbanReminderHost'
 import { SpreadsheetPanel } from './components/spreadsheet/SpreadsheetPanel'
@@ -32,6 +32,7 @@ import {
   createCanvasAtom,
   createTerminalTabAtom,
   createSpreadsheetTabAtom,
+  createSettingsTabAtom,
   selectedNodeAtom,
   createKanbanTabAtom,
   editorFontAtom,
@@ -124,14 +125,11 @@ const App = () => {
   const previousBodyCursor = useRef('')
   const previousBodyUserSelect = useRef('')
   const sidebarWidthRef = useRef(MIN_SIDEBAR_WIDTH)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const isSettingsOpenRef = useRef(false)
   const sidebarViewRef = useRef<'files' | 'search'>('files')
 
   // Keep a ref in sync with state so handlers always read the latest value
   // without needing to be re-registered (which breaks mid-interaction)
   useEffect(() => { sidebarWidthRef.current = sidebarWidth }, [sidebarWidth])
-  useEffect(() => { isSettingsOpenRef.current = isSettingsOpen }, [isSettingsOpen])
   useEffect(() => { sidebarViewRef.current = sidebarView }, [sidebarView])
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
@@ -144,6 +142,7 @@ const App = () => {
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
   const createTerminalTab = useSetAtom(createTerminalTabAtom)
   const createSpreadsheetTab = useSetAtom(createSpreadsheetTabAtom)
+  const createSettingsTab = useSetAtom(createSettingsTabAtom)
   const selectedNode = useAtomValue(selectedNodeAtom)
   const setSelectedNode = useSetAtom(selectedNodeAtom)
   const activeTab = useAtomValue(activeTabAtom)
@@ -309,14 +308,7 @@ const App = () => {
       /* Cmd + , */
       if ((e.metaKey || e.ctrlKey) && (e.key === ',' || e.code === 'Comma')) {
         e.preventDefault()
-        setIsSettingsOpen(true)
-        return
-      }
-
-      /* Esc closes settings */
-      if (e.key === 'Escape' && isSettingsOpenRef.current) {
-        e.preventDefault()
-        setIsSettingsOpen(false)
+        createSettingsTab()
         return
       }
 
@@ -391,7 +383,7 @@ const App = () => {
         unlockResizeInteraction()
       }
     }
-  }, [closeActiveTab, restoreClosedTab, switchTabByIndex, switchTabNext, switchTabPrev])
+  }, [closeActiveTab, createSettingsTab, restoreClosedTab, switchTabByIndex, switchTabNext, switchTabPrev])
 
   return (
     <ErrorBoundary>
@@ -499,8 +491,8 @@ const App = () => {
             <div className="flex-1" />
             <Tooltip content="Settings" position="right" icon={<VscSettingsGear className="w-3.5 h-3.5" />}>
               <button
-                className="obsidian-ribbon-btn"
-                onClick={() => setIsSettingsOpen(true)}
+                className={`obsidian-ribbon-btn ${activeTab?.kind === 'settings' ? 'is-active' : ''}`}
+                onClick={() => createSettingsTab()}
               >
                 <VscSettingsGear />
               </button>
@@ -628,8 +620,24 @@ const App = () => {
                   </div>
                 )
               })()}
+
+              {/* Settings — mounted once the tab has been opened */}
+              {(() => {
+                const settingsTab = tabs.find((t) => t.kind === 'settings')
+                if (!settingsTab) return null
+                return (
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      display: activeTab?.kind === 'settings' ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <SettingsPanel />
+                  </div>
+                )
+              })()}
             </div>
-            {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
             <KanbanReminderHost />
             <UpdateManager />
           </Content>

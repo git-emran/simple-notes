@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import { activeTabIdAtom, closeTabAtom, createNewTabAtom, reorderTabsAtom, setActiveTabAtom, tabsAtom } from '@renderer/store'
-import { VscAdd, VscClose, VscProject, VscTable, VscTerminal } from 'react-icons/vsc'
+import { VscAdd, VscClose, VscProject, VscSettingsGear, VscTable, VscTerminal } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { type CSSProperties, useRef, useState } from 'react'
 
@@ -87,6 +87,8 @@ export const EditorTabs = () => {
               <VscProject className="mr-2 h-3.5 w-3.5 shrink-0 opacity-80" />
             ) : tab.kind === 'spreadsheet' ? (
               <VscTable className="mr-2 h-3.5 w-3.5 shrink-0 opacity-80" />
+            ) : tab.kind === 'settings' ? (
+              <VscSettingsGear className="mr-2 h-3.5 w-3.5 shrink-0 opacity-80" />
             ) : null}
 
             <span className={twMerge(

@@ -39,7 +39,7 @@ const cardClass = 'rounded-lg border border-[var(--obsidian-border)] bg-[var(--o
 
 const fontOptions: EditorFontOption[] = ['SF Pro', 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Martian Mono', 'Courier']
 
-export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
+export const SettingsPanel = () => {
   const [themeMode, setThemeMode] = useAtom(themeModeAtom)
   const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
   const [showFolderIcons, setShowFolderIcons] = useAtom(showFolderIconsAtom)
@@ -70,20 +70,20 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   ]
 
   return (
-    <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4">
-      <div className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-xl">
-        <div className="flex items-center justify-between border-b border-[var(--obsidian-border-soft)] px-4 py-3">
-          <h3 className="text-sm font-semibold text-[var(--obsidian-text)]">Settings</h3>
-          <button
-            type="button"
-            className="rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]"
-            onClick={onClose}
-          >
-            Close
-          </button>
+    <div className="flex h-full flex-col bg-[var(--obsidian-base)]">
+      <div className="shrink-0 border-b border-[var(--obsidian-border-soft)] bg-[var(--obsidian-pane)] px-6 py-4">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
+          <div>
+            <h1 className="text-base font-semibold text-[var(--obsidian-text)]">Settings</h1>
+            <p className="mt-1 text-xs text-[var(--obsidian-text-muted)]">
+              Preferences are saved locally and apply immediately.
+            </p>
+          </div>
         </div>
+      </div>
 
-        <div className="max-h-[calc(85vh-49px)] space-y-6 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="mx-auto w-full max-w-4xl space-y-6">
           <div className="space-y-2">
             <div className={sectionTitleClass}>EDITING</div>
             <div className={cardClass}>
@@ -358,8 +358,30 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
               </label>
             </div>
           </div>
-        </div>
       </div>
+    </div>
     </div>
   )
 }
+
+export const SettingsModal = ({ onClose }: { onClose: () => void }) => (
+  <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4">
+    <div className="h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-xl">
+      <div className="flex h-full flex-col">
+        <div className="flex items-center justify-between border-b border-[var(--obsidian-border-soft)] px-4 py-3">
+          <h3 className="text-sm font-semibold text-[var(--obsidian-text)]">Settings</h3>
+          <button
+            type="button"
+            className="rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </div>
+        <div className="min-h-0 flex-1">
+          <SettingsPanel />
+        </div>
+      </div>
+    </div>
+  </div>
+)

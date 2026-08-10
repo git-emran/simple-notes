@@ -434,7 +434,11 @@ export function useEditorLifecycle({
       markdownMarkupColors,
       markdownLivePreview,
       ...headingFoldExtension,
-      EditorView.contentAttributes.of({ spellcheck: 'true' })
+      EditorView.contentAttributes.of({
+        spellcheck: 'true',
+        autocorrect: 'on',
+        autocapitalize: 'sentences'
+      })
     ],
     [handleClipboardImagePaste]
   )
