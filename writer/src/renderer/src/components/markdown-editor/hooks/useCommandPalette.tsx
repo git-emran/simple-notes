@@ -4,13 +4,30 @@ import {
   createSpreadsheetTabAtom,
   createTerminalTabAtom,
   showToolbarAtom,
+  fileTreeAtom,
+  openTabAtom
 } from '@renderer/store'
-import { useAtom, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { VscProject, VscSymbolRuler, VscTable, VscTerminal } from 'react-icons/vsc'
+import { VscProject, VscSymbolRuler, VscTable, VscTerminal, VscFile } from 'react-icons/vsc'
 import { type CommandPaletteItem } from '../CommandPaletteModal'
 import { EditorMenuEntry, getEditorMenuEntries } from '../editorMenuLogic'
 import type { SelectedNote, ViewRef } from './types'
+import { FileNode } from '@shared/models'
+
+const flattenFiles = (nodes: FileNode[]): FileNode[] => {
+  const output: FileNode[] = []
+  for (const node of nodes) {
+    if (node.type === 'file') {
+      output.push(node)
+      continue
+    }
+    if (node.children?.length) {
+      output.push(...flattenFiles(node.children))
+    }
+  }
+  return output
+}
 
 interface UseCommandPaletteParams {
   viewRef: ViewRef
@@ -34,6 +51,8 @@ export function useCommandPalette({
   const createTerminalTab = useSetAtom(createTerminalTabAtom)
   const createSpreadsheetTab = useSetAtom(createSpreadsheetTabAtom)
   const createCanvas = useSetAtom(createCanvasAtom)
+  const fileTree = useAtomValue(fileTreeAtom)
+  const openTab = useSetAtom(openTabAtom)
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
 
@@ -135,9 +154,20 @@ export function useCommandPalette({
     [editorMenuEntries, viewRef]
   )
 
+  const searchNoteItems: CommandPaletteItem[] = useMemo(() => {
+    const files = flattenFiles(fileTree ?? [])
+    return files.map((file) => ({
+      id: `open-${file.path}`,
+      label: file.name,
+      icon: <VscFile />,
+      keywords: ['file', 'note', 'open', file.path],
+      run: () => openTab(file)
+    }))
+  }, [fileTree, openTab])
+
   const commandPaletteItems: CommandPaletteItem[] = useMemo(
-    () => [...panelCommandItems, ...editorCommandItems],
-    [editorCommandItems, panelCommandItems]
+    () => [...panelCommandItems, ...searchNoteItems],
+    [panelCommandItems, searchNoteItems]
   )
 
   return {
@@ -146,5 +176,6 @@ export function useCommandPalette({
     setIsCommandPaletteOpen,
     commandPaletteItems,
     editorMenuEntries,
+    editorCommandItems,
   }
 }

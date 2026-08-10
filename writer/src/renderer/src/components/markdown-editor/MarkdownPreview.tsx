@@ -91,7 +91,6 @@ const PreviewCodeBlock = ({ language, codeContent, isDarkMode }: PreviewCodeBloc
       </div>
       {/* Syntax-highlighted code */}
       <SyntaxHighlighter
-        PreTag="div"
         language={language}
         style={isDarkMode ? vs2015 : vs}
         customStyle={{
@@ -107,6 +106,7 @@ const PreviewCodeBlock = ({ language, codeContent, isDarkMode }: PreviewCodeBloc
           ...(isDarkMode ? {} : { background: 'rgba(0,0,0,0.02)' }),
         }}
         codeTagProps={{
+          className: 'before:content-none after:content-none',
           style: {
             fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
             whiteSpace: 'pre-wrap',

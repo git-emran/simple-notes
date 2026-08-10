@@ -131,7 +131,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     tabIndentUnit: editorSettings.tabIndentUnit,
     rootDir,
     reconfigureLanguage,
-    commandPaletteItems: palette.commandPaletteItems
+    commandPaletteItems: palette.editorCommandItems
   })
 
   const splitView = useSplitViewSync({
