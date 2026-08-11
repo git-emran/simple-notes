@@ -172,7 +172,7 @@ export const getEditorTheme = (isDark: boolean) =>
       backgroundColor: 'var(--obsidian-pane)',
       border: '1px solid var(--obsidian-border)',
       borderRadius: '8px',
-      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)'
+      boxShadow: isDark ? '0 4px 14px rgba(0, 0, 0, 0.4)' : '0 8px 24px rgba(15, 23, 42, 0.14)'
     },
     '.cm-tooltip.cm-tooltip-autocomplete > ul': {
       fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -185,9 +185,10 @@ export const getEditorTheme = (isDark: boolean) =>
     '.cm-tooltip-autocomplete ul li': {
       padding: '8px 12px',
       color: 'var(--obsidian-text)',
-      display: 'flex',
+      display: 'grid',
+      gridTemplateColumns: 'minmax(0, 1fr) 86px minmax(0, auto)',
       alignItems: 'center',
-      gap: '12px',
+      columnGap: '10px',
       borderRadius: '6px',
       marginBottom: '2px', // space between items
       cursor: 'pointer'
@@ -197,17 +198,64 @@ export const getEditorTheme = (isDark: boolean) =>
       color: 'var(--obsidian-text)'
     },
     '.cm-completionLabel': {
-      flex: '1', // Take up remaining space so detail is pushed right
+      minWidth: '0',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
       fontWeight: '500'
     },
     '.cm-completionDetail': {
       fontFamily: editorFontFamilyVar,
-      color: '#A8D08D', // Greenish color matching screenshot
+      color: isDark ? '#A8D08D' : '#4d7c0f',
       fontSize: '13px',
       fontStyle: 'normal',
       opacity: '1',
-      marginLeft: 'auto', // Push to right
-      paddingLeft: '16px'
+      justifySelf: 'end',
+      minWidth: '0',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap'
+    },
+    '.cm-completionKind': {
+      justifySelf: 'end',
+      alignSelf: 'center',
+      boxSizing: 'border-box',
+      maxWidth: '86px',
+      border: '1px solid var(--obsidian-border)',
+      borderRadius: '4px',
+      padding: '1px 6px',
+      fontSize: '11px',
+      fontWeight: '600',
+      lineHeight: '1.35',
+      textAlign: 'center',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      color: 'var(--obsidian-text-muted)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.045)' : 'rgba(0, 0, 0, 0.035)'
+    },
+    '.cm-completionKind-empty': {
+      visibility: 'hidden'
+    },
+    '.cm-completionKind-function, .cm-completionKind-method': {
+      color: isDark ? '#93c5fd' : '#1d4ed8',
+      borderColor: isDark ? 'rgba(147, 197, 253, 0.35)' : 'rgba(29, 78, 216, 0.24)',
+      backgroundColor: isDark ? 'rgba(96, 165, 250, 0.10)' : 'rgba(29, 78, 216, 0.07)'
+    },
+    '.cm-completionKind-class, .cm-completionKind-interface, .cm-completionKind-type': {
+      color: isDark ? '#d8b4fe' : '#7e22ce',
+      borderColor: isDark ? 'rgba(216, 180, 254, 0.35)' : 'rgba(126, 34, 206, 0.24)',
+      backgroundColor: isDark ? 'rgba(192, 132, 252, 0.10)' : 'rgba(126, 34, 206, 0.07)'
+    },
+    '.cm-completionKind-variable, .cm-completionKind-constant, .cm-completionKind-property': {
+      color: isDark ? '#6ee7b7' : '#047857',
+      borderColor: isDark ? 'rgba(110, 231, 183, 0.35)' : 'rgba(4, 120, 87, 0.24)',
+      backgroundColor: isDark ? 'rgba(52, 211, 153, 0.10)' : 'rgba(4, 120, 87, 0.07)'
+    },
+    '.cm-completionKind-keyword': {
+      color: isDark ? '#fde68a' : '#92400e',
+      borderColor: isDark ? 'rgba(253, 230, 138, 0.35)' : 'rgba(146, 64, 14, 0.24)',
+      backgroundColor: isDark ? 'rgba(251, 191, 36, 0.10)' : 'rgba(146, 64, 14, 0.07)'
     },
     '.cm-completionIcon': {
       display: 'none !important'

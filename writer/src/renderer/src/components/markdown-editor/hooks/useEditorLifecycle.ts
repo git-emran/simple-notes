@@ -10,7 +10,7 @@ import {
 import { lintGutter } from '@codemirror/lint'
 import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { drawSelection, EditorView, keymap } from '@codemirror/view'
-import { closeBrackets, completionKeymap, autocompletion } from '@codemirror/autocomplete'
+import { closeBrackets, completionKeymap, autocompletion, type Completion } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
 import { autoCloseTags } from '@codemirror/lang-html'
@@ -72,6 +72,37 @@ interface UseEditorLifecycleParams {
   rootDir: string
   reconfigureLanguage: (view: EditorView, support: LanguageSupport | []) => void
   commandPaletteItems: import('../CommandPaletteModal').CommandPaletteItem[]
+}
+
+const COMPLETION_KIND_LABELS: Record<string, string> = {
+  class: 'Class',
+  constant: 'Constant',
+  definition: 'Definition',
+  enum: 'Enum',
+  function: 'Function',
+  interface: 'Interface',
+  keyword: 'Keyword',
+  method: 'Method',
+  namespace: 'Namespace',
+  property: 'Property',
+  text: 'Text',
+  type: 'Type',
+  variable: 'Variable'
+}
+
+function renderCompletionKind(completion: Completion): Node | null {
+  const primaryType = completion.type?.split(/\s+/).find(Boolean)
+
+  const el = document.createElement('span')
+  if (!primaryType) {
+    el.className = 'cm-completionKind cm-completionKind-empty'
+    return el
+  }
+
+  const safeTypeClass = primaryType.replace(/[^a-zA-Z0-9_-]/g, '-')
+  el.className = `cm-completionKind cm-completionKind-${safeTypeClass}`
+  el.textContent = COMPLETION_KIND_LABELS[primaryType] ?? primaryType
+  return el
 }
 
 export function useEditorLifecycle({
@@ -419,7 +450,13 @@ export function useEditorLifecycle({
       ...slashCommandExtension,
       autocompletion({
         activateOnTyping: true,
-        icons: false
+        icons: false,
+        addToOptions: [
+          {
+            render: renderCompletionKind,
+            position: 75
+          }
+        ]
       }),
       EditorState.languageData.of(() => [{ autocomplete: codeBlockLanguageSource }]),
       EditorState.languageData.of(() => [{ autocomplete: slashCommandSource }]),
