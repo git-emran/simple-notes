@@ -149,6 +149,16 @@ function buildLanguageOptions(): Completion[] {
 
 const languageOptions = buildLanguageOptions()
 
+function hasClosingFenceBelow(context: CompletionContext, lineNumber: number): boolean {
+  const doc = context.state.doc
+
+  for (let i = lineNumber + 1; i <= doc.lines; i++) {
+    if (doc.line(i).text.trimStart().startsWith('```')) return true
+  }
+
+  return false
+}
+
 /**
  * CodeMirror completion source for code block language suggestions.
  *
@@ -157,17 +167,23 @@ const languageOptions = buildLanguageOptions()
  * language identifiers styled like the slash command menu.
  */
 export function codeBlockLanguageSource(context: CompletionContext): CompletionResult | null {
-  // Match ``` optionally followed by word characters
+  // Match ``` optionally followed by language identifier characters.
   const match = context.matchBefore(/```[a-zA-Z0-9_+\-.]*/)
   if (!match) return null
 
   // Only trigger when ``` is at the start of the line (optionally preceded by spaces)
-  const lineStart = context.state.doc.lineAt(match.from).from
+  const line = context.state.doc.lineAt(match.from)
+  const lineStart = line.from
   const beforeBackticks = context.state.sliceDoc(lineStart, match.from).trim()
   if (beforeBackticks !== '') return null
 
   const typed = context.state.sliceDoc(match.from, match.to) // e.g. "```py"
   const query = typed.slice(3).toLowerCase() // text after the three backticks
+  const existingBlock = hasClosingFenceBelow(context, line.number)
+  const infoMatch = line.text.match(/^(\s*`{3,})(\s*)([^\s`]*)?(.*)$/)
+  const languageFrom = lineStart + (infoMatch?.[1].length ?? 3) + (infoMatch?.[2].length ?? 0)
+  const currentLanguage = infoMatch?.[3] ?? ''
+  const languageTo = languageFrom + currentLanguage.length
 
   const filtered = query
     ? languageOptions.filter(
@@ -187,18 +203,25 @@ export function codeBlockLanguageSource(context: CompletionContext): CompletionR
     options: filtered.map((opt) => ({
       ...opt,
       apply: (view, _completion, _from, _to) => {
-        // `from` is the position right after ``` (i.e., match.from + 3)
-        // Replace the whole line from the opening ``` through any typed chars
-        // then insert ```{lang}\n\n``` and place cursor on the blank inner line
-        const lineStart = view.state.doc.lineAt(match.from).from
-        const lineEnd = view.state.doc.lineAt(match.from).to
+        if (existingBlock) {
+          const cursorPos = languageFrom + opt.label.length
 
-        // Build the expanded fence
+          view.dispatch({
+            changes: { from: languageFrom, to: languageTo, insert: opt.label },
+            selection: { anchor: cursorPos }
+          })
+          view.focus()
+          return
+        }
+
+        const currentLine = view.state.doc.lineAt(match.from)
+        const currentLineStart = currentLine.from
+        const currentLineEnd = currentLine.to
         const insert = `\`\`\`${opt.label}\n\n\`\`\``
-        const cursorPos = lineStart + 3 + opt.label.length + 1 // after "```lang\n"
+        const cursorPos = currentLineStart + 3 + opt.label.length + 1 // after "```lang\n"
 
         view.dispatch({
-          changes: { from: lineStart, to: lineEnd, insert },
+          changes: { from: currentLineStart, to: currentLineEnd, insert },
           selection: { anchor: cursorPos }
         })
         view.focus()

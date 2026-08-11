@@ -25,6 +25,7 @@ import {
   DecorationSet,
   WidgetType,
 } from '@codemirror/view'
+import { startCompletion } from '@codemirror/autocomplete'
 import { syntaxTree } from '@codemirror/language'
 import { Range } from '@codemirror/state'
 
@@ -64,16 +65,24 @@ class CodeBlockHeaderWidget extends WidgetType {
   constructor(
     readonly lang: string,
     readonly meta: string,
-    readonly codeContent: string
+    readonly codeContent: string,
+    readonly langFrom: number,
+    readonly langTo: number
   ) {
     super()
   }
 
   eq(other: CodeBlockHeaderWidget) {
-    return this.lang === other.lang && this.meta === other.meta && this.codeContent === other.codeContent
+    return (
+      this.lang === other.lang &&
+      this.meta === other.meta &&
+      this.codeContent === other.codeContent &&
+      this.langFrom === other.langFrom &&
+      this.langTo === other.langTo
+    )
   }
 
-  toDOM() {
+  toDOM(view: EditorView) {
     const wrap = document.createElement('span')
     wrap.className = 'cm-codeblock-header'
 
@@ -84,9 +93,28 @@ class CodeBlockHeaderWidget extends WidgetType {
     icon.className = 'cm-codeblock-icon'
     icon.innerHTML = ICONS[this.lang.toLowerCase()] ?? FALLBACK_ICON
 
-    const langLabel = document.createElement('span')
+    const langLabel = document.createElement('button')
+    langLabel.type = 'button'
     langLabel.className = 'cm-codeblock-lang'
+    langLabel.title = 'Edit code block language'
     langLabel.textContent = this.lang || 'text'
+    langLabel.addEventListener('mousedown', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+    })
+    langLabel.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      view.dispatch({
+        selection: {
+          anchor: this.langFrom,
+          head: this.langTo
+        },
+        scrollIntoView: true
+      })
+      view.focus()
+      startCompletion(view)
+    })
 
     left.appendChild(icon)
     left.appendChild(langLabel)
@@ -128,6 +156,8 @@ interface FenceInfo {
   startLine: number
   endLine: number
   lang: string
+  langFrom: number
+  langTo: number
   meta: string
   code: string
 }
@@ -141,9 +171,13 @@ function parseFence(view: EditorView, nodeFrom: number, nodeTo: number): FenceIn
     if (startLine < 1 || startLine > totalLines || endLine < startLine) return null
 
     const openLine = doc.line(startLine)
-    const m = openLine.text.match(/^(`{3,})\s*([\w.-]*)?\s*(.*)$/)
+    const m = openLine.text.match(/^(\s*`{3,})\s*([^\s`]*)?\s*(.*)$/)
     const lang = m?.[2] ?? ''
     const meta = (m?.[3] ?? '').trim()
+    const opening = m?.[1] ?? '```'
+    const spaces = openLine.text.slice(opening.length).match(/^\s*/)?.[0] ?? ''
+    const langFrom = openLine.from + opening.length + spaces.length
+    const langTo = langFrom + lang.length
 
     let code = ''
     if (endLine > startLine + 1) {
@@ -152,7 +186,7 @@ function parseFence(view: EditorView, nodeFrom: number, nodeTo: number): FenceIn
       if (cFrom <= cTo) code = view.state.sliceDoc(cFrom, cTo)
     }
 
-    return { openLineTo: openLine.to, startLine, endLine, lang, meta, code }
+    return { openLineTo: openLine.to, startLine, endLine, lang, langFrom, langTo, meta, code }
   } catch {
     return null
   }
@@ -193,7 +227,13 @@ const codeBlockHeaderPlugin = ViewPlugin.fromClass(
 
             ranges.push(
               Decoration.widget({
-                widget: new CodeBlockHeaderWidget(info.lang, info.meta, info.code),
+                widget: new CodeBlockHeaderWidget(
+                  info.lang,
+                  info.meta,
+                  info.code,
+                  info.langFrom,
+                  info.langTo
+                ),
                 side: 1,
                 block: false, // CRITICAL: must be false
               }).range(info.openLineTo)
@@ -312,10 +352,19 @@ const codeBlockTheme = EditorView.baseTheme({
     flexShrink: '0',
   },
   '.cm-codeblock-lang': {
+    appearance: 'none',
+    border: 'none',
+    background: 'none',
+    color: 'inherit',
+    cursor: 'pointer',
+    padding: '1px 2px',
     fontWeight: '600',
     fontSize: '10px',
     letterSpacing: '.07em',
     textTransform: 'uppercase',
+  },
+  '.cm-codeblock-lang:hover': {
+    color: 'var(--obsidian-text)',
   },
   '.cm-codeblock-meta': {
     fontFamily: 'monospace',
