@@ -11,6 +11,7 @@ import {
   CreateDirectory,
   EnsureDirectory,
   DeletePath,
+  RevealPath,
   ReadFile,
   WriteFile,
   MovePath,
@@ -394,6 +395,19 @@ export const deletePath: DeletePath = async (filePath) => {
     await shell.trashItem(safePath)
     return true
   } catch (error) {
+    return false
+  }
+}
+
+export const revealPath: RevealPath = async (filePath) => {
+  try {
+    const safePath = ensurePathWithinRoot(filePath, { allowRoot: false })
+    const exists = await pathExists(safePath)
+    if (!exists) return false
+
+    shell.showItemInFolder(safePath)
+    return true
+  } catch {
     return false
   }
 }

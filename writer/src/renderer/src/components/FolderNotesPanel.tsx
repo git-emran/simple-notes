@@ -16,7 +16,7 @@ import { ComponentProps, useCallback, useMemo, useState, type MouseEvent } from 
 import { twMerge } from 'tailwind-merge'
 import { FileTreeItem } from './FileTreeItem'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
-import { VscNewFile, VscEdit, VscTrash } from 'react-icons/vsc'
+import { VscNewFile, VscEdit, VscTrash, VscFolderOpened } from 'react-icons/vsc'
 
 export const FolderNotesPanel = ({
   className,
@@ -261,6 +261,15 @@ export const FolderNotesPanel = ({
           <ContextMenuItem onClick={() => { handleCreateFile(); setContextMenu(null) }}>
             <VscNewFile className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
             <span>New File</span>
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={() => {
+              void window.context.revealPath(contextMenu.node.path)
+              setContextMenu(null)
+            }}
+          >
+            <VscFolderOpened className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>Reveal location</span>
           </ContextMenuItem>
           <ContextMenuItem
             onClick={() => {

@@ -10,6 +10,7 @@ import {
   CreateDirectory,
   EnsureDirectory,
   DeletePath,
+  RevealPath,
   ReadFile,
   WriteFile,
   MovePath,
@@ -38,6 +39,7 @@ declare global {
       createDirectory: CreateDirectory
       ensureDirectory: EnsureDirectory
       deletePath: DeletePath
+      revealPath: RevealPath
       readFileNew: ReadFile
       writeFileNew: WriteFile
       movePath: MovePath

@@ -24,6 +24,7 @@ import {
   createDirectory,
   ensureDirectory,
   deletePath,
+  revealPath,
   readFileNew,
   writeFileNew,
   movePath,
@@ -57,6 +58,7 @@ import {
   CreateDirectory,
   EnsureDirectory,
   DeletePath,
+  RevealPath,
   ReadFile,
   WriteFile,
   MovePath,
@@ -265,6 +267,7 @@ app.whenReady().then(() => {
   ipcMain.handle('createDirectory', (_, ...args: Parameters<CreateDirectory>) => createDirectory(...args))
   ipcMain.handle('ensureDirectory', (_, ...args: Parameters<EnsureDirectory>) => ensureDirectory(...args))
   ipcMain.handle('deletePath', (_, ...args: Parameters<DeletePath>) => deletePath(...args))
+  ipcMain.handle('revealPath', (_, ...args: Parameters<RevealPath>) => revealPath(...args))
   ipcMain.handle('readFileNew', (_, ...args: Parameters<ReadFile>) => readFileNew(...args))
   ipcMain.handle('writeFileNew', (_, ...args: Parameters<WriteFile>) => writeFileNew(...args))
   ipcMain.handle('movePath', (_, ...args: Parameters<MovePath>) => movePath(...args))

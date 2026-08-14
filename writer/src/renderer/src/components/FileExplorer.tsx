@@ -33,6 +33,7 @@ import {
     VscCollapseAll,
     VscEdit,
     VscExpandAll,
+    VscFolderOpened,
     VscGoToFile,
     VscNewFile,
     VscNewFolder,
@@ -670,6 +671,15 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
               </ContextMenuItem>
             </>
           )}
+          <ContextMenuItem
+            onClick={() => {
+              void window.context.revealPath(contextMenu.node.path)
+              setContextMenu(null)
+            }}
+          >
+            <VscFolderOpened className="h-4 w-4 text-[var(--obsidian-text-muted)]" />
+            <span>Reveal location</span>
+          </ContextMenuItem>
           <ContextMenuItem
             onClick={() => {
               void deleteNode(contextMenu.node.path)

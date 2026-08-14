@@ -10,6 +10,7 @@ import {
   CreateDirectory,
   EnsureDirectory,
   DeletePath,
+  RevealPath,
   ReadFile,
   WriteFile,
   MovePath,
@@ -43,6 +44,7 @@ declare global {
       createNoteNew: CreateNoteNew
       createCanvasNew: CreateCanvasNew
       deletePath: DeletePath
+      revealPath: RevealPath
       createDirectory: CreateDirectory
       ensureDirectory: EnsureDirectory
       movePath: MovePath
