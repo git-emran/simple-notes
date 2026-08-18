@@ -148,99 +148,14 @@ const canLeaveActiveFileTab = (get: Getter) => {
   )
 }
 
-/* Navigation History State */
-export type NavigationHistoryEntry = { tabId: string; path: string | null }
-export const navigationHistoryAtom = atom<NavigationHistoryEntry[]>([])
-export const navigationHistoryIndexAtom = atom<number>(-1)
-export const isNavigatingHistoryAtom = atom<boolean>(false)
-const MAX_HISTORY_LIMIT = 50
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-export const pushToNavigationHistoryAtom = atom(
-  null,
-  (get, set, payload: NavigationHistoryEntry) => {
-    if (get(isNavigatingHistoryAtom)) return
-    
-    const history = get(navigationHistoryAtom)
-    const index = get(navigationHistoryIndexAtom)
-    
-    // Don't push if it's the exact same as current
-    if (index >= 0 && history[index]?.tabId === payload.tabId && history[index]?.path === payload.path) {
-      return
-    }
+const generateTabId = () =>
+  `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
-    const newHistory = [...history.slice(0, index + 1), payload].slice(-MAX_HISTORY_LIMIT)
-    set(navigationHistoryAtom, newHistory)
-    set(navigationHistoryIndexAtom, newHistory.length - 1)
-  }
-)
-
-export const navigateBackAtom = atom(null, (get, set) => {
-  const history = get(navigationHistoryAtom)
-  const index = get(navigationHistoryIndexAtom)
-  
-  if (history.length <= 1) return
-  
-  const targetIndex = index > 0 ? index - 1 : history.length - 1
-  const targetEntry = history[targetIndex]
-  set(isNavigatingHistoryAtom, true)
-  
-  // Find if tab still exists
+/** Prefetch content for neighboring file tabs so they feel instant. */
+const prefetchNeighborTabs = (get: Getter, set: any, tabId: string) => {
   const tabs = get(tabsAtom)
-  const existingTab = tabs.find(t => t.id === targetEntry.tabId)
-  
-  if (existingTab) {
-    set(setActiveTabAtom, targetEntry.tabId)
-  } else if (targetEntry.path) {
-    // Reopen file if closed
-    const node = createFileNodeFromPath(targetEntry.path)
-    set(openTabAtom, node)
-  }
-  
-  set(navigationHistoryIndexAtom, targetIndex)
-  set(isNavigatingHistoryAtom, false)
-})
-
-export const navigateForwardAtom = atom(null, (get, set) => {
-  const history = get(navigationHistoryAtom)
-  const index = get(navigationHistoryIndexAtom)
-  
-  if (history.length <= 1) return
-  
-  const targetIndex = index < history.length - 1 ? index + 1 : 0
-  const targetEntry = history[targetIndex]
-  set(isNavigatingHistoryAtom, true)
-  
-  const tabs = get(tabsAtom)
-  const existingTab = tabs.find(t => t.id === targetEntry.tabId)
-  
-  if (existingTab) {
-    set(setActiveTabAtom, targetEntry.tabId)
-  } else if (targetEntry.path) {
-    const node = createFileNodeFromPath(targetEntry.path)
-    set(openTabAtom, node)
-  }
-  
-  set(navigationHistoryIndexAtom, targetIndex)
-  set(isNavigatingHistoryAtom, false)
-})
-
-export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
-  if (get(activeTabIdAtom) === tabId) return
-  if (!canLeaveActiveFileTab(get)) return
-  set(activeTabIdAtom, tabId)
-  const tabs = get(tabsAtom)
-  const next = tabs.find((t) => t.id === tabId) ?? tabs[0]
-  
-  if (next) {
-    set(pushToNavigationHistoryAtom, { tabId: next.id, path: next.path })
-  }
-
-  if (!next || next.kind !== 'file' || !next.path) {
-    return
-  }
-  set(selectedNodeAtom, createFileNodeFromPath(next.path))
-
-  // Prefetch adjacent file tabs in the background so they're cache-warm
   const activeIndex = tabs.findIndex((t) => t.id === tabId)
   const neighbors = [tabs[activeIndex - 1], tabs[activeIndex + 1]]
   for (const neighbor of neighbors) {
@@ -249,10 +164,9 @@ export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
       if (!cache.has(neighbor.path) && window.context) {
         void window.context.readFileNew(neighbor.path).then((text) => {
           if (text === undefined) return
-          set(noteContentCacheAtom, (prev) => {
+          set(noteContentCacheAtom, (prev: Map<string, string>) => {
             const next = new Map(prev)
             next.set(neighbor.path!, text)
-            // Evict oldest if over 30 entries
             if (next.size > 30) {
               const firstKey = next.keys().next().value
               if (firstKey) next.delete(firstKey)
@@ -263,8 +177,26 @@ export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
       }
     }
   }
+}
+
+/* ── Tab Actions ─────────────────────────────────────────────────────────── */
+
+/** Switch to an existing tab by its ID. */
+export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
+  if (get(activeTabIdAtom) === tabId) return
+  if (!canLeaveActiveFileTab(get)) return
+  set(activeTabIdAtom, tabId)
+
+  const tabs = get(tabsAtom)
+  const next = tabs.find((t) => t.id === tabId) ?? tabs[0]
+  if (next?.kind === 'file' && next.path) {
+    set(selectedNodeAtom, createFileNodeFromPath(next.path))
+  }
+
+  prefetchNeighborTabs(get, set, tabId)
 })
 
+/** Switch to a tab by its zero-based index. */
 export const switchTabByIndexAtom = atom(null, (get, set, index: number) => {
   const tabs = get(tabsAtom)
   if (index >= 0 && index < tabs.length) {
@@ -272,34 +204,35 @@ export const switchTabByIndexAtom = atom(null, (get, set, index: number) => {
   }
 })
 
+/** Cycle to the next tab. */
 export const switchTabNextAtom = atom(null, (get, set) => {
   const tabs = get(tabsAtom)
   const activeId = get(activeTabIdAtom)
   const currentIndex = tabs.findIndex(t => t.id === activeId)
   if (currentIndex !== -1) {
-    const nextIndex = (currentIndex + 1) % tabs.length
-    set(setActiveTabAtom, tabs[nextIndex].id)
+    set(setActiveTabAtom, tabs[(currentIndex + 1) % tabs.length].id)
   }
 })
 
+/** Cycle to the previous tab. */
 export const switchTabPrevAtom = atom(null, (get, set) => {
   const tabs = get(tabsAtom)
   const activeId = get(activeTabIdAtom)
   const currentIndex = tabs.findIndex(t => t.id === activeId)
   if (currentIndex !== -1) {
-    const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length
-    set(setActiveTabAtom, tabs[prevIndex].id)
+    set(setActiveTabAtom, tabs[(currentIndex - 1 + tabs.length) % tabs.length].id)
   }
 })
 
+/** Create a new empty tab. */
 export const createNewTabAtom = atom(null, (get, set) => {
   if (!canLeaveActiveFileTab(get)) return
-  const tabs = get(tabsAtom)
   const nextTab = createEmptyTab()
-  set(tabsAtom, [...tabs, nextTab])
+  set(tabsAtom, [...get(tabsAtom), nextTab])
   set(activeTabIdAtom, nextTab.id)
 })
 
+/** Drag-reorder tabs. */
 export const reorderTabsAtom = atom(
   null,
   (
@@ -326,174 +259,107 @@ export const reorderTabsAtom = atom(
   }
 )
 
-export const createKanbanTabAtom = atom(null, (get, set) => {
+/* ── Special / Singleton Tab Helper ──────────────────────────────────────── */
+
+type SpecialTabKind = 'kanban' | 'terminal' | 'spreadsheet' | 'settings'
+
+const openSpecialTab = (
+  get: Getter,
+  set: any,
+  kind: SpecialTabKind,
+  name: string,
+  extra?: Partial<EditorTab>
+) => {
   const tabs = get(tabsAtom)
-  const existing = tabs.find((t) => t.kind === 'kanban')
+  const existing = tabs.find((t) => t.kind === kind)
   if (existing) {
     set(activeTabIdAtom, existing.id)
     return
   }
   const nextTab: EditorTab = {
-    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    kind: 'kanban',
+    id: generateTabId(),
+    kind,
     path: null,
-    name: 'Kanban'
+    name,
+    ...extra
   }
   set(tabsAtom, [...tabs, nextTab])
   set(activeTabIdAtom, nextTab.id)
+}
+
+export const createKanbanTabAtom = atom(null, (get, set) => {
+  openSpecialTab(get, set, 'kanban', 'Kanban')
 })
 
 export const createTerminalTabAtom = atom(null, (get, set) => {
-  const tabs = get(tabsAtom)
-  const existing = tabs.find((tab) => tab.kind === 'terminal')
-  if (existing) {
-    set(activeTabIdAtom, existing.id)
-    return
-  }
-
-  const nextTab: EditorTab = {
-    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    kind: 'terminal',
-    path: null,
-    name: 'Terminal',
-    terminalSessionId: null
-  }
-
-  set(tabsAtom, [...tabs, nextTab])
-  set(activeTabIdAtom, nextTab.id)
+  openSpecialTab(get, set, 'terminal', 'Terminal', { terminalSessionId: null })
 })
 
 export const createSpreadsheetTabAtom = atom(null, (get, set) => {
-  const tabs = get(tabsAtom)
-  const existing = tabs.find((tab) => tab.kind === 'spreadsheet')
-  if (existing) {
-    set(activeTabIdAtom, existing.id)
-    return
-  }
-
-  const nextTab: EditorTab = {
-    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    kind: 'spreadsheet',
-    path: null,
-    name: 'Spreadsheet'
-  }
-
-  set(tabsAtom, [...tabs, nextTab])
-  set(activeTabIdAtom, nextTab.id)
+  openSpecialTab(get, set, 'spreadsheet', 'Spreadsheet')
 })
 
 export const createSettingsTabAtom = atom(null, (get, set) => {
-  const tabs = get(tabsAtom)
-  const existing = tabs.find((tab) => tab.kind === 'settings')
-  if (existing) {
-    set(activeTabIdAtom, existing.id)
-    return
-  }
-
-  const nextTab: EditorTab = {
-    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    kind: 'settings',
-    path: null,
-    name: 'Settings'
-  }
-
-  set(tabsAtom, [...tabs, nextTab])
-  set(activeTabIdAtom, nextTab.id)
+  openSpecialTab(get, set, 'settings', 'Settings')
 })
 
 export const setTerminalSessionIdAtom = atom(
   null,
   (get, set, payload: { tabId: string; sessionId: string | null }) => {
-    const tabs = get(tabsAtom)
     set(
       tabsAtom,
-      tabs.map((tab) =>
+      get(tabsAtom).map((tab) =>
         tab.id === payload.tabId ? { ...tab, terminalSessionId: payload.sessionId } : tab
       )
     )
   }
 )
 
+/* ── Open File Tab (Standard IDE Behavior) ───────────────────────────────
+   1. If the file is already open in a tab → switch to it.
+   2. If the active tab is an empty "New Tab" → replace it with the file.
+   3. Otherwise → open a new tab for the file.
+──────────────────────────────────────────────────────────────────────────── */
 export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   if (node.type !== 'file') return
-  if (get(activeTabPathAtom) !== node.path && !canLeaveActiveFileTab(get)) return
 
   const tabs = get(tabsAtom)
   const activeId = get(activeTabIdAtom)
   const name = getNameFromPath(node.path)
 
-  if (tabs.length === 0) {
-    const onlyTab: EditorTab = { id: 'tab-1', kind: 'file', path: node.path, name }
-    set(tabsAtom, [onlyTab])
-    set(activeTabIdAtom, onlyTab.id)
+  // 1. Already open? Just switch to it.
+  const existingTab = tabs.find((t) => t.kind === 'file' && t.path === node.path)
+  if (existingTab) {
+    set(setActiveTabAtom, existingTab.id)
     set(selectedNodeAtom, node)
-    set(pushToNavigationHistoryAtom, { tabId: onlyTab.id, path: onlyTab.path })
     return
   }
 
+  // Guard: confirm leaving unsaved tab
+  if (get(activeTabPathAtom) !== node.path && !canLeaveActiveFileTab(get)) return
+
+  // 2. Active tab is empty? Replace it with the file.
   const activeTab = tabs.find((t) => t.id === activeId)
-  const activeIsSpecial =
-    activeTab?.kind === 'kanban' ||
-    activeTab?.kind === 'terminal' ||
-    activeTab?.kind === 'spreadsheet' ||
-    activeTab?.kind === 'settings'
-
-  if (activeIsSpecial) {
-    const reusableTab = tabs.find((t) => t.kind === 'file' || t.kind === 'empty')
-    if (!reusableTab) {
-      const nextTab: EditorTab = {
-        id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        kind: 'file',
-        path: node.path,
-        name
-      }
-      set(tabsAtom, [...tabs, nextTab])
-      set(activeTabIdAtom, nextTab.id)
-      set(selectedNodeAtom, node)
-      set(pushToNavigationHistoryAtom, { tabId: nextTab.id, path: nextTab.path })
-      return
-    }
-
-    set(activeTabIdAtom, reusableTab.id)
+  if (activeTab?.kind === 'empty') {
     set(
       tabsAtom,
-      tabs.map((tab) => {
-        if (tab.id !== reusableTab.id) return tab
-        return { ...tab, kind: 'file' as const, path: node.path, name, terminalSessionId: null }
-      })
+      tabs.map((tab) =>
+        tab.id === activeId
+          ? { ...tab, kind: 'file' as const, path: node.path, name, terminalSessionId: null }
+          : tab
+      )
     )
     set(selectedNodeAtom, node)
-    set(pushToNavigationHistoryAtom, { tabId: reusableTab.id, path: node.path })
+    prefetchNeighborTabs(get, set, activeId)
     return
   }
 
-  set(
-    tabsAtom,
-    tabs.map((tab) => {
-      if (tab.id !== activeId) return tab
-      return { ...tab, kind: 'file' as const, path: node.path, name, terminalSessionId: null }
-    })
-  )
-  set(selectedNodeAtom, node)
-  set(pushToNavigationHistoryAtom, { tabId: activeId, path: node.path })
-})
-
-export const openInNewTabAtom = atom(null, (get, set, node: FileNode) => {
-  if (node.type !== 'file') return
-  if (!canLeaveActiveFileTab(get)) return
-
-  const tabs = get(tabsAtom)
-  const name = getNameFromPath(node.path)
-  const nextTab: EditorTab = {
-    id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    kind: 'file',
-    path: node.path,
-    name
-  }
-
+  // 3. Open in a new tab.
+  const nextTab: EditorTab = { id: generateTabId(), kind: 'file', path: node.path, name }
   set(tabsAtom, [...tabs, nextTab])
   set(activeTabIdAtom, nextTab.id)
   set(selectedNodeAtom, node)
+  prefetchNeighborTabs(get, set, nextTab.id)
 })
 
 const createFileNodeFromPath = (filePath: string): FileNode => {

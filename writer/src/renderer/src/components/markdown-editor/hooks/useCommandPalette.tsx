@@ -36,6 +36,7 @@ interface UseCommandPaletteParams {
   isAiModalOpen: boolean
   openAiModal: () => void
   isActive: boolean
+  canOpenCommandPalette?: () => boolean
 }
 
 export function useCommandPalette({
@@ -44,7 +45,8 @@ export function useCommandPalette({
   isFullPreview,
   isAiModalOpen,
   openAiModal,
-  isActive
+  isActive,
+  canOpenCommandPalette
 }: UseCommandPaletteParams) {
   const [showToolbar, setShowToolbar] = useAtom(showToolbarAtom)
   const createKanbanTab = useSetAtom(createKanbanTabAtom)
@@ -80,6 +82,7 @@ export function useCommandPalette({
 
       if (isFullPreview) return
       if (isAiModalOpen) return
+      if (canOpenCommandPalette && !canOpenCommandPalette()) return
       if (!selectedNote?.path) return
 
       e.preventDefault()
@@ -89,7 +92,14 @@ export function useCommandPalette({
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [isAiModalOpen, isFullPreview, selectedNote?.path, setShowToolbar, isActive])
+  }, [
+    canOpenCommandPalette,
+    isAiModalOpen,
+    isFullPreview,
+    selectedNote?.path,
+    setShowToolbar,
+    isActive
+  ])
 
   const editorMenuEntries: EditorMenuEntry[] = useMemo(
     () => getEditorMenuEntries(openAiModal),

@@ -10,7 +10,6 @@ import {
     notesRootDirAtom,
     noteStatusByPathAtom,
     noteTagByPathAtom,
-    openInNewTabAtom,
     openTabAtom,
     reindexTodoStatsAtom,
     selectedNodeAtom,
@@ -70,7 +69,6 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const createDirectory = useSetAtom(createDirectoryAtom)
   const deleteNode = useSetAtom(deleteNodeAtom)
   const movePath = useSetAtom(movePathAtom)
-  const openInNewTab = useSetAtom(openInNewTabAtom)
   const openTab = useSetAtom(openTabAtom)
   const reindexTodoStats = useSetAtom(reindexTodoStatsAtom)
 
@@ -651,7 +649,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           {contextMenu.node.type === 'file' && (
             <ContextMenuItem
               onClick={() => {
-                openInNewTab(contextMenu.node)
+                openTab(contextMenu.node)
                 setContextMenu(null)
               }}
             >

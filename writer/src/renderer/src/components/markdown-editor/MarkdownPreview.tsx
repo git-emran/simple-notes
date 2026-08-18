@@ -51,13 +51,28 @@ interface PreviewCodeBlockProps {
 
 const PreviewCodeBlock = ({ language, codeContent, isDarkMode }: PreviewCodeBlockProps) => {
   const [copied, setCopied] = useState(false)
+  const copyResetTimerRef = useRef<number | null>(null)
   const iconHtml = LANG_ICONS[language.toLowerCase()] ?? LANG_FALLBACK_ICON
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(codeContent).catch(() => {})
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    if (copyResetTimerRef.current !== null) {
+      window.clearTimeout(copyResetTimerRef.current)
+    }
+    copyResetTimerRef.current = window.setTimeout(() => {
+      copyResetTimerRef.current = null
+      setCopied(false)
+    }, 2000)
   }, [codeContent])
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current !== null) {
+        window.clearTimeout(copyResetTimerRef.current)
+      }
+    }
+  }, [])
 
   return (
     <div className="preview-code-block group relative my-4 rounded-lg overflow-hidden border border-[var(--obsidian-border)]">

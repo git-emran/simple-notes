@@ -44,6 +44,8 @@ export const AiModal = ({
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const openFocusTimerRef = useRef<number | null>(null);
+  const contextFocusTimerRef = useRef<number | null>(null);
   const [dropdownRect, setDropdownRect] = useState<{
     left: number;
     top: number;
@@ -87,10 +89,25 @@ export const AiModal = ({
     setSelectedPaths([currentNotePath]);
     
     // Auto-focus the textarea when opened
-    setTimeout(() => {
+    if (openFocusTimerRef.current !== null) {
+      window.clearTimeout(openFocusTimerRef.current);
+    }
+    openFocusTimerRef.current = window.setTimeout(() => {
+      openFocusTimerRef.current = null;
       textareaRef.current?.focus();
     }, 50);
   }, [isOpen, currentNotePath]);
+
+  useEffect(() => {
+    return () => {
+      if (openFocusTimerRef.current !== null) {
+        window.clearTimeout(openFocusTimerRef.current);
+      }
+      if (contextFocusTimerRef.current !== null) {
+        window.clearTimeout(contextFocusTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (showSuggestions) setSuggestionIndex(0);
@@ -204,7 +221,11 @@ export const AiModal = ({
     setShowSuggestions(false);
     
     // Focus back and set cursor position
-    setTimeout(() => {
+    if (contextFocusTimerRef.current !== null) {
+      window.clearTimeout(contextFocusTimerRef.current);
+    }
+    contextFocusTimerRef.current = window.setTimeout(() => {
+      contextFocusTimerRef.current = null;
       if (textareaRef.current) {
         textareaRef.current.focus();
         const newPos = lastAt;

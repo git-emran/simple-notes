@@ -2,7 +2,7 @@ import { aiApiKeyAtom, fileTreeIndexAtom } from '@renderer/store'
 import type { FileNode } from '@shared/models'
 import type { AiModelInfo } from '@shared/types'
 import { useAtomValue } from 'jotai'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SelectedNote, ViewRef } from './types'
 import { EditorView } from '@codemirror/view'
 
@@ -25,14 +25,27 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
   const [aiError, setAiError] = useState<string | null>(null)
   
   const cancelRef = useRef<(() => void) | null>(null)
+  const generationPathRef = useRef<string | null>(null)
 
   const stopGeneration = useCallback(() => {
     if (cancelRef.current) {
       cancelRef.current()
       cancelRef.current = null
     }
+    generationPathRef.current = null
     setIsGeneratingWithAi(false)
   }, [])
+
+  useEffect(() => {
+    return () => {
+      if (cancelRef.current) {
+        cancelRef.current()
+        cancelRef.current = null
+      }
+      generationPathRef.current = null
+      setIsGeneratingWithAi(false)
+    }
+  }, [selectedNote?.path])
 
   const openAiModal = useCallback(async () => {
     setIsAiModalOpen(true)
@@ -68,8 +81,15 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
       setAiError(null)
 
       try {
+        if (cancelRef.current) {
+          cancelRef.current()
+          cancelRef.current = null
+        }
+
         const view = viewRef.current
         const currentContent = view.state.doc.toString()
+        const generationPath = selectedNote?.path || ''
+        generationPathRef.current = generationPath
 
         const normalizePath = (p: string) => p.replace(/\\/g, '/')
         const rootDirNormalized = normalizePath(rootDir || '').replace(/\/+$/, '')
@@ -92,7 +112,7 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
 
         const MAX_NOTE_CHARS = 40_000
         const contentForAi = truncateMiddle(currentContent, MAX_NOTE_CHARS)
-        const currentNotePath = selectedNote?.path || ''
+        const currentNotePath = generationPath
         const effectiveContextPaths = currentNotePath
           ? Array.from(new Set([currentNotePath, ...contextPaths]))
           : contextPaths
@@ -195,7 +215,8 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
           },
           {
             onChunk: (chunk) => {
-              const v = viewRef.current
+              const v = viewRef.current === view ? view : null
+              if (generationPathRef.current !== generationPath) return
               if (v) {
                 const sel = v.state.selection.main
                 v.dispatch({
@@ -206,15 +227,19 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
               }
             },
             onDone: () => {
+              if (generationPathRef.current !== generationPath) return
               setIsGeneratingWithAi(false)
               cancelRef.current = null
+              generationPathRef.current = null
               setIsAiModalOpen(false)
               setAiPrompt('')
             },
             onError: (err) => {
+              if (generationPathRef.current !== generationPath) return
               setAiError(err)
               setIsGeneratingWithAi(false)
               cancelRef.current = null
+              generationPathRef.current = null
             }
           }
         )
@@ -223,6 +248,8 @@ export function useAiGeneration({ viewRef, rootDir, selectedNote }: UseAiGenerat
       } catch {
         setAiError('Failed to generate text.')
         setIsGeneratingWithAi(false)
+        cancelRef.current = null
+        generationPathRef.current = null
       }
     },
     [aiApiKey, aiPrompt, selectedAiModel, fileTreeIndex, rootDir, selectedNote?.path, viewRef]

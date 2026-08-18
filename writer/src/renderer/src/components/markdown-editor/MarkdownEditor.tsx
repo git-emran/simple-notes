@@ -34,6 +34,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
   const viewRef = useRef<EditorView | null>(null)
   const nativeSpellcheckMenuUntilRef = useRef(0)
   const contextMenuTimerRef = useRef<number | null>(null)
+  const splitViewModeRef = useRef({ isFullPreview: false })
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   const previewReadableWidthClass = 'w-full min-w-0 max-w-[860px]'
@@ -126,13 +127,19 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     selectedNote: selectedNote as SelectedNote | null
   })
 
+  const canOpenCommandPalette = useCallback(
+    () => !splitViewModeRef.current.isFullPreview,
+    []
+  )
+
   const palette = useCommandPalette({
     viewRef,
     selectedNote: selectedNote as SelectedNote | null,
     isFullPreview: false, // placeholder — splitView not yet defined
     isAiModalOpen: ai.isAiModalOpen,
     openAiModal: ai.openAiModal,
-    isActive
+    isActive,
+    canOpenCommandPalette
   })
 
   const lifecycle = useEditorLifecycle({
@@ -155,6 +162,16 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     selectedNote: selectedNote as SelectedNote | null,
     setDebouncedContent: lifecycle.setDebouncedContent
   })
+
+  splitViewModeRef.current.isFullPreview = splitView.isFullPreview
+
+  const { isCommandPaletteOpen, setIsCommandPaletteOpen } = palette
+
+  useEffect(() => {
+    if (splitView.isFullPreview && isCommandPaletteOpen) {
+      setIsCommandPaletteOpen(false)
+    }
+  }, [isCommandPaletteOpen, setIsCommandPaletteOpen, splitView.isFullPreview])
 
   // ── Empty state ───────────────────────────────────────────────────────────
   if (!selectedNote?.path) {
@@ -259,7 +276,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
           {/* Editor pane */}
           <div
             ref={splitView.editorContainerRef}
-            className="h-full"
+            className="relative h-full overflow-hidden"
             style={{
               width: splitView.isFullPreview ? '0' : splitView.isPreview ? '50%' : '100%',
               display: splitView.isFullPreview ? 'none' : 'block'
