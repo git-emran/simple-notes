@@ -288,7 +288,9 @@ export const readFileNew: ReadFile = async (filePath) => {
 
 export const writeFileNew: WriteFile = async (filePath, content) => {
   const safePath = ensurePathWithinRoot(filePath)
-  return writeFile(safePath, content, { encoding: fileEncoding })
+  const tmpPath = `${safePath}.tmp`
+  await writeFile(tmpPath, content, { encoding: fileEncoding })
+  await move(tmpPath, safePath, { overwrite: true })
 }
 
 export const createNoteNew: CreateNoteNew = async (parentDir) => {

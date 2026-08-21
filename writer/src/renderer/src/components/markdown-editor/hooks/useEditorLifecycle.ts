@@ -282,6 +282,16 @@ export function useEditorLifecycle({
     async (content: string, notePath: string) => {
       if (!notePath || selectedNote?.readError) return
 
+      // Skip save if content hasn't changed
+      if (content === lastPersistedContentRef.current) {
+        if (currentNotePathRef.current === notePath) {
+          setHasUnsavedChanges(false)
+          setSaveStatus('saved')
+        }
+        updateTrackedSaveState(notePath, { hasUnsavedChanges: false, hasSaveError: false })
+        return
+      }
+
       const isCurrentNote = currentNotePathRef.current === notePath
 
       if (isCurrentNote) {
@@ -296,11 +306,17 @@ export function useEditorLifecycle({
           lastPersistedContentRef.current = content
           retryAttemptRef.current = 0
           clearRetryTimer()
-          setHasUnsavedChanges(false)
+          
+          const currentContent = viewRef.current?.state.doc.toString()
+          const hasDiverged = currentContent !== undefined && currentContent !== content
+          
+          setHasUnsavedChanges(hasDiverged)
           setSaveStatus('saved')
           setSaveError(null)
+          updateTrackedSaveState(notePath, { hasUnsavedChanges: hasDiverged, hasSaveError: false })
+        } else {
+          updateTrackedSaveState(notePath, { hasUnsavedChanges: false, hasSaveError: false })
         }
-        updateTrackedSaveState(notePath, { hasUnsavedChanges: false, hasSaveError: false })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unable to save this note.'
         if (currentNotePathRef.current === notePath) {
@@ -325,11 +341,16 @@ export function useEditorLifecycle({
       const delay = Math.min(30000, 1000 * 2 ** (attempt - 1))
 
       retryTimerRef.current = setTimeout(() => {
+        // Read latest content if this is still the active note
+        const contentToSave = currentNotePathRef.current === notePath && viewRef.current 
+          ? viewRef.current.state.doc.toString() 
+          : content
+
         saveQueueRef.current = saveQueueRef.current
-          .then(() => executeSave(content, notePath))
+          .then(() => executeSave(contentToSave, notePath))
           .catch(() => {
             if (currentNotePathRef.current === notePath) {
-              scheduleRetrySave(content, notePath)
+              scheduleRetrySave(contentToSave, notePath)
             }
           })
       }, delay)
@@ -403,6 +424,15 @@ export function useEditorLifecycle({
       history(),
       Prec.highest(
         keymap.of([
+          {
+            key: 'Mod-s',
+            preventDefault: true,
+            stopPropagation: true,
+            run: () => {
+              debouncedSave.flush()
+              return true
+            }
+          },
           {
             key: 'Mod-b',
             preventDefault: true,
@@ -588,12 +618,12 @@ export function useEditorLifecycle({
               const notePath = currentNotePathRef.current
               const dirty = content !== lastPersistedContentRef.current
               setHasUnsavedChanges(dirty)
+              debouncedSetContent(content)
               if (dirty) {
                 setSaveStatus('saving')
                 updateTrackedSaveState(notePath, { hasUnsavedChanges: true, hasSaveError: false })
+                debouncedSave(content, notePath)
               }
-              debouncedSetContent(content)
-              debouncedSave(content, notePath)
             }
           }),
           EditorView.domEventHandlers({
@@ -678,7 +708,9 @@ export function useEditorLifecycle({
     updateTrackedSaveState
   ])
 
-  // Sync editor when selectedNote content changes asynchronously (e.g. external edits)
+  // Sync editor when selectedNote content changes asynchronously (e.g. external edits).
+  // Skip when the editor has unsaved changes — those mean the user is actively editing
+  // and we must not overwrite their work with our own save's round-trip through the cache.
   useEffect(() => {
     if (!selectedNote?.path || selectedNote.readError) return
     if (selectedNote.path !== currentNotePathRef.current) return
@@ -686,12 +718,18 @@ export function useEditorLifecycle({
     const view = viewRef.current
     if (!view) return
 
-    const editorContent = view.state.doc.toString()
     const incomingContent = selectedNote.content
+    if (incomingContent === undefined) return
 
-    if (editorContent !== incomingContent && incomingContent !== undefined) {
+    // If the incoming content matches what we last persisted, this is just our
+    // own save round-tripping through the atom — nothing to sync.
+    if (incomingContent === lastPersistedContentRef.current) return
+
+    const editorContent = view.state.doc.toString()
+    if (editorContent !== incomingContent) {
       debouncedSetContent.cancel()
       setDebouncedContent(incomingContent)
+      lastPersistedContentRef.current = incomingContent
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: incomingContent }
       })
@@ -714,7 +752,7 @@ export function useEditorLifecycle({
         viewRef.current.destroy()
         viewRef.current = null
       }
-      debouncedSave.cancel()
+      debouncedSave.flush()
       clearRetryTimer()
     }
   }, [clearRetryTimer, debouncedSave, viewRef])

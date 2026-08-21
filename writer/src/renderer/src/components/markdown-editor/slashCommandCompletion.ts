@@ -75,8 +75,8 @@ export function slashCommandSource(context: CompletionContext): CompletionResult
     if (charBefore !== '\n' && !/\s/.test(charBefore)) return null
   }
 
-  const typed = context.state.sliceDoc(match.from, match.to)
-  const query = typed.slice(1).toLowerCase() // text after "/"
+  const query = context.state.sliceDoc(match.from + 1, match.to).toLowerCase()
+  const slashPos = match.from
 
   const items = context.state.field(slashCommandItemsField, false) ?? []
 
@@ -102,7 +102,7 @@ export function slashCommandSource(context: CompletionContext): CompletionResult
         apply: (view, _completion, _from, to) => {
           // Delete slash + any typed text
           view.dispatch({
-            changes: { from: match.from, to, insert: '' }
+            changes: { from: slashPos, to, insert: '' }
           })
           item.run()
           view.focus()
@@ -116,10 +116,9 @@ export function slashCommandSource(context: CompletionContext): CompletionResult
     from: match.from + 1, // so CodeMirror knows the filter starts after "/"
     filter: false,        // we do our own filtering above
     options,
-    validFor: (_text, _from, to, state) => {
-      const currentTyped = state.sliceDoc(match.from, to)
-      return currentTyped === typed
-    }
+    // Use a regex so CodeMirror can check validity without re-querying the source.
+    // This matches any non-newline characters typed after the "/" trigger.
+    validFor: /^[^\n]*$/
   }
 }
 
