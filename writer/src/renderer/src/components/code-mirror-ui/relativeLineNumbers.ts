@@ -1,5 +1,5 @@
-import { gutter, GutterMarker } from '@codemirror/view'
 import { StateField, Transaction } from '@codemirror/state'
+import { gutter, GutterMarker } from '@codemirror/view'
 
 class RelativeNumberMarker extends GutterMarker {
   constructor(
@@ -17,10 +17,10 @@ class RelativeNumberMarker extends GutterMarker {
     const span = document.createElement('span')
     span.textContent = this.text
     // Modern UI: tabular-nums ensures digits align properly.
-    // Right alignment with pr-2 looks much better for line numbers.
+    // Right alignment looks much better for line numbers.
     span.className = this.isCurrent
-      ? 'cm-lineNumber pr-2 tabular-nums font-semibold text-[var(--obsidian-accent)] transition-colors duration-200 block text-right w-full'
-      : 'cm-lineNumber pr-2 tabular-nums text-[var(--obsidian-text-muted)] opacity-50 hover:opacity-100 transition-opacity duration-200 block text-right w-full'
+      ? 'cm-lineNumber tabular-nums font-semibold text-[var(--obsidian-accent)] transition-colors duration-200 block text-right w-full'
+      : 'cm-lineNumber tabular-nums text-[var(--obsidian-text-muted)] opacity-50 hover:opacity-100 transition-opacity duration-200 block text-left w-full'
     return span
   }
 }

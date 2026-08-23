@@ -1,5 +1,5 @@
 import { NoteContent, FileNode } from '@shared/models'
-import { atom, type Getter } from 'jotai'
+import { atom, type Getter, type Setter } from 'jotai'
 import { atomWithStorage, unwrap, atomFamily } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
 export * from './settingsStore'
@@ -77,6 +77,7 @@ export const fileTreeIndexAtom = atom<Map<string, FileNode>>((get) => {
 })
 
 export const selectedNodeAtom = atom<FileNode | null>(null)
+export const activeFilterAtom = atom<{ type: 'status' | 'tag', value: string } | null>(null)
 
 /* Tabs State */
 export type EditorTab = {
@@ -104,6 +105,11 @@ export const tabsAtom = atomWithStorage<EditorTab[]>('writr-open-tabs', [
 ])
 export const closedTabsHistoryAtom = atom<EditorTab[]>([])
 export const activeTabIdAtom = atomWithStorage<string>('writr-active-tab-id', 'tab-1')
+/* Navigation history tracks file paths (or null for empty) that were displayed.
+   Since we replace the active tab in-place, the tab ID stays the same but
+   its content changes — so we track what was shown, not which tab was active. */
+export const navigationHistoryAtom = atomWithStorage<(string | null)[]>('writr-nav-history', [null])
+export const navigationIndexAtom = atomWithStorage<number>('writr-nav-index', 0)
 
 export const activeTabPathAtom = atom<string | null>((get) => {
   const tabs = get(tabsAtom)
@@ -154,7 +160,7 @@ const generateTabId = () =>
   `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`
 
 /** Prefetch content for neighboring file tabs so they feel instant. */
-const prefetchNeighborTabs = (get: Getter, set: any, tabId: string) => {
+const prefetchNeighborTabs = (get: Getter, set: Setter, tabId: string) => {
   const tabs = get(tabsAtom)
   const activeIndex = tabs.findIndex((t) => t.id === tabId)
   const neighbors = [tabs[activeIndex - 1], tabs[activeIndex + 1]]
@@ -194,6 +200,58 @@ export const setActiveTabAtom = atom(null, (get, set, tabId: string) => {
   }
 
   prefetchNeighborTabs(get, set, tabId)
+})
+
+/** Helper: replace the active tab's content with a given path (used by nav back/forward). */
+const replaceActiveTabPath = (get: Getter, set: Setter, path: string | null) => {
+  const tabs = get(tabsAtom)
+  const activeId = get(activeTabIdAtom)
+
+  if (path === null) {
+    // Restore to empty state
+    set(
+      tabsAtom,
+      tabs.map((tab) =>
+        tab.id === activeId
+          ? { ...tab, kind: 'empty' as const, path: null, name: 'New Tab' }
+          : tab
+      )
+    )
+    set(selectedNodeAtom, null)
+  } else {
+    const name = getNameFromPath(path)
+    set(
+      tabsAtom,
+      tabs.map((tab) =>
+        tab.id === activeId
+          ? { ...tab, kind: 'file' as const, path, name, terminalSessionId: null }
+          : tab
+      )
+    )
+    set(selectedNodeAtom, createFileNodeFromPath(path))
+  }
+}
+
+export const navigateBackAtom = atom(null, (get, set) => {
+  const history = get(navigationHistoryAtom)
+  const index = get(navigationIndexAtom)
+  if (index > 0) {
+    if (!canLeaveActiveFileTab(get)) return
+    const prevPath = history[index - 1]
+    set(navigationIndexAtom, index - 1)
+    replaceActiveTabPath(get, set, prevPath)
+  }
+})
+
+export const navigateForwardAtom = atom(null, (get, set) => {
+  const history = get(navigationHistoryAtom)
+  const index = get(navigationIndexAtom)
+  if (index < history.length - 1) {
+    if (!canLeaveActiveFileTab(get)) return
+    const nextPath = history[index + 1]
+    set(navigationIndexAtom, index + 1)
+    replaceActiveTabPath(get, set, nextPath)
+  }
 })
 
 /** Switch to a tab by its zero-based index. */
@@ -265,7 +323,7 @@ type SpecialTabKind = 'kanban' | 'terminal' | 'spreadsheet' | 'settings'
 
 const openSpecialTab = (
   get: Getter,
-  set: any,
+  set: Setter,
   kind: SpecialTabKind,
   name: string,
   extra?: Partial<EditorTab>
@@ -315,10 +373,9 @@ export const setTerminalSessionIdAtom = atom(
   }
 )
 
-/* ── Open File Tab (Standard IDE Behavior) ───────────────────────────────
-   1. If the file is already open in a tab → switch to it.
-   2. If the active tab is an empty "New Tab" → replace it with the file.
-   3. Otherwise → open a new tab for the file.
+/* ── Open File in Current Tab ─────────────────────────────────────────────
+   Always replaces the active tab with the selected file.
+   The "+" button is the only way to create a genuinely new tab.
 ──────────────────────────────────────────────────────────────────────────── */
 export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   if (node.type !== 'file') return
@@ -327,39 +384,51 @@ export const openTabAtom = atom(null, (get, set, node: FileNode) => {
   const activeId = get(activeTabIdAtom)
   const name = getNameFromPath(node.path)
 
-  // 1. Already open? Just switch to it.
-  const existingTab = tabs.find((t) => t.kind === 'file' && t.path === node.path)
-  if (existingTab) {
-    set(setActiveTabAtom, existingTab.id)
-    set(selectedNodeAtom, node)
-    return
-  }
+  // Already showing this file in the active tab? Nothing to do.
+  const activeTab = tabs.find((t) => t.id === activeId)
+  if (activeTab?.kind === 'file' && activeTab.path === node.path) return
 
   // Guard: confirm leaving unsaved tab
   if (get(activeTabPathAtom) !== node.path && !canLeaveActiveFileTab(get)) return
 
-  // 2. Active tab is empty? Replace it with the file.
-  const activeTab = tabs.find((t) => t.id === activeId)
-  if (activeTab?.kind === 'empty') {
-    set(
-      tabsAtom,
-      tabs.map((tab) =>
-        tab.id === activeId
-          ? { ...tab, kind: 'file' as const, path: node.path, name, terminalSessionId: null }
-          : tab
-      )
+  // Replace the active tab in-place with the selected file.
+  set(
+    tabsAtom,
+    tabs.map((tab) =>
+      tab.id === activeId
+        ? { ...tab, kind: 'file' as const, path: node.path, name, terminalSessionId: null }
+        : tab
     )
-    set(selectedNodeAtom, node)
-    prefetchNeighborTabs(get, set, activeId)
-    return
+  )
+  set(selectedNodeAtom, node)
+
+  // Eagerly prefetch the file content into the cache so the editor
+  // lifecycle hook can resolve synchronously (no visible loading delay)
+  const cache = get(noteContentCacheAtom)
+  if (!cache.has(node.path) && window.context) {
+    void window.context.readFileNew(node.path).then((text) => {
+      if (text === undefined) return
+      set(noteContentCacheAtom, (prev) => {
+        const next = new Map(prev)
+        next.set(node.path, text)
+        if (next.size > 30) {
+          const firstKey = next.keys().next().value
+          if (firstKey) next.delete(firstKey)
+        }
+        return next
+      })
+    }).catch(() => {})
   }
 
-  // 3. Open in a new tab.
-  const nextTab: EditorTab = { id: generateTabId(), kind: 'file', path: node.path, name }
-  set(tabsAtom, [...tabs, nextTab])
-  set(activeTabIdAtom, nextTab.id)
-  set(selectedNodeAtom, node)
-  prefetchNeighborTabs(get, set, nextTab.id)
+  // Push to navigation history (track the file path, not the tab ID)
+  const history = get(navigationHistoryAtom)
+  const navIndex = get(navigationIndexAtom)
+  const newHistory = history.slice(0, navIndex + 1)
+  if (newHistory[newHistory.length - 1] !== node.path) {
+    newHistory.push(node.path)
+  }
+  set(navigationHistoryAtom, newHistory)
+  set(navigationIndexAtom, newHistory.length - 1)
 })
 
 const createFileNodeFromPath = (filePath: string): FileNode => {

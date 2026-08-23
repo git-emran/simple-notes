@@ -1,6 +1,17 @@
 import { useAtomValue, useSetAtom } from 'jotai'
-import { activeTabIdAtom, closeTabAtom, createNewTabAtom, reorderTabsAtom, setActiveTabAtom, tabsAtom } from '@renderer/store'
-import { VscAdd, VscClose, VscProject, VscSettingsGear, VscTable, VscTerminal } from 'react-icons/vsc'
+import {
+  activeTabIdAtom,
+  closeTabAtom,
+  createNewTabAtom,
+  reorderTabsAtom,
+  setActiveTabAtom,
+  tabsAtom,
+  navigationHistoryAtom,
+  navigationIndexAtom,
+  navigateBackAtom,
+  navigateForwardAtom
+} from '@renderer/store'
+import { VscAdd, VscClose, VscProject, VscSettingsGear, VscTable, VscTerminal, VscChevronLeft, VscChevronRight } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { type CSSProperties, useRef, useState } from 'react'
 
@@ -11,6 +22,15 @@ export const EditorTabs = () => {
   const closeTab = useSetAtom(closeTabAtom)
   const createNewTab = useSetAtom(createNewTabAtom)
   const reorderTabs = useSetAtom(reorderTabsAtom)
+  
+  const history = useAtomValue(navigationHistoryAtom)
+  const index = useAtomValue(navigationIndexAtom)
+  const navigateBack = useSetAtom(navigateBackAtom)
+  const navigateForward = useSetAtom(navigateForwardAtom)
+  
+  const canGoBack = index > 0
+  const canGoForward = index < history.length - 1
+
   const draggedTabIdRef = useRef<string | null>(null)
   const [dropIndicator, setDropIndicator] = useState<{ tabId: string; position: 'before' | 'after' } | null>(null)
 
@@ -27,6 +47,36 @@ export const EditorTabs = () => {
         }
       }}
     >
+      {/* Navigation Buttons */}
+      <div className="flex items-center gap-1 shrink-0 mr-1" style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}>
+        <button
+          onClick={() => canGoBack && navigateBack()}
+          disabled={!canGoBack}
+          className={twMerge(
+            "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+            canGoBack 
+              ? "text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)] cursor-pointer" 
+              : "text-[var(--obsidian-text-muted)] opacity-50 cursor-not-allowed"
+          )}
+          title="Go Back"
+        >
+          <VscChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => canGoForward && navigateForward()}
+          disabled={!canGoForward}
+          className={twMerge(
+            "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+            canGoForward 
+              ? "text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)] cursor-pointer" 
+              : "text-[var(--obsidian-text-muted)] opacity-50 cursor-not-allowed"
+          )}
+          title="Go Forward"
+        >
+          <VscChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
       {tabs.map((tab) => {
         const isActive = activeTabId === tab.id
         return (

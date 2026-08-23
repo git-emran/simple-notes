@@ -10,6 +10,7 @@ import {
   createNoteAtom,
   deleteNodeAtom,
   movePathAtom,
+  activeFilterAtom,
 } from '@renderer/store'
 import { FileNode } from '@shared/models'
 import { ComponentProps, useCallback, useMemo, useState, type MouseEvent } from 'react'
@@ -24,6 +25,7 @@ export const FolderNotesPanel = ({
 }: ComponentProps<'aside'>) => {
   const fileTreeIndex = useAtomValue(fileTreeIndexAtom)
   const activeTabPath = useAtomValue(activeTabPathAtom)
+  const activeFilter = useAtomValue(activeFilterAtom)
   const [selectedNode, setSelectedNode] = useAtom(selectedNodeAtom)
   const [renamingPath, setRenamingPath] = useAtom(renamingPathAtom)
   const noteStatuses = useAtomValue(noteStatusByPathAtom)
@@ -95,6 +97,26 @@ export const FolderNotesPanel = ({
     return 'Older'
   }
 
+  const filesToShow = useMemo(() => {
+    if (activeFilter) {
+      const allFiles = Array.from(fileTreeIndex.values()).filter(node => node.type === 'file')
+      if (activeFilter.type === 'status') {
+        return allFiles.filter(f => noteStatuses[f.path] === activeFilter.value)
+      }
+      if (activeFilter.type === 'tag') {
+        return allFiles.filter(f => {
+          const tags = noteTags[f.path]
+          if (!tags) return false
+          return tags.split(',').map(t => t.trim()).includes(activeFilter.value)
+        })
+      }
+    }
+    if (activeFolder && activeFolder.children) {
+      return activeFolder.children.filter((c) => c.type === 'file')
+    }
+    return []
+  }, [activeFilter, fileTreeIndex, noteStatuses, noteTags, activeFolder])
+
   /**
    * Visible rows of the active folder: files sorted by edit time, separated by timeline groups.
    */
@@ -111,9 +133,9 @@ export const FolderNotesPanel = ({
     }
 
     const rows: Row[] = []
-    if (!activeFolder || !activeFolder.children) return rows
-
-    const files = activeFolder.children.filter((c) => c.type === 'file')
+    
+    const files = [...filesToShow]
+    if (files.length === 0) return rows
     
     files.sort((a, b) => {
       const timeA = a.lastEditTime ?? 0
@@ -133,9 +155,9 @@ export const FolderNotesPanel = ({
     }
 
     return rows
-  }, [activeFolder])
+  }, [filesToShow])
 
-  if (!activeFolder) {
+  if (!activeFolder && !activeFilter) {
     return (
       <aside
         className={twMerge(
@@ -164,14 +186,15 @@ export const FolderNotesPanel = ({
       <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-[var(--obsidian-border-soft)] select-none">
         <span
           className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85 truncate"
-          title={activeFolder.name}
+          title={activeFilter ? `${activeFilter.type}: ${activeFilter.value}` : activeFolder?.name}
         >
-          {activeFolder.name}
+          {activeFilter ? `${activeFilter.type}: ${activeFilter.value}` : activeFolder?.name}
         </span>
         <div className="flex items-center gap-0.5 shrink-0">
           <button
             onClick={() => handleCreateFile()}
-            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+            disabled={!activeFolder}
+            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors disabled:opacity-50"
             title="New File"
           >
             <VscNewFile className="w-4 h-4" />

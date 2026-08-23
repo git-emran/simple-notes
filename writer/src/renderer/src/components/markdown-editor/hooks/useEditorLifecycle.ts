@@ -328,7 +328,7 @@ export function useEditorLifecycle({
         throw error
       }
     },
-    [clearRetryTimer, saveNote, selectedNote?.readError, updateTrackedSaveState]
+    [clearRetryTimer, saveNote, selectedNote?.readError, updateTrackedSaveState, viewRef]
   )
 
   const scheduleRetrySave = useCallback(
@@ -355,7 +355,7 @@ export function useEditorLifecycle({
           })
       }, delay)
     },
-    [clearRetryTimer, executeSave]
+    [clearRetryTimer, executeSave, viewRef]
   )
 
   const queueSave = useCallback(
@@ -509,7 +509,7 @@ export function useEditorLifecycle({
         lang: window.context.locale
       })
     ],
-    [handleClipboardImagePaste]
+    [handleClipboardImagePaste, debouncedSave]
   )
 
   // ── Main editor lifecycle (create / switch notes) ─────────────────────────
@@ -521,15 +521,59 @@ export function useEditorLifecycle({
         viewRef.current.destroy()
         viewRef.current = null
       }
+      currentNotePathRef.current = ''
       return
     }
 
-    if (viewRef.current && currentNotePathRef.current !== selectedNote.path) {
-      debouncedSave.flush()
-      viewRef.current.destroy()
-      viewRef.current = null
+    const incomingPath = selectedNote.path
+    const incomingContent = selectedNote.content
+
+    // ── Path changed: reuse editor, swap document ──────────────────────────
+    if (viewRef.current && currentNotePathRef.current !== incomingPath) {
+      // 1. Flush any pending save for the OLD note before switching
+      const oldPath = currentNotePathRef.current
+      const oldContent = viewRef.current.state.doc.toString()
+      debouncedSave.cancel()  // cancel throttled save (we'll flush inline)
+      debouncedSetContent.cancel()
+
+      // Synchronously queue the final save for the old note, guarded by path
+      if (oldPath && oldContent !== lastPersistedContentRef.current) {
+        queueSave(oldContent, oldPath)
+      }
+
+      // 2. Update tracking refs BEFORE swapping content to prevent
+      //    the updateListener from saving new content under the old path
+      currentNotePathRef.current = incomingPath
+      currentNoteTitleRef.current = selectedNote.title
+      lastPersistedContentRef.current = incomingContent
+      lastLanguageRef.current = null
+      clearRetryTimer()
+      retryAttemptRef.current = 0
+
+      // 3. Swap the document in the existing editor (no destroy/recreate)
+      viewRef.current.dispatch({
+        changes: {
+          from: 0,
+          to: viewRef.current.state.doc.length,
+          insert: incomingContent
+        },
+        selection: { anchor: 0 },
+        // Reconfigure live-preview images for the new note path
+        effects: compartments.livePreviewImages.reconfigure(
+          createLivePreviewImages(incomingPath, rootDir || undefined)
+        )
+      })
+
+      // 4. Reset UI state
+      setHasUnsavedChanges(false)
+      setSaveStatus('saved')
+      setSaveError(null)
+      updateTrackedSaveState(incomingPath, { hasUnsavedChanges: false, hasSaveError: false })
+      setDebouncedContent(incomingContent)
+      return
     }
 
+    // ── First mount: create the editor ──────────────────────────────────────
     const buildState = (doc: string) =>
       EditorState.create({
         doc,
@@ -615,6 +659,8 @@ export function useEditorLifecycle({
             }
             if (update.docChanged) {
               const content = update.state.doc.toString()
+              // Capture the path from the ref AT THIS MOMENT to bind saves to
+              // the correct note — even if the user switches before the throttle fires
               const notePath = currentNotePathRef.current
               const dirty = content !== lastPersistedContentRef.current
               setHasUnsavedChanges(dirty)
