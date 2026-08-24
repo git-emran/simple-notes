@@ -21,13 +21,13 @@ import { UpdateManager } from './components/updater/UpdateManager'
 import { MIN_SIDEBAR_WIDTH } from './constants/sidebarLayout'
 import { useRef, useState, useEffect } from 'react'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { 
+import {
   activeTabAtom,
-  createDailyNoteAtom, 
-  switchTabByIndexAtom, 
+  createDailyNoteAtom,
+  switchTabByIndexAtom,
   switchTabNextAtom,
   switchTabPrevAtom,
-  closeActiveTabAtom, 
+  closeActiveTabAtom,
   restoreClosedTabAtom,
   createCanvasAtom,
   createTerminalTabAtom,
@@ -83,7 +83,7 @@ const getEditorFontStack = (font: EditorFontOption) => {
       'SF Pro Display',
       'Segoe UI',
       'Inter',
-      'sans-serif',
+      'sans-serif'
     ]
   }
 
@@ -92,10 +92,10 @@ const getEditorFontStack = (font: EditorFontOption) => {
 
 const DARK_THEMES = new Set(['dark', 'gruvbox-dark', 'catppuccin-dark'])
 const THEME_CLASS_MAP: Record<string, string> = {
-  'gruvbox-dark':    'theme-gruvbox-dark',
-  'gruvbox-light':   'theme-gruvbox-light',
+  'gruvbox-dark': 'theme-gruvbox-dark',
+  'gruvbox-light': 'theme-gruvbox-light',
   'catppuccin-dark': 'theme-catppuccin-dark',
-  'catppuccin-light':'theme-catppuccin-light',
+  'catppuccin-light': 'theme-catppuccin-light'
 }
 const ALL_THEME_CLASSES = Object.values(THEME_CLASS_MAP)
 
@@ -118,7 +118,7 @@ const App = () => {
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(MIN_SIDEBAR_WIDTH) // default width for FileExplorer
   const [notesPanelWidth, setNotesPanelWidth] = useState(240) // default width for FolderNotesPanel
-  
+
   const isDragging = useRef(false)
   const isDraggingNotes = useRef(false)
   const previousBodyCursor = useRef('')
@@ -128,8 +128,12 @@ const App = () => {
 
   // Keep a ref in sync with state so handlers always read the latest value
   // without needing to be re-registered (which breaks mid-interaction)
-  useEffect(() => { sidebarWidthRef.current = sidebarWidth }, [sidebarWidth])
-  useEffect(() => { sidebarViewRef.current = sidebarView }, [sidebarView])
+  useEffect(() => {
+    sidebarWidthRef.current = sidebarWidth
+  }, [sidebarWidth])
+  useEffect(() => {
+    sidebarViewRef.current = sidebarView
+  }, [sidebarView])
 
   const switchTabByIndex = useSetAtom(switchTabByIndexAtom)
   const switchTabNext = useSetAtom(switchTabNextAtom)
@@ -207,10 +211,14 @@ const App = () => {
     }
 
     /* Attempt to create a new canvas file */
-    const parentDir = selectedNode?.type === 'folder' 
-      ? selectedNode.path 
-      : selectedNode?.path?.substring(0, Math.max(selectedNode.path.lastIndexOf('/'), selectedNode.path.lastIndexOf('\\'))) || ''
-    
+    const parentDir =
+      selectedNode?.type === 'folder'
+        ? selectedNode.path
+        : selectedNode?.path?.substring(
+            0,
+            Math.max(selectedNode.path.lastIndexOf('/'), selectedNode.path.lastIndexOf('\\'))
+          ) || ''
+
     await createCanvas(parentDir)
     setAppMode('canvas')
   }
@@ -238,7 +246,10 @@ const App = () => {
     const root = document.documentElement
     const stack = getEditorFontStack(editorFont).map(toCssFontFamily).join(', ')
     root.style.setProperty('--writr-editor-font-family', stack)
-    root.style.setProperty('--writr-editor-font-size', `${Math.max(11, Math.min(20, editorFontSize))}px`)
+    root.style.setProperty(
+      '--writr-editor-font-size',
+      `${Math.max(11, Math.min(20, editorFontSize))}px`
+    )
   }, [editorFont, editorFontSize])
 
   /* Apply user-chosen accent color as CSS custom properties */
@@ -330,7 +341,7 @@ const App = () => {
         e.preventDefault()
         closeActiveTab()
       }
-      
+
       /* Cmd + Shift + T */
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 't') {
         e.preventDefault()
@@ -348,7 +359,7 @@ const App = () => {
       /* Tab Cycling */
       if (
         ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === '[' || e.key === '{')) ||
-        ((e.ctrlKey) && e.shiftKey && e.key === 'Tab')
+        (e.ctrlKey && e.shiftKey && e.key === 'Tab')
       ) {
         e.preventDefault()
         switchTabPrev()
@@ -357,7 +368,7 @@ const App = () => {
 
       if (
         ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === ']' || e.key === '}')) ||
-        ((e.ctrlKey) && !e.shiftKey && e.key === 'Tab')
+        (e.ctrlKey && !e.shiftKey && e.key === 'Tab')
       ) {
         e.preventDefault()
         switchTabNext()
@@ -381,21 +392,33 @@ const App = () => {
         unlockResizeInteraction()
       }
     }
-  }, [closeActiveTab, createSettingsTab, restoreClosedTab, switchTabByIndex, switchTabNext, switchTabPrev])
+  }, [
+    closeActiveTab,
+    createSettingsTab,
+    restoreClosedTab,
+    switchTabByIndex,
+    switchTabNext,
+    switchTabPrev
+  ])
 
   return (
     <ErrorBoundary>
       <RootLayout className="obsidian-shell flex-col">
         {/* Persistent Title Bar */}
-        <div 
+        <div
           className="h-10 flex shrink-0 bg-[var(--obsidian-titlebar)] border-b border-[var(--obsidian-border-soft)] z-50"
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties & { WebkitAppRegion: string }}
         >
           {/* Spacer for Ribbon + Sidebar + Traffic Lights */}
-          <div 
-            className="flex shrink-0 items-center transition-[width] duration-200 ease-out" 
-            style={{ 
-              width: Math.max(112, 58 + (collapsed ? 0 : sidebarWidth) + (!collapsed && sidebarView === 'files' ? notesPanelWidth : 0)) 
+          <div
+            className="flex shrink-0 items-center transition-[width] duration-200 ease-out"
+            style={{
+              width: Math.max(
+                112,
+                58 +
+                  (collapsed ? 0 : sidebarWidth) +
+                  (!collapsed && sidebarView === 'files' ? notesPanelWidth : 0)
+              )
             }}
           >
             {/* macOS traffic lights safe area */}
@@ -405,7 +428,11 @@ const App = () => {
               <Tooltip content={collapsed ? 'Show sidebar' : 'Hide sidebar'} position="bottom">
                 <button
                   className="writr-titlebar-sidebar-toggle"
-                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties & { WebkitAppRegion: string }}
+                  style={
+                    { WebkitAppRegion: 'no-drag' } as React.CSSProperties & {
+                      WebkitAppRegion: string
+                    }
+                  }
                   onClick={() => setCollapsed((prev) => !prev)}
                   aria-label={collapsed ? 'Show sidebar' : 'Hide sidebar'}
                 >
@@ -437,7 +464,11 @@ const App = () => {
                 <VscFiles />
               </button>
             </Tooltip>
-            <Tooltip content="Daily note" position="right" icon={<VscCalendar className="w-3.5 h-3.5" />}>
+            <Tooltip
+              content="Daily note"
+              position="right"
+              icon={<VscCalendar className="w-3.5 h-3.5" />}
+            >
               <button
                 className="obsidian-ribbon-btn"
                 onClick={() => {
@@ -448,7 +479,11 @@ const App = () => {
                 <VscCalendar />
               </button>
             </Tooltip>
-            <Tooltip content="Kanban" position="right" icon={<VscProject className="w-3.5 h-3.5" />}>
+            <Tooltip
+              content="Kanban"
+              position="right"
+              icon={<VscProject className="w-3.5 h-3.5" />}
+            >
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'kanban' ? 'is-active' : ''}`}
                 onClick={() => {
@@ -458,7 +493,11 @@ const App = () => {
                 <VscProject />
               </button>
             </Tooltip>
-            <Tooltip content="Spreadsheet" position="right" icon={<VscTable className="w-3.5 h-3.5" />}>
+            <Tooltip
+              content="Spreadsheet"
+              position="right"
+              icon={<VscTable className="w-3.5 h-3.5" />}
+            >
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'spreadsheet' ? 'is-active' : ''}`}
                 onClick={() => {
@@ -468,7 +507,11 @@ const App = () => {
                 <VscTable />
               </button>
             </Tooltip>
-            <Tooltip content="Terminal" position="right" icon={<VscTerminal className="w-3.5 h-3.5" />}>
+            <Tooltip
+              content="Terminal"
+              position="right"
+              icon={<VscTerminal className="w-3.5 h-3.5" />}
+            >
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'terminal' ? 'is-active' : ''}`}
                 onClick={() => {
@@ -478,7 +521,11 @@ const App = () => {
                 <VscTerminal />
               </button>
             </Tooltip>
-            <Tooltip content="Canvas" position="right" icon={<VscSymbolRuler className="w-3.5 h-3.5" />}>
+            <Tooltip
+              content="Canvas"
+              position="right"
+              icon={<VscSymbolRuler className="w-3.5 h-3.5" />}
+            >
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'file' && appMode === 'canvas' ? 'is-active' : ''}`}
                 onClick={handleCanvasClick}
@@ -487,7 +534,11 @@ const App = () => {
               </button>
             </Tooltip>
             <div className="flex-1" />
-            <Tooltip content="Settings" position="right" icon={<VscSettingsGear className="w-3.5 h-3.5" />}>
+            <Tooltip
+              content="Settings"
+              position="right"
+              icon={<VscSettingsGear className="w-3.5 h-3.5" />}
+            >
               <button
                 className={`obsidian-ribbon-btn ${activeTab?.kind === 'settings' ? 'is-active' : ''}`}
                 onClick={() => createSettingsTab()}

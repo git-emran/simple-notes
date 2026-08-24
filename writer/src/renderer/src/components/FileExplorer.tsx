@@ -1,51 +1,51 @@
 import {
-    activeTabPathAtom,
-    createDirectoryAtom,
-    createNoteAtom,
-    deleteNodeAtom,
-    fileTreeAtom,
-    fileTreeIndexAtom,
-    fileTreeUiByRootAtom,
-    movePathAtom,
-    notesRootDirAtom,
-    noteStatusByPathAtom,
-    noteTagByPathAtom,
-    openTabAtom,
-    reindexTodoStatsAtom,
-    selectedNodeAtom,
-    showFolderIconsAtom,
-    renamingPathAtom,
-    activeFilterAtom
+  activeTabPathAtom,
+  createDirectoryAtom,
+  createNoteAtom,
+  deleteNodeAtom,
+  fileTreeAtom,
+  fileTreeIndexAtom,
+  fileTreeUiByRootAtom,
+  movePathAtom,
+  notesRootDirAtom,
+  noteStatusByPathAtom,
+  noteTagByPathAtom,
+  openTabAtom,
+  reindexTodoStatsAtom,
+  selectedNodeAtom,
+  showFolderIconsAtom,
+  renamingPathAtom,
+  activeFilterAtom
 } from '@renderer/store'
 import { buildMoveDestination, canMovePathToDirectory } from '@renderer/utils/fileTreeDrag'
 import { FileNode } from '@shared/models'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
-    ComponentProps,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    type MouseEvent
+  ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent
 } from 'react'
 import {
-    VscCollapseAll,
-    VscEdit,
-    VscExpandAll,
-    VscFolderOpened,
-    VscGoToFile,
-    VscNewFile,
-    VscNewFolder,
-    VscSearch,
-    VscTrash,
-    VscChevronDown,
-    VscChevronUp,
-    VscCircleFilled,
-    VscPassFilled,
-    VscPlayCircle,
-    VscError,
-    VscDebugPause
+  VscCollapseAll,
+  VscEdit,
+  VscExpandAll,
+  VscFolderOpened,
+  VscGoToFile,
+  VscNewFile,
+  VscNewFolder,
+  VscSearch,
+  VscTrash,
+  VscChevronDown,
+  VscChevronUp,
+  VscCircleFilled,
+  VscPassFilled,
+  VscPlayCircle,
+  VscError,
+  VscDebugPause
 } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
 import { ContextMenu, ContextMenuItem } from './ContextMenu'
@@ -126,7 +126,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    Array.from(fileTreeIndex.values()).forEach(node => {
+    Array.from(fileTreeIndex.values()).forEach((node) => {
       if (node.type === 'file') {
         const status = noteStatuses[node.path]
         if (status) {
@@ -139,11 +139,11 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
   const tagCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    Array.from(fileTreeIndex.values()).forEach(node => {
+    Array.from(fileTreeIndex.values()).forEach((node) => {
       if (node.type === 'file') {
         const tagStr = noteTags[node.path]
         if (tagStr) {
-          tagStr.split(',').forEach(tag => {
+          tagStr.split(',').forEach((tag) => {
             const t = tag.trim()
             if (t) {
               counts[t] = (counts[t] || 0) + 1
@@ -162,11 +162,16 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <VscPlayCircle className="text-sky-400 w-4 h-4" />
-      case 'on hold': return <VscDebugPause className="text-amber-400 w-4 h-4" />
-      case 'completed': return <VscPassFilled className="text-emerald-400 w-4 h-4" />
-      case 'dropped': return <VscError className="text-rose-400 w-4 h-4" />
-      default: return <VscCircleFilled className="text-gray-400 w-4 h-4" />
+      case 'active':
+        return <VscPlayCircle className="text-sky-400 w-4 h-4" />
+      case 'on hold':
+        return <VscDebugPause className="text-amber-400 w-4 h-4" />
+      case 'completed':
+        return <VscPassFilled className="text-emerald-400 w-4 h-4" />
+      case 'dropped':
+        return <VscError className="text-rose-400 w-4 h-4" />
+      default:
+        return <VscCircleFilled className="text-gray-400 w-4 h-4" />
     }
   }
 
@@ -174,7 +179,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
     const isBug = tag.toLowerCase() === 'bug'
     const isWork = tag.toLowerCase() === 'work'
     const isPersonal = tag.toLowerCase() === 'personal'
-    
+
     if (isWork) return 'text-sky-400'
     if (isPersonal) return 'text-emerald-400'
     if (isBug) return 'text-rose-400'
@@ -496,11 +501,17 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
               : FILE_TREE_FOLDER_ROW_HEIGHT
       const rowHeight = baseRowHeight
 
-      const hideChevron =
-        node.type === 'folder' &&
-        !node.children?.some((c) => c.type === 'folder')
+      const hideChevron = node.type === 'folder' && !node.children?.some((c) => c.type === 'folder')
 
-      rows.push({ node, depth: frame.depth, isExpanded, noteStatus, noteTag, rowHeight, hideChevron })
+      rows.push({
+        node,
+        depth: frame.depth,
+        isExpanded,
+        noteStatus,
+        noteTag,
+        rowHeight,
+        hideChevron
+      })
 
       if (node.type === 'folder' && isExpanded && node.children?.length) {
         const children = node.children.filter((child) => child.type === 'folder')
@@ -704,38 +715,59 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
         {/* Status Section */}
         {hasStatuses && (
           <div className="mt-4 flex flex-col select-none">
-            <div 
+            <div
               className="flex items-center justify-between px-4 py-1.5 cursor-pointer text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] group"
-              onClick={(e) => { e.stopPropagation(); setIsStatusExpanded(!isStatusExpanded); }}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsStatusExpanded(!isStatusExpanded)
+              }}
             >
               <span className="text-[13px] font-medium">Status</span>
               <div className="flex items-center">
-                {isStatusExpanded ? <VscChevronUp className="w-4 h-4 opacity-50 group-hover:opacity-100" /> : <VscChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-100" />}
+                {isStatusExpanded ? (
+                  <VscChevronUp className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                ) : (
+                  <VscChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                )}
               </div>
             </div>
             {isStatusExpanded && (
               <div className="flex flex-col py-1">
-                {NOTE_STATUS_VALUES.map(status => {
-                  if (!statusCounts[status]) return null;
+                {NOTE_STATUS_VALUES.map((status) => {
+                  if (!statusCounts[status]) return null
                   const isActive = activeFilter?.type === 'status' && activeFilter.value === status
                   return (
-                  <div 
-                    key={status} 
-                    className={twMerge(
-                      "flex items-center justify-between px-6 py-1.5 hover:bg-[var(--obsidian-hover-soft)] cursor-pointer text-[13px]",
-                      isActive && "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)]"
-                    )}
-                    onClick={(e) => { e.stopPropagation(); setActiveFilter({ type: 'status', value: status }); }}
-                  >
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(status)}
-                      <span className={twMerge("capitalize", isActive ? "text-[var(--obsidian-text)]" : "text-[var(--obsidian-text-muted)]")}>{status}</span>
+                    <div
+                      key={status}
+                      className={twMerge(
+                        'flex items-center justify-between px-6 py-1.5 hover:bg-[var(--obsidian-hover-soft)] cursor-pointer text-[13px]',
+                        isActive &&
+                          'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)]'
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActiveFilter({ type: 'status', value: status })
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(status)}
+                        <span
+                          className={twMerge(
+                            'capitalize',
+                            isActive
+                              ? 'text-[var(--obsidian-text)]'
+                              : 'text-[var(--obsidian-text-muted)]'
+                          )}
+                        >
+                          {status}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[var(--obsidian-text-muted)] opacity-60 tabular-nums">
+                        {statusCounts[status]}
+                      </span>
                     </div>
-                    <span className="text-[11px] text-[var(--obsidian-text-muted)] opacity-60 tabular-nums">
-                      {statusCounts[status]}
-                    </span>
-                  </div>
-                )})}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -744,14 +776,20 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
         {/* Tags Section */}
         {hasTags && (
           <div className="mt-2 flex flex-col select-none">
-            <div 
+            <div
               className="flex items-center justify-between px-4 py-1.5 cursor-pointer text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] group"
-              onClick={(e) => { e.stopPropagation(); setIsTagsExpanded(!isTagsExpanded); }}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsTagsExpanded(!isTagsExpanded)
+              }}
             >
               <span className="text-[13px] font-medium">Tags</span>
               <div className="flex items-center gap-1">
-                <VscSearch className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100" />
-                {isTagsExpanded ? <VscChevronUp className="w-4 h-4 opacity-50 group-hover:opacity-100" /> : <VscChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-100" />}
+                {isTagsExpanded ? (
+                  <VscChevronUp className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                ) : (
+                  <VscChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                )}
               </div>
             </div>
             {isTagsExpanded && (
@@ -759,25 +797,38 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
                 {Object.entries(tagCounts)
                   .sort(([a], [b]) => a.localeCompare(b))
                   .map(([tag, count]) => {
-                  const isActive = activeFilter?.type === 'tag' && activeFilter.value === tag
-                  return (
-                  <div 
-                    key={tag} 
-                    className={twMerge(
-                      "flex items-center justify-between px-6 py-1.5 hover:bg-[var(--obsidian-hover-soft)] cursor-pointer text-[13px]",
-                      isActive && "bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)]"
-                    )}
-                    onClick={(e) => { e.stopPropagation(); setActiveFilter({ type: 'tag', value: tag }); }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <VscCircleFilled className={twMerge('w-3.5 h-3.5', getTagColor(tag))} />
-                      <span className={isActive ? "text-[var(--obsidian-text)]" : "text-[var(--obsidian-text-muted)]"}>{tag}</span>
-                    </div>
-                    <span className="text-[11px] text-[var(--obsidian-text-muted)] opacity-60 tabular-nums">
-                      {count}
-                    </span>
-                  </div>
-                )})}
+                    const isActive = activeFilter?.type === 'tag' && activeFilter.value === tag
+                    return (
+                      <div
+                        key={tag}
+                        className={twMerge(
+                          'flex items-center justify-between px-6 py-1.5 hover:bg-[var(--obsidian-hover-soft)] cursor-pointer text-[13px]',
+                          isActive &&
+                            'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)]'
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveFilter({ type: 'tag', value: tag })
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <VscCircleFilled className={twMerge('w-3.5 h-3.5', getTagColor(tag))} />
+                          <span
+                            className={
+                              isActive
+                                ? 'text-[var(--obsidian-text)]'
+                                : 'text-[var(--obsidian-text-muted)]'
+                            }
+                          >
+                            {tag}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[var(--obsidian-text-muted)] opacity-60 tabular-nums">
+                          {count}
+                        </span>
+                      </div>
+                    )
+                  })}
               </div>
             )}
           </div>

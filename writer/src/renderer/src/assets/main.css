@@ -311,7 +311,7 @@ header {
 }
 
 .obsidian-ribbon {
-  width: 58px;
+  width: 42px;
   flex-shrink: 0;
   background: var(--obsidian-ribbon);
   border-right: 1px solid var(--obsidian-border);
