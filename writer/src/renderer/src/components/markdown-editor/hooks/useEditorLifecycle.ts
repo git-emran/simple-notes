@@ -9,7 +9,7 @@ import {
 } from '@codemirror/language'
 import { lintGutter } from '@codemirror/lint'
 import { Compartment, EditorState, Prec } from '@codemirror/state'
-import { drawSelection, EditorView, keymap } from '@codemirror/view'
+import { drawSelection, EditorView, keymap, placeholder } from '@codemirror/view'
 import { closeBrackets, completionKeymap, autocompletion, type Completion } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
@@ -72,6 +72,7 @@ interface UseEditorLifecycleParams {
   rootDir: string
   reconfigureLanguage: (view: EditorView, support: LanguageSupport | []) => void
   commandPaletteItems: import('../CommandPaletteModal').CommandPaletteItem[]
+  onOpenTemplatePalette: () => void
 }
 
 const COMPLETION_KIND_LABELS: Record<string, string> = {
@@ -117,7 +118,8 @@ export function useEditorLifecycle({
   tabIndentUnit,
   rootDir,
   reconfigureLanguage,
-  commandPaletteItems
+  commandPaletteItems,
+  onOpenTemplatePalette
 }: UseEditorLifecycleParams) {
   const saveNote = useSetAtom(saveNoteAtom)
   const setEditorSaveStateByPath = useSetAtom(editorSaveStateByPathAtom)
@@ -456,6 +458,37 @@ export function useEditorLifecycle({
         ])
       ),
       keymap.of([...searchKeymap, ...defaultKeymap, ...historyKeymap, ...foldKeymap, ...completionKeymap]),
+      placeholder(() => {
+        const wrap = document.createElement('span')
+        wrap.style.cursor = 'pointer'
+        wrap.style.pointerEvents = 'auto'
+        wrap.title = 'Open template palette'
+        wrap.onmousedown = (e) => {
+          e.preventDefault()
+          onOpenTemplatePalette()
+        }
+
+        const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.userAgent)
+        const shortcutText = isMac ? 'Option-T' : 'Alt-T'
+
+        const txt = document.createElement('span')
+        txt.style.color = 'var(--obsidian-text-muted)'
+        txt.style.pointerEvents = 'none'
+        txt.textContent = 'Just start typing, or '
+        wrap.appendChild(txt)
+
+        const btn = document.createElement('span')
+        btn.className = 'inline-flex items-center justify-center gap-1 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-modifier-cover)] px-1.5 py-0.5 text-xs text-[var(--obsidian-text)] cursor-pointer hover:bg-[var(--obsidian-hover)] transition-colors'
+        btn.style.pointerEvents = 'auto'
+        btn.textContent = `Choose a template ${shortcutText}`
+        btn.onmousedown = (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onOpenTemplatePalette()
+        }
+        wrap.appendChild(btn)
+        return wrap
+      }),
       drawSelection(),
       closeBrackets(),
       autoCloseTags,
@@ -509,7 +542,7 @@ export function useEditorLifecycle({
         lang: window.context.locale
       })
     ],
-    [handleClipboardImagePaste, debouncedSave]
+    [handleClipboardImagePaste, debouncedSave, onOpenTemplatePalette]
   )
 
   // ── Main editor lifecycle (create / switch notes) ─────────────────────────
@@ -570,6 +603,9 @@ export function useEditorLifecycle({
       setSaveError(null)
       updateTrackedSaveState(incomingPath, { hasUnsavedChanges: false, hasSaveError: false })
       setDebouncedContent(incomingContent)
+      
+      // Focus editor on note change
+      viewRef.current.focus()
       return
     }
 
@@ -735,6 +771,9 @@ export function useEditorLifecycle({
       setDebouncedContent(initialContent)
       // Seed the slash command items into the new editor instance
       viewRef.current.dispatch({ effects: setSlashCommandItems.of(commandPaletteItems) })
+      
+      // Auto-focus new editor
+      viewRef.current.focus()
     }
 
     initEditor()

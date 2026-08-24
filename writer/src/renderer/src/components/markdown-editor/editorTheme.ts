@@ -24,6 +24,9 @@ export const getEditorTheme = (isDark: boolean) =>
       color: 'var(--obsidian-text)',
       letterSpacing: '0'
     },
+    '.cm-placeholder': {
+      pointerEvents: 'auto'
+    },
     '.cm-scroller': {
       fontFamily: editorFontFamilyVar,
       padding: '0',

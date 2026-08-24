@@ -8,6 +8,7 @@ import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
 import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import { AiModal } from './AiModal'
 import { CommandPaletteModal } from './CommandPaletteModal'
+import { TemplatePaletteModal } from './TemplatePaletteModal'
 import { EditorFAB } from './EditorFAB'
 import { EditorHeader } from './EditorHeader'
 import { MarkdownPreview } from './MarkdownPreview'
@@ -18,6 +19,7 @@ import { useEditorCompartments } from './hooks/useEditorCompartments'
 import { useEditorLifecycle } from './hooks/useEditorLifecycle'
 import { useNoteMetadata } from './hooks/useNoteMetadata'
 import { useSplitViewSync } from './hooks/useSplitViewSync'
+import { useTemplatePalette } from './hooks/useTemplatePalette'
 import type { SelectedNote } from './hooks/types'
 import type { EditorView } from '@codemirror/view'
 
@@ -142,6 +144,11 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     canOpenCommandPalette
   })
 
+  const templatePalette = useTemplatePalette({
+    viewRef,
+    isActive
+  })
+
   const lifecycle = useEditorLifecycle({
     selectedNote: selectedNote as SelectedNote | null,
     editorRef,
@@ -154,7 +161,11 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     tabIndentUnit: editorSettings.tabIndentUnit,
     rootDir,
     reconfigureLanguage,
-    commandPaletteItems: palette.editorCommandItems
+    commandPaletteItems: palette.editorCommandItems,
+    onOpenTemplatePalette: useCallback(
+      () => templatePalette.setIsTemplatePaletteOpen(true),
+      [templatePalette.setIsTemplatePaletteOpen]
+    )
   })
 
   const splitView = useSplitViewSync({
@@ -379,6 +390,19 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
         onClose={() => {
           palette.setIsCommandPaletteOpen(false)
           viewRef.current?.focus()
+        }}
+      />
+
+      {/* Template palette */}
+      <TemplatePaletteModal
+        isOpen={templatePalette.isTemplatePaletteOpen}
+        isDarkMode={isDarkMode}
+        onClose={() => {
+          templatePalette.setIsTemplatePaletteOpen(false)
+          viewRef.current?.focus()
+        }}
+        onSelect={(content) => {
+          templatePalette.insertTemplate(content)
         }}
       />
     </div>
