@@ -33,11 +33,7 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
     category: 'Debugging',
     description: "For a bug you've already found the root cause of and are ready to fix",
     keywords: ['bug', 'fix', 'issue', 'patch'],
-    content: `---
-_template:
-  title: Bug fix
-  description: For a bug you've already found the root cause of and are ready to fix
----
+    content: `
 ## Actual Behavior
 
 ## Expected Behavior
@@ -90,10 +86,7 @@ _template:
     category: 'Debugging',
     description: 'For triaging a crash or unhandled exception from a stack trace or crash log',
     keywords: ['crash', 'exception', 'stack', 'trace', 'error'],
-    content: `---
-_template:
-  title: Crash bug
-  description: For triaging a crash or unhandled exception from a stack trace or crash log
+    content: `
 
 ## Crash Summary
 
@@ -126,6 +119,7 @@ STACK TRACE GOES HERE
 - Can the user provide a crash log, screen recording, or more repro details?
 
 ## Root Cause
+*Root cause is stated here!*
 
 ## Fix`
   }, 
