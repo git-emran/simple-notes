@@ -162,6 +162,8 @@ function createWindow(): void {
     center: true,
     title: 'Writer',
     frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
     vibrancy: 'under-window',
     visualEffectState: 'active',
     titleBarStyle: 'hidden',

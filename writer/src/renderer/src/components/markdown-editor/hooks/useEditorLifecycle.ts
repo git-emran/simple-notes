@@ -41,7 +41,6 @@ import { quoteLineStyling } from '../quoteLineStyling'
 import { githubAlertStyling } from '../githubAlertStyling'
 import { tabAsSpaces } from '../tabAsSpaces'
 import { tripleBacktickExtension } from '../tripleBacktick'
-import { statusBarExtension } from '../statusbar'
 import { slashCommandExtension, setSlashCommandItems, slashCommandSource } from '../slashCommandCompletion'
 import { codeBlockLanguageSource } from '../codeBlockLanguageCompletion'
 import { editorSaveStateByPathAtom, saveNoteAtom } from '@renderer/store'
@@ -526,7 +525,6 @@ export function useEditorLifecycle({
       markdownTableEnhancement,
       checkboxExtension,
       createClipboardExperience({ importImages: handleClipboardImagePaste }),
-      statusBarExtension,
       codeBlockEnhancements,
       quoteLineStyling,
       githubAlertStyling,

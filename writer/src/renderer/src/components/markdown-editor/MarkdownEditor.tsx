@@ -187,7 +187,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
   // ── Empty state ───────────────────────────────────────────────────────────
   if (!selectedNote?.path) {
     return (
-      <div className="flex items-center justify-center h-full bg-[var(--obsidian-base)]">
+      <div className="flex items-center justify-center h-full" style={{ background: 'var(--obsidian-base)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
         <div className="text-center">
           <h2 className="text-lg font-semibold text-[var(--obsidian-text)]">No note selected</h2>
           <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">
@@ -208,7 +208,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--obsidian-base)]">
+    <div className="flex flex-col h-full w-full" style={{ background: 'var(--obsidian-base)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
       {noteMetadata.exportNotice && (
         <div className="absolute top-14 right-5 z-50 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg">
           {noteMetadata.exportNotice}

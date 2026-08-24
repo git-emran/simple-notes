@@ -45,12 +45,12 @@
 
 @layer base {
   :root {
-    --obsidian-base: #f6f6f6;
-    --obsidian-titlebar: #f2f2f2;
-    --obsidian-ribbon: #f4f4f4;
-    --obsidian-sidebar: #f6f6f6;
-    --obsidian-workspace: #ffffff;
-    --obsidian-pane: #ffffff;
+    --obsidian-base: rgba(246, 246, 246, 0.4);
+    --obsidian-titlebar: rgba(242, 242, 242, 0.4);
+    --obsidian-ribbon: rgba(244, 244, 244, 0.4);
+    --obsidian-sidebar: rgba(246, 246, 246, 0.4);
+    --obsidian-workspace: rgba(255, 255, 255, 0.4);
+    --obsidian-pane: rgba(255, 255, 255, 0.4);
     --obsidian-border: #e6e6e6;
     --obsidian-border-soft: #efefef;
     --obsidian-text: #111827;
@@ -79,12 +79,12 @@
   }
 
   .dark {
-    --obsidian-base: #0d0f12;
-    --obsidian-titlebar: #101216;
-    --obsidian-ribbon: #111318;
-    --obsidian-sidebar: #111318;
-    --obsidian-workspace: #15171c;
-    --obsidian-pane: #181b21;
+    --obsidian-base: rgba(13, 15, 18, 0.4);
+    --obsidian-titlebar: rgba(16, 18, 22, 0.4);
+    --obsidian-ribbon: rgba(17, 19, 24, 0.4);
+    --obsidian-sidebar: rgba(17, 19, 24, 0.4);
+    --obsidian-workspace: rgba(21, 23, 28, 0.4);
+    --obsidian-pane: rgba(24, 27, 33, 0.4);
     --obsidian-border: rgba(255, 255, 255, 0.1);
     --obsidian-border-soft: rgba(255, 255, 255, 0.07);
     --obsidian-text: #e5e7eb;
@@ -111,12 +111,12 @@
 
   /* ── Gruvbox Dark ────────────────────────────────────────── */
   .theme-gruvbox-dark {
-    --obsidian-base: #1d2021;
-    --obsidian-titlebar: #282828;
-    --obsidian-ribbon: #282828;
-    --obsidian-sidebar: #282828;
-    --obsidian-workspace: #282828;
-    --obsidian-pane: #32302f;
+    --obsidian-base: rgba(29, 32, 33, 0.4);
+    --obsidian-titlebar: rgba(40, 40, 40, 0.4);
+    --obsidian-ribbon: rgba(40, 40, 40, 0.4);
+    --obsidian-sidebar: rgba(40, 40, 40, 0.4);
+    --obsidian-workspace: rgba(40, 40, 40, 0.4);
+    --obsidian-pane: rgba(50, 48, 47, 0.4);
     --obsidian-border: rgba(146, 131, 116, 0.25);
     --obsidian-border-soft: rgba(146, 131, 116, 0.14);
     --obsidian-text: #ebdbb2;
@@ -143,12 +143,12 @@
 
   /* ── Gruvbox Light ───────────────────────────────────────── */
   .theme-gruvbox-light {
-    --obsidian-base: #f9f5d7;
-    --obsidian-titlebar: #fbf1c7;
-    --obsidian-ribbon: #fbf1c7;
-    --obsidian-sidebar: #f2e5bc;
-    --obsidian-workspace: #fbf1c7;
-    --obsidian-pane: #ebdbb2;
+    --obsidian-base: rgba(249, 245, 215, 0.4);
+    --obsidian-titlebar: rgba(251, 241, 199, 0.4);
+    --obsidian-ribbon: rgba(251, 241, 199, 0.4);
+    --obsidian-sidebar: rgba(242, 229, 188, 0.4);
+    --obsidian-workspace: rgba(251, 241, 199, 0.4);
+    --obsidian-pane: rgba(235, 219, 178, 0.4);
     --obsidian-border: rgba(102, 92, 84, 0.2);
     --obsidian-border-soft: rgba(102, 92, 84, 0.12);
     --obsidian-text: #3c3836;
@@ -176,12 +176,12 @@
 
   /* ── Catppuccin Dark (Mocha) ─────────────────────────────── */
   .theme-catppuccin-dark {
-    --obsidian-base: #1e1e2e;
-    --obsidian-titlebar: #181825;
-    --obsidian-ribbon: #181825;
-    --obsidian-sidebar: #181825;
-    --obsidian-workspace: #1e1e2e;
-    --obsidian-pane: #313244;
+    --obsidian-base: rgba(30, 30, 46, 0.4);
+    --obsidian-titlebar: rgba(24, 24, 37, 0.4);
+    --obsidian-ribbon: rgba(24, 24, 37, 0.4);
+    --obsidian-sidebar: rgba(24, 24, 37, 0.4);
+    --obsidian-workspace: rgba(30, 30, 46, 0.4);
+    --obsidian-pane: rgba(49, 50, 68, 0.4);
     --obsidian-border: rgba(108, 112, 134, 0.28);
     --obsidian-border-soft: rgba(108, 112, 134, 0.15);
     --obsidian-text: #cdd6f4;
@@ -208,12 +208,12 @@
 
   /* ── Catppuccin Light (Latte) ────────────────────────────── */
   .theme-catppuccin-light {
-    --obsidian-base: #eff1f5;
-    --obsidian-titlebar: #e6e9ef;
-    --obsidian-ribbon: #e6e9ef;
-    --obsidian-sidebar: #e6e9ef;
-    --obsidian-workspace: #eff1f5;
-    --obsidian-pane: #ccd0da;
+    --obsidian-base: rgba(239, 241, 245, 0.4);
+    --obsidian-titlebar: rgba(230, 233, 239, 0.4);
+    --obsidian-ribbon: rgba(230, 233, 239, 0.4);
+    --obsidian-sidebar: rgba(230, 233, 239, 0.4);
+    --obsidian-workspace: rgba(239, 241, 245, 0.4);
+    --obsidian-pane: rgba(204, 208, 218, 0.4);
     --obsidian-border: rgba(156, 160, 176, 0.3);
     --obsidian-border-soft: rgba(156, 160, 176, 0.18);
     --obsidian-text: #4c4f69;
@@ -251,9 +251,13 @@
       BlinkMacSystemFont,
       'Segoe UI',
       sans-serif;
-    background: var(--obsidian-base);
+    background: transparent; /* Use transparent to let the app background shine through */
     color: var(--obsidian-text);
   }
+}
+
+#root {
+  background: transparent;
 }
 
 .writr-markdown-preview {

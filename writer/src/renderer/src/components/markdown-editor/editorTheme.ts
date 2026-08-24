@@ -20,7 +20,7 @@ export const getEditorTheme = (isDark: boolean) =>
       height: '100%',
       fontSize: editorFontSizeVar,
       lineHeight: '1.68',
-      backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)',
+      backgroundColor: 'transparent',
       color: 'var(--obsidian-text)',
       letterSpacing: '0'
     },
@@ -30,7 +30,7 @@ export const getEditorTheme = (isDark: boolean) =>
     '.cm-scroller': {
       fontFamily: editorFontFamilyVar,
       padding: '0',
-      backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)',
+      backgroundColor: 'transparent',
       overflowX: 'auto'
     },
     '.cm-focused': {
@@ -51,7 +51,7 @@ export const getEditorTheme = (isDark: boolean) =>
       overflowWrap: 'break-word'
     },
     '.cm-gutters': {
-      backgroundColor: isDark ? 'var(--obsidian-base)' : 'var(--obsidian-workspace)',
+      backgroundColor: 'transparent',
       paddingLeft: '0',
       borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.16)'
     },
