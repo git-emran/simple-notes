@@ -17,7 +17,6 @@ import {
 import { MdHorizontalRule } from 'react-icons/md'
 import { VscSearch, VscSparkle } from 'react-icons/vsc'
 import { EditorView } from '@codemirror/view'
-import { openSearchPanel } from '@codemirror/search'
 import * as commands from './editorCommands'
 
 export type EditorMenuEntry =
@@ -68,18 +67,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     keywords: ['kbd', 'keyboard', 'key', 'shortcut'],
     run: (view) => commands.insertKbd(view)
   },
-  {
-    type: 'item',
-    id: 'find-replace',
-    label: 'Find and Replace',
-    icon: <VscSearch className="h-3 w-3 opacity-60" />,
-    shortcut: 'Ctrl+F',
-    keywords: ['search', 'replace', 'find in note'],
-    run: (view) => {
-      if (!view) return
-      openSearchPanel(view)
-    }
-  },
+
   {
     type: 'item',
     id: 'write-with-ai',

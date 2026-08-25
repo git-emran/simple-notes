@@ -834,3 +834,4 @@ header {
 .kanban-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: var(--writr-scrollbar-thumb-hover);
 }
+
