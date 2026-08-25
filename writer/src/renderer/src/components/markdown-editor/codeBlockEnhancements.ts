@@ -195,6 +195,10 @@ function parseFence(view: EditorView, nodeFrom: number, nodeTo: number): FenceIn
 /* ─── Plugin 1: Inline header widget ────────────────────────────────────── */
 // block: false — placed at END of opening fence line (line.to)
 // This NEVER conflicts with Decoration.line() which is at line.from
+//
+// Also emits Decoration.replace() to hide the language+meta text on the fence
+// line (the header already shows it). When the cursor is on the fence line,
+// the replace decoration is skipped so the user can edit the raw text.
 
 const codeBlockHeaderPlugin = ViewPlugin.fromClass(
   class {
@@ -205,7 +209,7 @@ const codeBlockHeaderPlugin = ViewPlugin.fromClass(
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged) {
+      if (update.docChanged || update.viewportChanged || update.selectionSet) {
         this.decorations = this.build(update.view)
       }
     }
@@ -213,6 +217,14 @@ const codeBlockHeaderPlugin = ViewPlugin.fromClass(
     build(view: EditorView): DecorationSet {
       const ranges: Range<Decoration>[] = []
       const seen = new Set<number>()
+
+      // Collect all cursor positions (lines the cursor is on)
+      const cursorLines = new Set<number>()
+      for (const range of view.state.selection.ranges) {
+        const startLine = view.state.doc.lineAt(range.from).number
+        const endLine = view.state.doc.lineAt(range.to).number
+        for (let i = startLine; i <= endLine; i++) cursorLines.add(i)
+      }
 
       for (const { from, to } of view.visibleRanges) {
         syntaxTree(view.state).iterate({
@@ -225,6 +237,7 @@ const codeBlockHeaderPlugin = ViewPlugin.fromClass(
             const info = parseFence(view, node.from, node.to)
             if (!info) return
 
+            // Header widget at end of opening fence line
             ranges.push(
               Decoration.widget({
                 widget: new CodeBlockHeaderWidget(
@@ -238,6 +251,23 @@ const codeBlockHeaderPlugin = ViewPlugin.fromClass(
                 block: false, // CRITICAL: must be false
               }).range(info.openLineTo)
             )
+
+            // Hide language+meta text after backticks when cursor is NOT on this line
+            const cursorOnFenceLine = cursorLines.has(info.startLine)
+            if (!cursorOnFenceLine && info.lang) {
+              // Hide from right after the backticks to end of line
+              const openLine = view.state.doc.line(info.startLine)
+              const m = openLine.text.match(/^(\s*`{3,})/)
+              if (m) {
+                const hideFrom = openLine.from + m[1].length
+                const hideTo = openLine.to
+                if (hideFrom < hideTo) {
+                  ranges.push(
+                    Decoration.replace({}).range(hideFrom, hideTo)
+                  )
+                }
+              }
+            }
           }
         })
       }

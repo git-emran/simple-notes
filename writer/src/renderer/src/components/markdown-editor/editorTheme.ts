@@ -172,7 +172,7 @@ export const getEditorTheme = (isDark: boolean) =>
 
     /* Autocomplete Tooltip Styles */
     '.cm-tooltip': {
-      backgroundColor: 'var(--obsidian-pane)',
+      backgroundColor: 'var(--obsidian-surface)',
       border: '1px solid var(--obsidian-border)',
       borderRadius: '8px',
       boxShadow: isDark ? '0 4px 14px rgba(0, 0, 0, 0.4)' : '0 8px 24px rgba(15, 23, 42, 0.14)'
