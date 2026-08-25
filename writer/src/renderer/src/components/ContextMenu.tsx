@@ -50,7 +50,7 @@ export const ContextMenu = ({ x, y, onClose, children, className, style, ...prop
     <div
       ref={ref}
       className={twMerge(
-        'fixed z-50 rounded-md py-1 min-w-[150px] max-h-[400px] overflow-y-auto preview-scrollbar bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-lg',
+        'fixed z-50 rounded-md py-1 min-w-[150px] max-h-[400px] overflow-y-auto preview-scrollbar bg-[var(--obsidian-surface)] border border-obsidian-border shadow-lg backdrop-blur-sm',
         className
       )}
       style={{

@@ -134,7 +134,7 @@ export const EditorHeader = ({
           : ''
 
   return (
-    <div className="flex flex-col px-6 py-4 bg-[var(--obsidian-workspace)] shrink-0 border-b border-[var(--obsidian-border-soft)]">
+    <div className="flex flex-col px-6 py-4 bg-[var(--obsidian-workspace)] shrink-0 border-b border-obsidian-border-soft">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center flex-1 mr-4 min-w-0">
           <div className="relative group mr-2 shrink-0" ref={emojiPickerRef}>
@@ -146,7 +146,7 @@ export const EditorHeader = ({
               {currentEmoji ? currentEmoji : <VscAdd className="w-4 h-4" />}
             </button>
             {isEmojiPickerOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] rounded-md shadow-lg p-2 z-50 w-max">
+              <div className="absolute top-full left-0 mt-1 bg-[var(--obsidian-surface)] border border-obsidian-border rounded-md shadow-lg p-2 z-50 w-max">
                 <div className="grid grid-cols-6 gap-1">
                   {POPULAR_EMOJIS.map(emoji => (
                     <button
@@ -203,7 +203,7 @@ export const EditorHeader = ({
                 'rounded-full border px-2 py-0.5 text-[11px] font-medium',
                 saveStatus === 'error'
                   ? 'border-red-500/40 bg-red-500/10 text-red-500'
-                  : 'border-[var(--obsidian-border)] text-[var(--obsidian-text-muted)]'
+                  : 'border-obsidian-border text-[var(--obsidian-text-muted)]'
               )}
               title={
                 saveStatus === 'error' ? (saveError ?? 'Unable to save this note.') : saveLabel

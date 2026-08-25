@@ -113,17 +113,17 @@ export const CommandPaletteModal = ({
       />
       <div
         className={twMerge(
-          'relative z-10 w-full max-w-xl overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
+          'relative z-10 w-full max-w-xl overflow-hidden rounded-lg border border-obsidian-border bg-[var(--obsidian-surface)] shadow-2xl transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
           easingClass,
           isShown ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-1 scale-[0.98] opacity-0'
         )}
       >
         {title && (
-          <div className="border-b border-[var(--obsidian-border-soft)] px-4 py-3 bg-[var(--obsidian-workspace)]">
+          <div className="border-b border-obsidian-border-soft px-4 py-3 bg-[var(--obsidian-workspace)]">
             <h2 className="text-sm font-semibold text-[var(--obsidian-text)]">{title}</h2>
           </div>
         )}
-        <div className="border-b border-[var(--obsidian-border-soft)] px-4 py-3">
+        <div className="border-b border-obsidian-border-soft px-4 py-3">
           <input
             ref={inputRef}
             value={query}
@@ -153,7 +153,7 @@ export const CommandPaletteModal = ({
               }
             }}
             placeholder={placeholder || "Search commands…"}
-            className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+            className="w-full rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
           />
           <div className="mt-2 text-[11px] text-[var(--obsidian-text-muted)]">
             Enter to run • ↑/↓ to navigate • Esc to close

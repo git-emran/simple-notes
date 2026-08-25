@@ -133,8 +133,8 @@ export const KanbanReminderHost = () => {
 
   return (
     <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 px-4">
-      <div className="w-full max-w-lg rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl">
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--obsidian-border-soft)] px-4 py-3">
+      <div className="w-full max-w-lg rounded-xl border border-obsidian-border bg-[var(--obsidian-pane)] shadow-2xl">
+        <div className="flex items-center justify-between gap-3 border-b border-obsidian-border-soft px-4 py-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
               <VscBell className="h-4 w-4" />
@@ -160,7 +160,7 @@ export const KanbanReminderHost = () => {
           </div>
 
           {active.cardDescription.trim() ? (
-            <div className="whitespace-pre-wrap break-words rounded-lg border border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)] px-4 py-3 text-sm leading-6 text-[var(--obsidian-text)]">
+            <div className="whitespace-pre-wrap break-words rounded-lg border border-obsidian-border-soft bg-[var(--obsidian-workspace)] px-4 py-3 text-sm leading-6 text-[var(--obsidian-text)]">
               {active.cardDescription}
             </div>
           ) : null}
@@ -169,7 +169,7 @@ export const KanbanReminderHost = () => {
             <button
               type="button"
               className={twMerge(
-                'inline-flex items-center gap-2 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
+                'inline-flex items-center gap-2 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
               )}
               onClick={() => setQueue((prev) => prev.slice(1))}
             >

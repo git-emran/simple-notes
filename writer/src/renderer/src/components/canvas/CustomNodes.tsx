@@ -28,7 +28,7 @@ export const EditableNode = ({ id, data, selected }: NodeProps) => {
   return (
     <div
       className={`relative p-3 rounded-md h-full w-full border-2 shadow-sm bg-[var(--obsidian-pane)] transition-all ${
-        selected ? 'border-[var(--obsidian-accent)] shadow-md' : 'border-[var(--obsidian-border)]'
+        selected ? 'border-[var(--obsidian-accent)] shadow-md' : 'border-obsidian-border'
       }`}
     >
       <NodeResizer isVisible={!!selected} minWidth={120} minHeight={60} />
@@ -160,7 +160,7 @@ export const CircleNode = ({ id, data, selected }: NodeProps) => {
   return (
     <div
       className={`flex items-center justify-center w-[120px] h-[120px] rounded-full border-2 bg-[var(--obsidian-pane)] transition-all ${
-        selected ? 'border-[var(--obsidian-accent)] shadow-md' : 'border-[var(--obsidian-border)]'
+        selected ? 'border-[var(--obsidian-accent)] shadow-md' : 'border-obsidian-border'
       }`}
     >
       <Handle type="target" position={Position.Top} style={commonHandleStyle} id="t" />

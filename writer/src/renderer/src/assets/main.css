@@ -51,6 +51,7 @@
     --obsidian-sidebar: rgba(246, 246, 246, 0.4);
     --obsidian-workspace: rgba(255, 255, 255, 0.4);
     --obsidian-pane: rgba(255, 255, 255, 0.4);
+    --obsidian-surface: #f5f5f7;
     --obsidian-border: #e6e6e6;
     --obsidian-border-soft: #efefef;
     --obsidian-text: #111827;
@@ -85,6 +86,7 @@
     --obsidian-sidebar: rgba(17, 19, 24, 0.4);
     --obsidian-workspace: rgba(21, 23, 28, 0.4);
     --obsidian-pane: rgba(24, 27, 33, 0.4);
+    --obsidian-surface: #1c1f26;
     --obsidian-border: rgba(255, 255, 255, 0.1);
     --obsidian-border-soft: rgba(255, 255, 255, 0.07);
     --obsidian-text: #e5e7eb;
@@ -117,6 +119,7 @@
     --obsidian-sidebar: rgba(40, 40, 40, 0.4);
     --obsidian-workspace: rgba(40, 40, 40, 0.4);
     --obsidian-pane: rgba(50, 48, 47, 0.4);
+    --obsidian-surface: #282828;
     --obsidian-border: rgba(146, 131, 116, 0.25);
     --obsidian-border-soft: rgba(146, 131, 116, 0.14);
     --obsidian-text: #ebdbb2;
@@ -149,6 +152,7 @@
     --obsidian-sidebar: rgba(242, 229, 188, 0.4);
     --obsidian-workspace: rgba(251, 241, 199, 0.4);
     --obsidian-pane: rgba(235, 219, 178, 0.4);
+    --obsidian-surface: #f2e5bc;
     --obsidian-border: rgba(102, 92, 84, 0.2);
     --obsidian-border-soft: rgba(102, 92, 84, 0.12);
     --obsidian-text: #3c3836;
@@ -182,6 +186,7 @@
     --obsidian-sidebar: rgba(24, 24, 37, 0.4);
     --obsidian-workspace: rgba(30, 30, 46, 0.4);
     --obsidian-pane: rgba(49, 50, 68, 0.4);
+    --obsidian-surface: #1e1e2e;
     --obsidian-border: rgba(108, 112, 134, 0.28);
     --obsidian-border-soft: rgba(108, 112, 134, 0.15);
     --obsidian-text: #cdd6f4;
@@ -214,6 +219,7 @@
     --obsidian-sidebar: rgba(230, 233, 239, 0.4);
     --obsidian-workspace: rgba(239, 241, 245, 0.4);
     --obsidian-pane: rgba(204, 208, 218, 0.4);
+    --obsidian-surface: #eff1f5;
     --obsidian-border: rgba(156, 160, 176, 0.3);
     --obsidian-border-soft: rgba(156, 160, 176, 0.18);
     --obsidian-text: #4c4f69;

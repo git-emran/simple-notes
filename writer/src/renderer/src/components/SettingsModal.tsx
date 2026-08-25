@@ -34,7 +34,7 @@ const ACCENT_PRESETS = [
 const sectionTitleClass = 'text-xs font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]'
 const labelClass = 'text-sm text-[var(--obsidian-text)]'
 const helpClass = 'text-xs text-[var(--obsidian-text-muted)]'
-const cardClass = 'rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] p-4'
+const cardClass = 'rounded-lg border border-obsidian-border bg-[var(--obsidian-workspace)] p-4'
 
 const fontOptions: EditorFontOption[] = ['SF Pro', 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Martian Mono', 'Courier']
 
@@ -69,7 +69,7 @@ export const SettingsPanel = () => {
 
   return (
     <div className="flex h-full flex-col bg-[var(--obsidian-base)]">
-      <div className="shrink-0 border-b border-[var(--obsidian-border-soft)] bg-[var(--obsidian-pane)] px-6 py-4">
+      <div className="shrink-0 border-b border-obsidian-border-soft bg-[var(--obsidian-pane)] px-6 py-4">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
           <div>
             <h1 className="text-base font-semibold text-[var(--obsidian-text)]">Settings</h1>
@@ -117,7 +117,7 @@ export const SettingsPanel = () => {
                 <select
                   value={themeMode}
                   onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
-                  className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                  className="rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                 >
                   <optgroup label="Base">
                     {themeOptions.map((opt) => (
@@ -225,7 +225,7 @@ export const SettingsPanel = () => {
                       const current = Number(tabIndentUnit)
                       if (!current || current < 1) setTabIndentUnit(1)
                     }}
-                    className="w-20 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                    className="w-20 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                   />
                 </div>
 
@@ -256,7 +256,7 @@ export const SettingsPanel = () => {
                           setFontSize(9)
                         }
                       }}
-                      className="w-20 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                      className="w-20 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                     />
                     <div className="text-xs text-[var(--obsidian-text-muted)]">px</div>
                   </div>
@@ -270,7 +270,7 @@ export const SettingsPanel = () => {
                   <select
                     value={editorFont}
                     onChange={(e) => setEditorFont(e.target.value as EditorFontOption)}
-                    className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                    className="rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
                   >
                     {fontOptions.map((font) => (
                       <option key={font} value={font}>
@@ -303,7 +303,7 @@ export const SettingsPanel = () => {
                     {/* Custom picker */}
                     <label
                       title="Custom color"
-                      className="relative w-5 h-5 rounded-full overflow-hidden border-2 border-dashed border-[var(--obsidian-border)] hover:border-[var(--obsidian-accent)] cursor-pointer shrink-0 transition-colors flex items-center justify-center"
+                      className="relative w-5 h-5 rounded-full overflow-hidden border-2 border-dashed border-obsidian-border hover:border-[var(--obsidian-accent)] cursor-pointer shrink-0 transition-colors flex items-center justify-center"
                     >
                       <span className="text-[8px] text-[var(--obsidian-text-muted)] select-none">+</span>
                       <input
@@ -339,7 +339,7 @@ export const SettingsPanel = () => {
                   autoCorrect="off"
                   autoCapitalize="off"
                   placeholder="sk-or-v1-..."
-                  className="mt-3 w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none placeholder:opacity-30 focus:border-[var(--obsidian-accent)]"
+                  className="mt-3 w-full rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none placeholder:opacity-30 focus:border-[var(--obsidian-accent)]"
                 />
               </label>
             </div>
@@ -352,9 +352,9 @@ export const SettingsPanel = () => {
 
 export const SettingsModal = ({ onClose }: { onClose: () => void }) => (
   <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4">
-    <div className="h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-xl">
+    <div className="h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-obsidian-border bg-[var(--obsidian-pane)] shadow-xl">
       <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-[var(--obsidian-border-soft)] px-4 py-3">
+        <div className="flex items-center justify-between border-b border-obsidian-border-soft px-4 py-3">
           <h3 className="text-sm font-semibold text-[var(--obsidian-text)]">Settings</h3>
           <button
             type="button"

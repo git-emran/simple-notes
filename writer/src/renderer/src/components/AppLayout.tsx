@@ -22,7 +22,7 @@ export const Sidebar = ({
   return (
     <aside
       className={twMerge(
-        'h-full flex flex-col relative border-r border-[var(--obsidian-border)] bg-transparent',
+        'h-full flex flex-col relative border-r border-obsidian-border bg-transparent',
         className
       )}
       style={{ width, minWidth }}

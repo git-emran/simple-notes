@@ -266,7 +266,7 @@ export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { pat
         <Background color="var(--obsidian-border)" gap={24} size={1} />
         <Controls />
         <Panel position="top-right" className="flex gap-2">
-          <div className="flex gap-1 bg-[var(--obsidian-pane)]/80 backdrop-blur-md p-1.5 rounded-xl border border-[var(--obsidian-border)] shadow-2xl">
+          <div className="flex gap-1 bg-[var(--obsidian-pane)]/80 backdrop-blur-md p-1.5 rounded-xl border border-obsidian-border shadow-2xl">
             <button
               onClick={() => addNode('editable')}
               className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-[var(--obsidian-text)] transition-all active:scale-95"
@@ -316,7 +316,7 @@ export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { pat
 
       {isCanvasEmpty && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="px-4 py-2 rounded-lg text-sm text-[var(--obsidian-text-muted)] bg-[var(--obsidian-pane)]/70 backdrop-blur border border-[var(--obsidian-border)] shadow-sm transition-opacity duration-200 opacity-100">
+          <div className="px-4 py-2 rounded-lg text-sm text-[var(--obsidian-text-muted)] bg-[var(--obsidian-pane)]/70 backdrop-blur border border-obsidian-border shadow-sm transition-opacity duration-200 opacity-100">
             Drag and drop items to start
           </div>
         </div>
@@ -324,7 +324,7 @@ export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { pat
 
       {/* Floating Header */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
-        <div className="bg-[var(--obsidian-pane)]/90 backdrop-blur-md px-4 py-2 rounded-full border border-[var(--obsidian-border)] shadow-lg flex items-center gap-2 pointer-events-auto">
+        <div className="bg-[var(--obsidian-pane)]/90 backdrop-blur-md px-4 py-2 rounded-full border border-obsidian-border shadow-lg flex items-center gap-2 pointer-events-auto">
           <VscTypeHierarchy className="w-4 h-4 text-[var(--obsidian-accent)]" />
           {isRenaming ? (
             <input

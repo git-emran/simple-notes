@@ -20,7 +20,7 @@ export const Tooltip = ({ children, content, icon, position = 'right', className
     <div className={`group relative inline-flex justify-center items-center ${className}`}>
       {children}
       <div 
-        className={`absolute z-[999] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap bg-[var(--obsidian-pane)] text-[var(--obsidian-text)] border border-[var(--obsidian-border)] px-2.5 py-1.5 rounded-md shadow-lg flex items-center gap-1.5 ${positionClasses[position]}`}
+        className={`absolute z-[999] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap bg-[var(--obsidian-surface)] text-[var(--obsidian-text)] border border-obsidian-border px-2.5 py-1.5 rounded-md shadow-lg flex items-center gap-1.5 ${positionClasses[position]}`}
       >
         {icon && <span className="text-[var(--obsidian-text-muted)] flex items-center justify-center">{icon}</span>}
         <span className="text-[12px] font-medium leading-none">{content}</span>

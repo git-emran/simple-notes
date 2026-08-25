@@ -7,7 +7,14 @@ export default {
     './src/renderer/index.html' // If your renderer has its own HTML file
   ],
   theme: {
-    extend: {}
+    extend: {
+      colors: {
+        obsidian: {
+          border: 'var(--obsidian-border)',
+          'border-soft': 'var(--obsidian-border-soft)'
+        }
+      }
+    }
   },
   plugins: [require('@tailwindcss/typography')]
 }

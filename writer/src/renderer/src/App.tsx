@@ -406,7 +406,7 @@ const App = () => {
       <RootLayout className="obsidian-shell flex-col">
         {/* Persistent Title Bar */}
         <div
-          className="h-10 flex shrink-0 bg-[var(--obsidian-titlebar)] border-b border-[var(--obsidian-border-soft)] z-50"
+          className="h-10 flex shrink-0 bg-[var(--obsidian-titlebar)] border-b border-obsidian-border-soft z-50"
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties & { WebkitAppRegion: string }}
         >
           {/* Spacer for Ribbon + Sidebar + Traffic Lights */}

@@ -398,7 +398,7 @@ export const SpreadsheetPanel = () => {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-[var(--obsidian-base)] text-[var(--obsidian-text)]">
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-4">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-obsidian-border bg-[var(--obsidian-pane)] px-4">
         <div className="text-sm font-semibold">Spreadsheet</div>
         <div className="relative ml-2 min-w-[240px] max-w-[420px] flex-1">
           <VscSearch className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--obsidian-text-muted)]" />
@@ -406,11 +406,11 @@ export const SpreadsheetPanel = () => {
             value={sheet.search}
             onChange={(event) => updateSheet((current) => ({ ...current, search: event.target.value }))}
             placeholder="Search active sheet"
-            className="h-8 w-full rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-base)] pl-8 pr-3 text-xs outline-none focus:border-[var(--obsidian-accent)] focus:ring-2 focus:ring-[var(--obsidian-accent-dim)]"
+            className="h-8 w-full rounded-md border border-obsidian-border bg-[var(--obsidian-base)] pl-8 pr-3 text-xs outline-none focus:border-[var(--obsidian-accent)] focus:ring-2 focus:ring-[var(--obsidian-accent-dim)]"
           />
         </div>
         {selectedRows.size > 0 && (
-          <div className="flex items-center gap-1 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-base)] p-1">
+          <div className="flex items-center gap-1 rounded-md border border-obsidian-border bg-[var(--obsidian-base)] p-1">
             <span className="px-2 text-xs text-[var(--obsidian-text-muted)]">{selectedRows.size} selected</span>
             <button className="spreadsheet-toolbar-btn" onClick={() => duplicateRows(selectedRows)}>
               <VscCopy /> Duplicate
@@ -432,7 +432,7 @@ export const SpreadsheetPanel = () => {
         </button>
       </div>
 
-      <div className="flex h-10 shrink-0 items-center gap-1 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3">
+      <div className="flex h-10 shrink-0 items-center gap-1 border-b border-obsidian-border bg-[var(--obsidian-pane)] px-3">
         {state.sheets.map((item) => (
           <div
             key={item.id}
@@ -448,7 +448,7 @@ export const SpreadsheetPanel = () => {
             className={twMerge(
               'group flex h-8 items-center gap-1 rounded-md border px-2 text-xs transition-colors',
               item.id === sheet.id
-                ? 'border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]'
+                ? 'border-obsidian-border bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)]'
                 : 'border-transparent text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]'
             )}
             onClick={() => setState((current) => ({ ...current, activeSheetId: item.id }))}
@@ -503,12 +503,12 @@ export const SpreadsheetPanel = () => {
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto p-4">
-        <div className="min-w-fit rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+        <div className="min-w-fit rounded-lg border border-obsidian-border bg-[var(--obsidian-pane)] shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
           <div
-            className="grid border-b border-[var(--obsidian-border)] bg-[var(--obsidian-table-head)]"
+            className="grid border-b border-obsidian-border bg-[var(--obsidian-table-head)]"
             style={{ gridTemplateColumns: `44px ${visibleColumns.map((column) => `${column.width}px`).join(' ')} 120px` }}
           >
-            <div className="h-10 border-r border-[var(--obsidian-border)]" />
+            <div className="h-10 border-r border-obsidian-border" />
             {visibleColumns.map((column) => (
               <div
                 key={column.id}
@@ -521,7 +521,7 @@ export const SpreadsheetPanel = () => {
                 onDragEnd={() => {
                   draggedColumnIdRef.current = null
                 }}
-                className="group relative flex h-10 items-center gap-2 border-r border-[var(--obsidian-border)] px-2"
+                className="group relative flex h-10 items-center gap-2 border-r border-obsidian-border px-2"
               >
                 <VscGrabber className="h-3.5 w-3.5 cursor-grab text-[var(--obsidian-text-muted)]" />
                 <input
@@ -577,7 +577,7 @@ export const SpreadsheetPanel = () => {
                 {settingsColumnId === column.id && (
                   <div
                     ref={settingsMenuRef}
-                    className="absolute right-2 top-9 z-20 w-52 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-2 shadow-xl"
+                    className="absolute right-2 top-9 z-20 w-52 rounded-md border border-obsidian-border bg-[var(--obsidian-surface)] p-2 shadow-xl backdrop-blur-sm"
                   >
                     <label className="text-[10px] font-semibold uppercase text-[var(--obsidian-text-muted)]">Type</label>
                     <select
@@ -585,7 +585,7 @@ export const SpreadsheetPanel = () => {
                       onChange={(event) =>
                         updateColumn(column.id, { type: event.target.value as SpreadsheetColumnType })
                       }
-                      className="mt-1 h-8 w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-base)] px-2 text-xs outline-none"
+                      className="mt-1 h-8 w-full rounded border border-obsidian-border bg-[var(--obsidian-base)] px-2 text-xs outline-none"
                     >
                       {columnTypes.map((type) => (
                         <option key={type} value={type}>
@@ -628,10 +628,10 @@ export const SpreadsheetPanel = () => {
               onDragEnd={() => {
                 draggedRowIdRef.current = null
               }}
-              className="grid border-b border-[var(--obsidian-border-soft)] last:border-b-0 hover:bg-[var(--obsidian-hover-soft)]"
+              className="grid border-b border-obsidian-border-soft last:border-b-0 hover:bg-[var(--obsidian-hover-soft)]"
               style={{ gridTemplateColumns: `44px ${visibleColumns.map((column) => `${column.width}px`).join(' ')}` }}
             >
-              <div className="flex h-11 items-center justify-center border-r border-[var(--obsidian-border-soft)]">
+              <div className="flex h-11 items-center justify-center border-r border-obsidian-border-soft">
                 <input
                   type="checkbox"
                   checked={selectedRows.has(row.id)}
@@ -665,7 +665,7 @@ export const SpreadsheetPanel = () => {
             {sheet.columns.filter((column) => column.hidden).map((column) => (
               <button
                 key={column.id}
-                className="rounded border border-[var(--obsidian-border)] px-2 py-1 hover:bg-[var(--obsidian-hover)]"
+                className="rounded border border-obsidian-border px-2 py-1 hover:bg-[var(--obsidian-hover)]"
                 onClick={() => updateColumn(column.id, { hidden: false })}
               >
                 Show {column.name}
@@ -679,9 +679,9 @@ export const SpreadsheetPanel = () => {
         <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4 animate-in fade-in duration-150">
           <div
             ref={deleteModalRef}
-            className="w-full max-w-sm rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-xl overflow-hidden animate-in zoom-in-95 duration-150"
+            className="w-full max-w-sm rounded-lg border border-obsidian-border bg-[var(--obsidian-pane)] shadow-xl overflow-hidden animate-in zoom-in-95 duration-150"
           >
-            <div className="flex items-center justify-between border-b border-[var(--obsidian-border-soft)] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-obsidian-border-soft px-4 py-3">
               <h3 className="text-sm font-semibold text-[var(--obsidian-text)]">Delete Sheet</h3>
               <button
                 type="button"
@@ -694,11 +694,11 @@ export const SpreadsheetPanel = () => {
             <div className="px-4 py-4 text-sm text-[var(--obsidian-text)]">
               Are you sure you want to delete the sheet "<strong>{state.sheets.find(s => s.id === sheetToDeleteId)?.name}</strong>"? This action cannot be undone.
             </div>
-            <div className="flex justify-end gap-2 border-t border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)]/30 px-4 py-3">
+            <div className="flex justify-end gap-2 border-t border-obsidian-border-soft bg-[var(--obsidian-workspace)]/30 px-4 py-3">
               <button
                 type="button"
                 onClick={() => setSheetToDeleteId(null)}
-                className="rounded border border-[var(--obsidian-border)] px-4 py-1.5 text-xs text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+                className="rounded border border-obsidian-border px-4 py-1.5 text-xs text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
               >
                 Cancel
               </button>
@@ -738,7 +738,7 @@ const Cell = ({
 
   if (column.type === 'checkbox') {
     return (
-      <div className="flex h-11 items-center border-r border-[var(--obsidian-border-soft)] px-3">
+      <div className="flex h-11 items-center border-r border-obsidian-border-soft px-3">
         <input
           type="checkbox"
           checked={Boolean(value)}
@@ -755,7 +755,7 @@ const Cell = ({
   if (!editing && (column.type === 'status' || column.type === 'select') && option) {
     return (
       <button
-        className="flex h-11 items-center border-r border-[var(--obsidian-border-soft)] px-2 text-left"
+        className="flex h-11 items-center border-r border-obsidian-border-soft px-2 text-left"
         onDoubleClick={() => setEditing(true)}
       >
         <span
@@ -772,7 +772,7 @@ const Cell = ({
     const values = textValue.split(',').map((item) => item.trim()).filter(Boolean)
     return (
       <button
-        className="flex h-11 items-center gap-1 overflow-hidden border-r border-[var(--obsidian-border-soft)] px-2 text-left"
+        className="flex h-11 items-center gap-1 overflow-hidden border-r border-obsidian-border-soft px-2 text-left"
         onDoubleClick={() => setEditing(true)}
       >
         {values.length ? values.map((item) => {
@@ -796,7 +796,7 @@ const Cell = ({
 
   if (editing && options?.length && (column.type === 'status' || column.type === 'select')) {
     return (
-      <div className="flex h-11 items-center border-r border-[var(--obsidian-border-soft)] px-2">
+      <div className="flex h-11 items-center border-r border-obsidian-border-soft px-2">
         <select
           autoFocus
           value={textValue}
@@ -810,7 +810,7 @@ const Cell = ({
             onChange(event.target.value)
             setEditing(false)
           }}
-          className="h-8 w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-base)] px-2 text-xs outline-none"
+          className="h-8 w-full rounded border border-obsidian-border bg-[var(--obsidian-base)] px-2 text-xs outline-none"
         >
           {options.map((item) => (
             <option key={item.id} value={item.id}>
@@ -823,7 +823,7 @@ const Cell = ({
   }
 
   return (
-    <div className="flex h-11 items-center border-r border-[var(--obsidian-border-soft)] px-2">
+    <div className="flex h-11 items-center border-r border-obsidian-border-soft px-2">
       <input
         value={textValue}
         type={column.type === 'number' || column.type === 'currency' ? 'number' : column.type === 'date' ? 'date' : 'text'}

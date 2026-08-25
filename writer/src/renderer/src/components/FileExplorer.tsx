@@ -579,13 +579,13 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   return (
     <aside
       className={twMerge(
-        'flex flex-col h-full border-r border-[var(--obsidian-border)] bg-[var(--obsidian-sidebar)]',
+        'flex flex-col h-full border-r border-obsidian-border bg-[var(--obsidian-sidebar)]',
         className
       )}
       style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
       {...props}
     >
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-[var(--obsidian-border-soft)] select-none">
+      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-obsidian-border-soft select-none">
         <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85">
           Notebooks
         </span>

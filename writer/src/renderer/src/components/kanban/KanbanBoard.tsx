@@ -190,7 +190,7 @@ export const KanbanBoard = () => {
 
   return (
     <div className="flex h-full w-full flex-col bg-[var(--obsidian-base)] text-[var(--obsidian-text)] overflow-hidden">
-      <div className="px-6 py-4 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shrink-0">
+      <div className="px-6 py-4 border-b border-obsidian-border bg-[var(--obsidian-pane)] shrink-0">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {state.workspaces.map((workspace) => (
             editingWorkspaceId === workspace.id ? (
@@ -252,7 +252,7 @@ export const KanbanBoard = () => {
             onChange={(e) => setNewColumnTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addColumn()}
             placeholder="Add board name"
-            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-[var(--obsidian-accent)]/50 transition-colors"
+            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-obsidian-border focus:border-[var(--obsidian-accent)]/50 transition-colors"
           />
           <button
             onClick={addColumn}
@@ -293,7 +293,7 @@ export const KanbanBoard = () => {
 
       {isWorkspaceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-5 shadow-2xl">
+          <div className="w-full max-w-md rounded-xl border border-obsidian-border bg-[var(--obsidian-pane)] p-5 shadow-2xl">
             <div className="text-lg font-semibold text-[var(--obsidian-text)]">Create workspace</div>
             <input
               ref={newWorkspaceInputRef}
@@ -304,7 +304,7 @@ export const KanbanBoard = () => {
                 if (e.key === "Escape") setIsWorkspaceModalOpen(false);
               }}
               placeholder="Workspace name"
-              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-[var(--obsidian-border)] focus:border-[var(--obsidian-accent)]/50 transition-colors"
+              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-obsidian-border focus:border-[var(--obsidian-accent)]/50 transition-colors"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -357,7 +357,7 @@ export const KanbanBoard = () => {
         const cardCount = col?.cards?.length ?? 0;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-            <div className="w-full max-w-sm rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-5 shadow-2xl">
+            <div className="w-full max-w-sm rounded-xl border border-obsidian-border bg-[var(--obsidian-pane)] p-5 shadow-2xl">
               <div className="text-lg font-semibold text-[var(--obsidian-text)]">Delete board</div>
               <p className="mt-2 text-sm text-[var(--obsidian-text-muted)]">
                 Are you sure you want to delete <span className="font-medium text-[var(--obsidian-text)]">{col?.title ?? "this board"}</span>?
@@ -499,7 +499,7 @@ const Column = ({ title, headingColor, cards, column, setCards, onRename, color,
 
   return (
     <div
-      className="w-[313.6px] shrink-0 rounded-xl border border-[var(--obsidian-border)] px-3 pt-3 pb-2 flex flex-col max-h-full"
+      className="w-[313.6px] shrink-0 rounded-xl border border-obsidian-border px-3 pt-3 pb-2 flex flex-col max-h-full"
       style={bgStyle}
       onContextMenu={(e) => {
         e.preventDefault();
@@ -575,7 +575,7 @@ const Card = ({ text, id, column, priority, description, todos, handleDragStart,
         draggable="true"
         onDragStart={(e) => handleDragStart(e, { text, id, column })}
         onClick={onClick}
-        className="cursor-grab rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-3 active:cursor-grabbing transition-all hover:border-[var(--obsidian-accent)]/50"
+        className="cursor-grab rounded border border-obsidian-border bg-[var(--obsidian-pane)] p-3 active:cursor-grabbing transition-all hover:border-[var(--obsidian-accent)]/50"
         style={color ? { backgroundColor: `color-mix(in srgb, var(--obsidian-pane) 93%, ${color} 7%)` } : {}}
       >
         <div className="flex items-center gap-2">
@@ -587,7 +587,7 @@ const Card = ({ text, id, column, priority, description, todos, handleDragStart,
           )}
           <p className="text-sm text-[var(--obsidian-text)] flex-1 break-words font-medium">{text}</p>
           {todos && todos.length > 0 && (
-            <div className="flex items-center gap-1 text-[10px] shrink-0 font-medium text-[var(--obsidian-text-muted)] bg-[var(--obsidian-workspace)] px-1.5 py-0.5 rounded border border-[var(--obsidian-border-soft)] shadow-sm">
+            <div className="flex items-center gap-1 text-[10px] shrink-0 font-medium text-[var(--obsidian-text-muted)] bg-[var(--obsidian-workspace)] px-1.5 py-0.5 rounded border border-obsidian-border-soft shadow-sm">
               <VscChecklist className="w-3 h-3 opacity-70" />
               <span>{todos.filter(t => t.completed).length}/{todos.length}</span>
             </div>
@@ -648,7 +648,7 @@ const BurnBarrel = ({ setCards }: BurnBarrelProps) => {
       className={`grid w-[313.6px] shrink-0 place-content-center rounded-xl border border-dashed text-3xl transition-colors ${
         active
           ? "border-red-800 bg-red-800/20 text-red-500"
-          : "border-[var(--obsidian-border)] bg-[var(--obsidian-hover-soft)] text-[var(--obsidian-text-muted)]"
+          : "border-obsidian-border bg-[var(--obsidian-hover-soft)] text-[var(--obsidian-text-muted)]"
       }`}
     >
       {active ? <FaFire className="animate-bounce" /> : <FiTrash />}
@@ -718,7 +718,7 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
         <motion.form
           layout
           onSubmit={handleSubmit}
-          className="w-full rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] p-3 flex flex-col gap-2 relative mt-2 transition-colors"
+          className="w-full rounded border border-obsidian-border bg-[var(--obsidian-workspace)] p-3 flex flex-col gap-2 relative mt-2 transition-colors"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs text-[var(--obsidian-text-muted)] font-medium">New Task</span>
@@ -726,7 +726,7 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="inline-flex items-center gap-1.5 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-2 py-1 text-[11px] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-all"
+                className="inline-flex items-center gap-1.5 rounded border border-obsidian-border bg-[var(--obsidian-pane)] px-2 py-1 text-[11px] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-all"
               >
                 <span
                   className="h-2 w-2 rounded-full"
@@ -737,7 +737,7 @@ const AddCard = ({ column, setCards }: AddCardProps) => {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 top-full z-10 mt-1 w-28 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-1 shadow-lg">
+                <div className="absolute right-0 top-full z-10 mt-1 w-28 rounded-md border border-obsidian-border bg-[var(--obsidian-surface)] p-1 shadow-lg backdrop-blur-sm">
                   {(["low", "medium", "high"] as const).map((level) => (
                     <button
                       key={level}

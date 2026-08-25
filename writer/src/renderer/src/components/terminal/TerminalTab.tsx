@@ -537,7 +537,7 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
 
   return (
     <div className="flex h-full flex-col bg-[var(--obsidian-workspace)]">
-      <div className="flex h-9 min-h-9 shrink-0 items-center gap-3 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-4 text-[11px] leading-none text-[var(--obsidian-text-muted)]">
+      <div className="flex h-9 min-h-9 shrink-0 items-center gap-3 border-b border-obsidian-border bg-[var(--obsidian-pane)] px-4 text-[11px] leading-none text-[var(--obsidian-text-muted)]">
         <div className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-[var(--obsidian-text)]">
           <VscTerminal className="h-4 w-4" />
           <span className="font-medium">{shellLabel}</span>

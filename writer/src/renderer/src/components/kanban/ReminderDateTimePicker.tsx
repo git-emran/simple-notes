@@ -183,8 +183,8 @@ export const ReminderDateTimePicker = ({
       </button>
 
       {isOpen ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[1200] rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl">
-          <div className="flex items-center justify-between gap-2 border-b border-[var(--obsidian-border-soft)] px-4 py-2.5">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[1200] rounded-xl border border-obsidian-border bg-[var(--obsidian-surface)] shadow-2xl">
+          <div className="flex items-center justify-between gap-2 border-b border-obsidian-border-soft px-4 py-2.5">
             <div className="text-xs font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
               REMINDER
             </div>
@@ -285,13 +285,13 @@ export const ReminderDateTimePicker = ({
                   <button
                     type="button"
                     onClick={() => setOpenMenu((prev) => (prev === 'hour' ? null : 'hour'))}
-                    className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                    className="rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
                     title="Hour"
                   >
                     {pad2(timeDraft.hour)}
                   </button>
                   {openMenu === 'hour' ? (
-                    <div className="absolute right-0 top-[calc(100%+6px)] z-[1210] w-24 rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-1 shadow-2xl max-h-56 overflow-auto">
+                    <div className="absolute right-0 top-[calc(100%+6px)] z-[1210] w-24 rounded-lg border border-obsidian-border bg-[var(--obsidian-surface)] p-1 shadow-2xl max-h-56 overflow-auto">
                       {hourOptions.map((h) => (
                         <button
                           key={h}
@@ -318,13 +318,13 @@ export const ReminderDateTimePicker = ({
                   <button
                     type="button"
                     onClick={() => setOpenMenu((prev) => (prev === 'minute' ? null : 'minute'))}
-                    className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                    className="rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
                     title="Minute"
                   >
                     {pad2(timeDraft.minute)}
                   </button>
                   {openMenu === 'minute' ? (
-                    <div className="absolute right-0 top-[calc(100%+6px)] z-[1210] w-24 rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-1 shadow-2xl max-h-56 overflow-auto">
+                    <div className="absolute right-0 top-[calc(100%+6px)] z-[1210] w-24 rounded-lg border border-obsidian-border bg-[var(--obsidian-surface)] p-1 shadow-2xl max-h-56 overflow-auto">
                       {minuteOptions.map((m) => (
                         <button
                           key={m}
@@ -349,13 +349,13 @@ export const ReminderDateTimePicker = ({
                   <button
                     type="button"
                     onClick={() => setOpenMenu((prev) => (prev === 'ampm' ? null : 'ampm'))}
-                    className="rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                    className="rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
                     title="AM/PM"
                   >
                     {timeDraft.ampm}
                   </button>
                   {openMenu === 'ampm' ? (
-                    <div className="absolute right-0 top-[calc(100%+6px)] z-[1210] w-24 rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-1 shadow-2xl max-h-56 overflow-auto">
+                    <div className="absolute right-0 top-[calc(100%+6px)] z-[1210] w-24 rounded-lg border border-obsidian-border bg-[var(--obsidian-surface)] p-1 shadow-2xl max-h-56 overflow-auto">
                       {(['AM', 'PM'] as const).map((value) => (
                         <button
                           key={value}
@@ -402,7 +402,7 @@ export const ReminderDateTimePicker = ({
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-2 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                  className="inline-flex items-center gap-2 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
                   onClick={() => {
                     onChange(null)
                     setOpenMenu(null)

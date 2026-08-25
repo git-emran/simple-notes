@@ -477,7 +477,7 @@ export function useEditorLifecycle({
         wrap.appendChild(txt)
 
         const btn = document.createElement('span')
-        btn.className = 'inline-flex items-center justify-center gap-1 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-modifier-cover)] px-1.5 py-0.5 text-xs text-[var(--obsidian-text)] cursor-pointer hover:bg-[var(--obsidian-hover)] transition-colors'
+        btn.className = 'inline-flex items-center justify-center gap-1 rounded border border-obsidian-border bg-[var(--obsidian-modifier-cover)] px-1.5 py-0.5 text-xs text-[var(--obsidian-text)] cursor-pointer hover:bg-[var(--obsidian-hover)] transition-colors'
         btn.style.pointerEvents = 'auto'
         btn.textContent = `Choose a template ${shortcutText}`
         btn.onmousedown = (e) => {

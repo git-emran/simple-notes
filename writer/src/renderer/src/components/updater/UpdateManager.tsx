@@ -117,7 +117,7 @@ export const UpdateManager: React.FC = () => {
     <>
       {/* Dynamic Background Download Progress Toast */}
       {status === 'downloading' && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 w-80 p-4 rounded-xl border border-[var(--obsidian-border)] bg-[rgba(30,30,30,0.75)] backdrop-blur-md shadow-2xl animate-slide-up text-white">
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 w-80 p-4 rounded-xl border border-obsidian-border bg-[rgba(30,30,30,0.75)] backdrop-blur-md shadow-2xl animate-slide-up text-white">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgba(65,105,225,0.2)] text-blue-400">
               <VscCloudDownload className="w-5 h-5 animate-pulse" />
@@ -180,9 +180,9 @@ export const UpdateManager: React.FC = () => {
       {/* Release Notes / Details Modal (UpdatePromptModal) */}
       {showPromptModal && updateInfo && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="flex flex-col w-[540px] max-h-[80vh] rounded-2xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl text-[var(--obsidian-text)] animate-scale-up overflow-hidden">
+          <div className="flex flex-col w-[540px] max-h-[80vh] rounded-2xl border border-obsidian-border bg-[var(--obsidian-pane)] shadow-2xl text-[var(--obsidian-text)] animate-scale-up overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-[var(--obsidian-border)]">
+            <div className="flex items-center justify-between p-5 border-b border-obsidian-border">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400">
                   <VscSparkle className="w-5 h-5" />
@@ -219,9 +219,9 @@ export const UpdateManager: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 p-5 border-t border-[var(--obsidian-border)] bg-[rgba(0,0,0,0.15)]">
+            <div className="flex justify-end gap-3 p-5 border-t border-obsidian-border bg-[rgba(0,0,0,0.15)]">
               <button 
-                className="py-2 px-4 rounded-xl text-xs font-semibold border border-[var(--obsidian-border)] hover:bg-white/5 transition"
+                className="py-2 px-4 rounded-xl text-xs font-semibold border border-obsidian-border hover:bg-white/5 transition"
                 onClick={() => setShowPromptModal(false)}
               >
                 Remind Me Later
@@ -242,7 +242,7 @@ export const UpdateManager: React.FC = () => {
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="flex flex-col w-[540px] max-h-[80vh] rounded-2xl border border-yellow-900/30 bg-[var(--obsidian-pane)] shadow-2xl text-[var(--obsidian-text)] animate-scale-up overflow-hidden">
             {/* Celebrate Header */}
-            <div className="flex items-center justify-between p-6 border-b border-[var(--obsidian-border)] bg-gradient-to-r from-blue-900/10 via-purple-900/10 to-yellow-900/10">
+            <div className="flex items-center justify-between p-6 border-b border-obsidian-border bg-gradient-to-r from-blue-900/10 via-purple-900/10 to-yellow-900/10">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-yellow-500/20 text-yellow-400 animate-bounce">
                   <VscSparkle className="w-6 h-6" />
@@ -269,7 +269,7 @@ export const UpdateManager: React.FC = () => {
             </div>
 
             {/* Action Footer */}
-            <div className="flex justify-end p-5 border-t border-[var(--obsidian-border)] bg-[rgba(0,0,0,0.15)]">
+            <div className="flex justify-end p-5 border-t border-obsidian-border bg-[rgba(0,0,0,0.15)]">
               <button 
                 className="py-2.5 px-6 rounded-xl text-xs font-bold bg-yellow-600 hover:bg-yellow-500 transition text-white shadow-lg shadow-yellow-950/20"
                 onClick={handleDismissWelcome}

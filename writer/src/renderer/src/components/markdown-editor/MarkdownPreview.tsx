@@ -75,9 +75,9 @@ const PreviewCodeBlock = ({ language, codeContent, isDarkMode }: PreviewCodeBloc
   }, [])
 
   return (
-    <div className="preview-code-block group relative my-4 rounded-lg overflow-hidden border border-[var(--obsidian-border)]">
+    <div className="preview-code-block group relative my-4 rounded-lg overflow-hidden border border-obsidian-border">
       <div
-        className="flex items-center justify-between px-3 py-1.5 text-[11px] select-none bg-[var(--obsidian-pane)] border-b border-[var(--obsidian-border)] text-[var(--obsidian-text-muted)]"
+        className="flex items-center justify-between px-3 py-1.5 text-[11px] select-none bg-[var(--obsidian-pane)] border-b border-obsidian-border text-[var(--obsidian-text-muted)]"
       >
         {/* Left: icon + lang */}
         <div className="flex items-center gap-1.5 overflow-hidden">
@@ -204,7 +204,7 @@ const SectionWrapper = ({ children, node, previewReadableWidthClass }: SectionWr
   let containerClass = ''
   switch (level) {
     case 1:
-      containerClass = 'mt-8 mb-4 border-b border-[var(--obsidian-border)] pb-2'
+      containerClass = 'mt-8 mb-4 border-b border-obsidian-border pb-2'
       break
     case 2:
       containerClass = 'mt-6 mb-3'
@@ -463,7 +463,7 @@ export const MarkdownPreview = memo(
                       <img
                         src={finalSrc}
                         alt={String(children)}
-                        className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]"
+                        className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-obsidian-border"
                         style={{ maxWidth: 'min(100%, 720px)' }}
                       />
                     </div>
@@ -485,33 +485,33 @@ export const MarkdownPreview = memo(
                 <hr
                   className={twMerge(
                     previewReadableWidthClass,
-                    'my-8 border-t border-[var(--obsidian-border)]'
+                    'my-8 border-t border-obsidian-border'
                   )}
                 />
               ),
               table: ({ children }) => (
-                <div className="w-full overflow-x-auto my-6 border border-[var(--obsidian-border)] rounded-lg">
+                <div className="w-full overflow-x-auto my-6 border border-obsidian-border rounded-lg">
                   <table className="w-full table-auto border-collapse">{children}</table>
                 </div>
               ),
               thead: ({ children }) => (
-                <thead className="bg-[var(--obsidian-table-head)] border-b border-[var(--obsidian-border-soft)]">
+                <thead className="bg-[var(--obsidian-table-head)] border-b border-obsidian-border-soft">
                   {children}
                 </thead>
               ),
               tbody: ({ children }) => <tbody>{children}</tbody>,
               tr: ({ children }) => (
-                <tr className="border-b border-[var(--obsidian-border-soft)] even:bg-[var(--obsidian-table-row)] transition-colors last:border-b-0">
+                <tr className="border-b border-obsidian-border-soft even:bg-[var(--obsidian-table-row)] transition-colors last:border-b-0">
                   {children}
                 </tr>
               ),
               th: ({ children }) => (
-                <th className="px-3 py-2 text-left text-[11px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-[var(--obsidian-border)] last:border-r-0 align-top">
+                <th className="px-3 py-2 text-left text-[11px] font-bold text-[var(--obsidian-text-muted)] uppercase tracking-tight border-r border-obsidian-border last:border-r-0 align-top">
                   <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
                 </th>
               ),
               td: ({ children }) => (
-                <td className="px-3 py-1.5 text-xs text-[var(--obsidian-text)] border-r border-[var(--obsidian-border-soft)] last:border-r-0 align-top">
+                <td className="px-3 py-1.5 text-xs text-[var(--obsidian-text)] border-r border-obsidian-border-soft last:border-r-0 align-top">
                   <div className="min-w-[140px] whitespace-normal break-words">{children}</div>
                 </td>
               ),
@@ -528,7 +528,7 @@ export const MarkdownPreview = memo(
                 if (isInline && codeContent.toLowerCase().startsWith('kbd:')) {
                   const keyText = codeContent.slice(4)
                   return (
-                    <kbd className="inline-flex items-center rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--obsidian-text)] shadow-[inset_0_-1px_0_rgba(0,0,0,0.22),0_10px_28px_rgba(0,0,0,0.06)]">
+                    <kbd className="inline-flex items-center rounded-md border border-obsidian-border bg-[var(--obsidian-pane)] px-1.5 py-0.5 text-[11px] font-mono font-medium text-[var(--obsidian-text)] shadow-[inset_0_-1px_0_rgba(0,0,0,0.22),0_10px_28px_rgba(0,0,0,0.06)]">
                       {keyText}
                     </kbd>
                   )
@@ -559,7 +559,7 @@ export const MarkdownPreview = memo(
                     <img
                       src={finalSrc}
                       alt={alt}
-                      className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-[var(--obsidian-border)]"
+                      className="max-w-full w-auto h-auto rounded-lg shadow-[0_10px_28px_rgba(0,0,0,0.18)] my-4 border border-obsidian-border"
                       style={{ maxWidth: 'min(100%, 720px)' }}
                     />
                   </div>

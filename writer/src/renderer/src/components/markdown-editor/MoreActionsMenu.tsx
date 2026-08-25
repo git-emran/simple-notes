@@ -58,7 +58,7 @@ export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: tions
       {isOpen && createPortal(
         <div
           ref={menuRef}
-          className="fixed bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] rounded-md shadow-xl z-[9999] py-1 min-w-[180px]"
+          className="fixed bg-[var(--obsidian-surface)] border border-obsidian-border rounded-md shadow-xl z-[9999] py-1 min-w-[180px] backdrop-blur-sm"
           style={{
             top: buttonRef.current ? buttonRef.current.getBoundingClientRect().bottom + 5 : 0,
             right: buttonRef.current ? window.innerWidth - buttonRef.current.getBoundingClientRect().right : 0

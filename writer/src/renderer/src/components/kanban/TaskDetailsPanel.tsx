@@ -125,12 +125,12 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
 
       <aside
         className={twMerge(
-          'absolute right-0 top-0 h-full w-[520px] max-w-[92vw] border-l border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl transition-transform duration-200 ease-out',
+          'absolute right-0 top-0 h-full w-[520px] max-w-[92vw] border-l border-obsidian-border bg-[var(--obsidian-surface)] shadow-2xl transition-transform duration-200 ease-out',
           isVisible ? 'translate-x-0' : 'translate-x-full'
         )}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--obsidian-border-soft)] px-4 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-obsidian-border-soft px-4 py-4">
           <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-wide text-[var(--obsidian-text-muted)]">Task</div>
             <div className="truncate text-base font-semibold text-[var(--obsidian-text)]">
@@ -156,7 +156,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                 <button
                   type="button"
                   onClick={cancel}
-                  className="inline-flex items-center gap-2 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                  className="inline-flex items-center gap-2 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
                   title="Cancel"
                 >
                   <VscDiscard className="h-4 w-4" />
@@ -167,7 +167,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="inline-flex items-center gap-2 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                className="inline-flex items-center gap-2 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
                 title="Edit"
               >
                 <VscEdit className="h-4 w-4" />
@@ -275,7 +275,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                             }
                           }}
                           className={twMerge(
-                            "flex-1 bg-transparent text-sm text-[var(--obsidian-text)] outline-none border-b border-transparent focus:border-[var(--obsidian-border)] transition-colors",
+                            "flex-1 bg-transparent text-sm text-[var(--obsidian-text)] outline-none border-b border-transparent focus:border-obsidian-border transition-colors",
                             todo.completed ? "line-through opacity-50" : ""
                           )}
                           placeholder="Task..."
@@ -301,7 +301,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                   <button
                     type="button"
                     onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
-                    className="inline-flex items-center gap-1.5 rounded border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-1.5 text-[13px] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-all"
+                    className="inline-flex items-center gap-1.5 rounded border border-obsidian-border bg-[var(--obsidian-pane)] px-3 py-1.5 text-[13px] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-all"
                   >
                     <span 
                       className="h-2 w-2 rounded-full" 
@@ -312,7 +312,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                   </button>
                   
                   {isPriorityDropdownOpen && (
-                    <div className="absolute left-0 top-full z-10 mt-1 w-32 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] p-1 shadow-lg">
+                    <div className="absolute left-0 top-full z-10 mt-1 w-32 rounded-md border border-obsidian-border bg-[var(--obsidian-surface)] p-1 shadow-lg backdrop-blur-sm">
                       {KANBAN_PRIORITY_OPTIONS.map((opt) => {
                         const isActive = priorityDraft === opt.value
                         return (
@@ -402,7 +402,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
 
               <div>
                 <div className="text-xs font-semibold text-[var(--obsidian-text-muted)]">Priority</div>
-                <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)] px-3 py-1.5 text-sm text-[var(--obsidian-text)]">
+                <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-1.5 text-sm text-[var(--obsidian-text)]">
                   <span 
                     className="h-2 w-2 rounded-full" 
                     style={{ backgroundColor: prefixTint }} 

@@ -281,7 +281,7 @@ export const AiModal = ({
 
   return (
     <div className="absolute top-12 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50 px-4">
-      <div className="rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="rounded-xl border border-obsidian-border bg-[var(--obsidian-pane)] shadow-2xl overflow-hidden flex flex-col ring-1 ring-black/5 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header / Input Area */}
         <div className="p-3">
@@ -335,13 +335,13 @@ export const AiModal = ({
         )}
 
         {/* Footer Controls */}
-        <div className="flex items-center justify-between border-t border-[var(--obsidian-border-soft)] bg-[var(--obsidian-workspace)]/50 px-4 py-2">
+        <div className="flex items-center justify-between border-t border-obsidian-border-soft bg-[var(--obsidian-workspace)]/50 px-4 py-2">
           <div className="flex items-center gap-2">
             <select
               value={selectedAiModel}
               onChange={(e) => setSelectedAiModel(e.target.value)}
               disabled={isLoadingAiModels || isGeneratingWithAi}
-              className="rounded-md border border-[var(--obsidian-border)] bg-transparent px-2 py-1 text-[11px] text-[var(--obsidian-text-muted)] outline-none hover:border-[var(--obsidian-accent)] hover:text-[var(--obsidian-text)] transition-colors disabled:opacity-50"
+              className="rounded-md border border-obsidian-border bg-transparent px-2 py-1 text-[11px] text-[var(--obsidian-text-muted)] outline-none hover:border-[var(--obsidian-accent)] hover:text-[var(--obsidian-text)] transition-colors disabled:opacity-50"
             >
               {aiModels.map((model) => (
                 <option key={model.id} value={model.id}>
@@ -394,7 +394,7 @@ export const AiModal = ({
         createPortal(
           <div
             ref={suggestionsRef}
-            className="overflow-y-auto bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] rounded-xl shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-100"
+            className="overflow-y-auto bg-[var(--obsidian-pane)] border border-obsidian-border rounded-xl shadow-2xl py-2 animate-in fade-in zoom-in-95 duration-100"
             style={{
               position: 'fixed',
               left: dropdownRect.left,

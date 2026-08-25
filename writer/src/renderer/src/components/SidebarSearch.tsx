@@ -61,7 +61,7 @@ export const SidebarSearch = ({ className, onCloseRequested, ...props }: Sidebar
       )}
       {...props}
     >
-      <div className="px-3 py-2 border-b border-[var(--obsidian-border-soft)]">
+      <div className="px-3 py-2 border-b border-obsidian-border-soft">
         <div className="flex items-center justify-between mb-2">
           <div className="text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
             SEARCH
@@ -95,7 +95,7 @@ export const SidebarSearch = ({ className, onCloseRequested, ...props }: Sidebar
             autoCorrect="off"
             autoCapitalize="off"
             placeholder="Search files, status or tags..."
-            className="w-full pl-8 pr-2 py-1.5 text-xs rounded bg-[var(--obsidian-workspace)] border border-[var(--obsidian-border)] text-[var(--obsidian-text)] placeholder:text-[var(--obsidian-text-muted)] outline-none focus:border-[var(--obsidian-accent)]"
+            className="w-full pl-8 pr-2 py-1.5 text-xs rounded bg-[var(--obsidian-workspace)] border border-obsidian-border text-[var(--obsidian-text)] placeholder:text-[var(--obsidian-text-muted)] outline-none focus:border-[var(--obsidian-accent)]"
           />
         </div>
       </div>

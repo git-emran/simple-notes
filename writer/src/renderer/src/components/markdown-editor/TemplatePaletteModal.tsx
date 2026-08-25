@@ -1,4 +1,4 @@
-import {
+import React, {
   useEffect,
   useMemo,
   useRef,
@@ -31,12 +31,12 @@ const TemplatePreview = memo(({ content, isDarkMode }: { content: string; isDark
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-[var(--obsidian-text)] mt-5 mb-2 pb-1 border-b border-[var(--obsidian-border)]">
+            <h1 className="text-xl font-bold text-[var(--obsidian-text)] mt-5 mb-2 pb-1 border-b border-obsidian-border">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-base font-semibold text-[var(--obsidian-text)] mt-5 mb-1.5 pb-1 border-b border-[var(--obsidian-border)]">
+            <h2 className="text-base font-semibold text-[var(--obsidian-text)] mt-5 mb-1.5 pb-1 border-b border-obsidian-border">
               {children}
             </h2>
           ),
@@ -65,7 +65,7 @@ const TemplatePreview = memo(({ content, isDarkMode }: { content: string; isDark
             const isBlock = !!className
             if (isBlock) {
               return (
-                <pre className="bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] rounded-md px-3 py-2 text-[12px] font-mono overflow-x-auto my-2">
+                <pre className="bg-[var(--obsidian-pane)] border border-obsidian-border rounded-md px-3 py-2 text-[12px] font-mono overflow-x-auto my-2">
                   <code className="text-[var(--obsidian-text)]">{children}</code>
                 </pre>
               )
@@ -78,7 +78,7 @@ const TemplatePreview = memo(({ content, isDarkMode }: { content: string; isDark
           },
           pre: ({ children }) => <div>{children}</div>,
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-[var(--obsidian-border)] pl-3 my-2 italic text-[var(--obsidian-text-muted)] text-[12px]">
+            <blockquote className="border-l-4 border-obsidian-border pl-3 my-2 italic text-[var(--obsidian-text-muted)] text-[12px]">
               {children}
             </blockquote>
           ),
@@ -89,7 +89,7 @@ const TemplatePreview = memo(({ content, isDarkMode }: { content: string; isDark
             <em className="italic text-[var(--obsidian-text)]">{children}</em>
           ),
           hr: () => (
-            <hr className="border-t border-[var(--obsidian-border)] my-4" />
+            <hr className="border-t border-obsidian-border my-4" />
           ),
         }}
       >
@@ -249,14 +249,14 @@ export const TemplatePaletteModal = ({
       {/* Modal shell */}
       <div
         className={twMerge(
-          'relative z-10 w-full max-w-4xl overflow-hidden rounded-xl border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] shadow-2xl flex flex-col transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
+          'relative z-10 w-full max-w-4xl overflow-hidden rounded-xl border border-obsidian-border bg-[var(--obsidian-surface)] shadow-2xl flex flex-col transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
           'max-h-[78vh]',
           easing,
           isShown ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'
         )}
       >
         {/* ── Header ── */}
-        <div className="flex items-center gap-2 border-b border-[var(--obsidian-border)] px-4 py-3 bg-[var(--obsidian-workspace)] flex-shrink-0">
+        <div className="flex items-center gap-2 border-b border-obsidian-border px-4 py-3 bg-[var(--obsidian-workspace)] flex-shrink-0">
           {/* Pencil icon */}
           <svg
             className="w-4 h-4 text-[var(--obsidian-text-muted)] flex-shrink-0"
@@ -277,7 +277,7 @@ export const TemplatePaletteModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded border border-[var(--obsidian-border)] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors text-[10px] font-bold flex-shrink-0"
+            className="w-6 h-6 flex items-center justify-center rounded border border-obsidian-border text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors text-[10px] font-bold flex-shrink-0"
             title="Close"
           >
             ✕
@@ -285,7 +285,7 @@ export const TemplatePaletteModal = ({
         </div>
 
         {/* ── Search bar ── */}
-        <div className="border-b border-[var(--obsidian-border)] px-3 py-2 bg-[var(--obsidian-workspace)] flex-shrink-0 flex items-center gap-2">
+        <div className="border-b border-obsidian-border px-3 py-2 bg-[var(--obsidian-workspace)] flex-shrink-0 flex items-center gap-2">
           <VscSearch className="w-3.5 h-3.5 text-[var(--obsidian-text-muted)] flex-shrink-0" />
           <input
             ref={inputRef}
@@ -301,7 +301,7 @@ export const TemplatePaletteModal = ({
           {/* Sidebar */}
           <div
             ref={listRef}
-            className="w-56 flex-shrink-0 border-r border-[var(--obsidian-border)] overflow-y-auto preview-scrollbar py-2"
+            className="w-56 flex-shrink-0 border-r border-obsidian-border overflow-y-auto preview-scrollbar py-2"
           >
             {filtered.length === 0 ? (
               <div className="px-4 py-3 text-xs text-[var(--obsidian-text-muted)]">
@@ -347,7 +347,7 @@ export const TemplatePaletteModal = ({
             {selectedTemplate ? (
               <>
                 {/* Preview header */}
-                <div className="px-5 pt-4 pb-2 border-b border-[var(--obsidian-border)] flex-shrink-0">
+                <div className="px-5 pt-4 pb-2 border-b border-obsidian-border flex-shrink-0">
                   <h3 className="text-base font-semibold text-[var(--obsidian-text)]">
                     {selectedTemplate.label}
                   </h3>
@@ -362,7 +362,7 @@ export const TemplatePaletteModal = ({
                 </div>
 
                 {/* Footer CTA */}
-                <div className="flex-shrink-0 border-t border-[var(--obsidian-border)] px-5 py-2.5 flex items-center justify-between">
+                <div className="flex-shrink-0 border-t border-obsidian-border px-5 py-2.5 flex items-center justify-between">
                   <span className="text-xs text-[var(--obsidian-text-muted)]">
                     ↑/↓ navigate · Enter to use · Esc to close
                   </span>

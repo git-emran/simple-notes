@@ -185,7 +185,7 @@ export const MarkdownToolbar = ({
           fixed z-[1000] min-w-[160px] py-1.5
           rounded-xl overflow-hidden
           bg-[var(--obsidian-pane)]/80 backdrop-blur-xl
-          border border-[var(--obsidian-border)]
+          border border-obsidian-border
           shadow-[0_8px_32px_rgba(0,0,0,0.24)]
         "
       >
@@ -226,9 +226,9 @@ export const MarkdownToolbar = ({
         className="
           flex items-center gap-0.5 px-2 py-1
           rounded-2xl
-          bg-white/5 dark:bg-white/[0.05]
+          bg-white/60 dark:bg-[#1e1e2e]/70
           backdrop-blur-xl
-          border border-[var(--obsidian-border)]
+          border border-obsidian-border
           shadow-[0_4px_24px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.07)]
         "
         role="toolbar"

@@ -210,7 +210,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
   return (
     <div className="flex flex-col h-full w-full" style={{ background: 'var(--obsidian-base)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
       {noteMetadata.exportNotice && (
-        <div className="absolute top-14 right-5 z-50 rounded-md border border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg">
+        <div className="absolute top-14 right-5 z-50 rounded-md border border-obsidian-border bg-[var(--obsidian-surface)] px-3 py-2 text-xs text-[var(--obsidian-text)] shadow-lg">
           {noteMetadata.exportNotice}
         </div>
       )}
@@ -266,12 +266,14 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
         >
           {/* Floating Format Toolbar */}
           {!splitView.isFullPreview && palette.showToolbar && (
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto shrink-0">
-              <MarkdownToolbarMemo
-                view={viewRef.current}
-                onWriteWithAi={() => void ai.openAiModal()}
-                isActive={isActive}
-              />
+            <div className="absolute bottom-10 left-0 w-full flex justify-center z-[100] pointer-events-none shrink-0">
+              <div className="pointer-events-auto">
+                <MarkdownToolbarMemo
+                  view={viewRef.current}
+                  onWriteWithAi={() => void ai.openAiModal()}
+                  isActive={isActive}
+                />
+              </div>
             </div>
           )}
 
@@ -357,7 +359,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
           x={contextMenu.x}
           y={contextMenu.y}
           onClose={() => setContextMenu(null)}
-          className="fixed z-50 bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar"
+          className="fixed z-50 bg-[var(--obsidian-surface)] border border-obsidian-border shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar backdrop-blur-sm"
         >
           {palette.editorMenuEntries.map((entry) => {
             if (entry.type === 'separator') {

@@ -348,7 +348,7 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
 
   return (
     <>
-      <div className="mermaid-container group relative my-4 rounded-lg border border-[var(--obsidian-border)] bg-[var(--obsidian-workspace)]">
+      <div className="mermaid-container group relative my-4 rounded-lg border border-obsidian-border bg-[var(--obsidian-workspace)]">
         <MermaidToolbar
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}

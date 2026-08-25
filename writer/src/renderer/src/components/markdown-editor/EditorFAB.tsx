@@ -20,7 +20,7 @@ export const EditorFAB = ({
 }: EditorFABProps) => {
   return (
     <div className={twMerge(
-      "absolute bottom-10 right-4 flex flex-col items-center gap-0.5 bg-[var(--obsidian-workspace)] border border-[var(--obsidian-border)] rounded-xl shadow-xl z-[100] p-1 transition-all duration-300 transform",
+      "absolute bottom-10 right-4 flex flex-col items-center gap-0.5 bg-[var(--obsidian-workspace)] border border-obsidian-border rounded-xl shadow-xl z-[100] p-1 transition-all duration-300 transform backdrop-blur-md",
       showFAB ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
     )}>
       <button
