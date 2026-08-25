@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { VscEllipsis, VscPinned, VscFiles, VscMail, VscFilePdf } from 'react-icons/vsc'
-import { useAtom, useSetAtom } from 'jotai'
-import { pinnedNotePathsAtom, duplicateNoteAtom } from '@renderer/store'
+import { VscEllipsis, VscFiles, VscFilePdf } from 'react-icons/vsc'
+import { useSetAtom } from 'jotai'
+import { duplicateNoteAtom } from '@renderer/store'
 import { twMerge } from 'tailwind-merge'
 
 interface tionsMenuProps {
@@ -13,13 +13,9 @@ interface tionsMenuProps {
 
 export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: tionsMenuProps) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [pinnedPaths, setPinnedPaths] = useAtom(pinnedNotePathsAtom)
   const duplicateNote = useSetAtom(duplicateNoteAtom)
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
-
-  const isPinned = pinnedPaths.includes(notePath)
-
 
   const handleDuplicate = () => {
     void duplicateNote(notePath)

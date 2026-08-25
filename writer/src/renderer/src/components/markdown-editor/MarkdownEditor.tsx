@@ -149,6 +149,8 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     isActive
   })
 
+  const { setIsTemplatePaletteOpen } = templatePalette
+
   const lifecycle = useEditorLifecycle({
     selectedNote: selectedNote as SelectedNote | null,
     editorRef,
@@ -163,8 +165,8 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     reconfigureLanguage,
     commandPaletteItems: palette.editorCommandItems,
     onOpenTemplatePalette: useCallback(
-      () => templatePalette.setIsTemplatePaletteOpen(true),
-      [templatePalette.setIsTemplatePaletteOpen]
+      () => setIsTemplatePaletteOpen(true),
+      [setIsTemplatePaletteOpen]
     )
   })
 
