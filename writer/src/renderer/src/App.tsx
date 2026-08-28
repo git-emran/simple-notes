@@ -45,6 +45,7 @@ import {
   rememberLastStateAtom,
   isDarkModeAtom,
   accentColorAtom,
+  transparentBgAtom,
   type EditorFontOption
 } from '@renderer/store'
 import {
@@ -153,6 +154,7 @@ const App = () => {
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
   const accentColor = useAtomValue(accentColorAtom)
+  const transparentBg = useAtomValue(transparentBgAtom)
   const fileTree = useAtomValue(fileTreeAtom)
   const openTab = useSetAtom(openTabAtom)
   const [tabs, setTabs] = useAtom(tabsAtom)
@@ -265,6 +267,11 @@ const App = () => {
       root.style.setProperty('--obsidian-accent-dim', `rgba(${r}, ${g}, ${b}, 0.15)`)
     }
   }, [accentColor])
+
+  /* Toggle transparency mode — adds/removes 'no-transparency' class on <html> */
+  useEffect(() => {
+    document.documentElement.classList.toggle('no-transparency', !transparentBg)
+  }, [transparentBg])
 
   /* Drag to resize logic */
   useEffect(() => {

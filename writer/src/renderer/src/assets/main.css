@@ -250,6 +250,83 @@
     color-scheme: light;
   }
 
+  /* ── No-Transparency Mode ────────────────────────────────── */
+  /* When the user disables transparent backgrounds, every
+     semi-transparent surface switches to its fully-opaque
+     equivalent and all backdrop-filter blur is removed.        */
+
+  /* Light baseline */
+  .no-transparency {
+    --obsidian-base: #f6f6f6;
+    --obsidian-titlebar: #f2f2f2;
+    --obsidian-ribbon: #f4f4f4;
+    --obsidian-sidebar: #f6f6f6;
+    --obsidian-workspace: #ffffff;
+    --obsidian-pane: #ffffff;
+    --toolbar-bg: #ffffff;
+    --writr-folders-glass-bg: #ffffff;
+  }
+
+  /* Dark baseline */
+  .dark.no-transparency {
+    --obsidian-base: #0d0f12;
+    --obsidian-titlebar: #101216;
+    --obsidian-ribbon: #111318;
+    --obsidian-sidebar: #111318;
+    --obsidian-workspace: #15171c;
+    --obsidian-pane: #181b21;
+    --toolbar-bg: #0d0f12;
+    --writr-folders-glass-bg: #14171d;
+  }
+
+  /* Gruvbox Dark */
+  .theme-gruvbox-dark.no-transparency {
+    --obsidian-base: #1d2021;
+    --obsidian-titlebar: #282828;
+    --obsidian-ribbon: #282828;
+    --obsidian-sidebar: #282828;
+    --obsidian-workspace: #282828;
+    --obsidian-pane: #32302f;
+    --toolbar-bg: #1d2021;
+    --writr-folders-glass-bg: #282828;
+  }
+
+  /* Gruvbox Light */
+  .theme-gruvbox-light.no-transparency {
+    --obsidian-base: #f9f5d7;
+    --obsidian-titlebar: #fbf1c7;
+    --obsidian-ribbon: #fbf1c7;
+    --obsidian-sidebar: #f2e5bc;
+    --obsidian-workspace: #fbf1c7;
+    --obsidian-pane: #ebdbb2;
+    --toolbar-bg: #fbf1c7;
+    --writr-folders-glass-bg: #fbf1c7;
+  }
+
+  /* Catppuccin Dark */
+  .theme-catppuccin-dark.no-transparency {
+    --obsidian-base: #1e1e2e;
+    --obsidian-titlebar: #181825;
+    --obsidian-ribbon: #181825;
+    --obsidian-sidebar: #181825;
+    --obsidian-workspace: #1e1e2e;
+    --obsidian-pane: #313244;
+    --toolbar-bg: #1e1e2e;
+    --writr-folders-glass-bg: #1e1e2e;
+  }
+
+  /* Catppuccin Light */
+  .theme-catppuccin-light.no-transparency {
+    --obsidian-base: #eff1f5;
+    --obsidian-titlebar: #e6e9ef;
+    --obsidian-ribbon: #e6e9ef;
+    --obsidian-sidebar: #e6e9ef;
+    --obsidian-workspace: #eff1f5;
+    --obsidian-pane: #ccd0da;
+    --toolbar-bg: #eff1f5;
+    --writr-folders-glass-bg: #eff1f5;
+  }
+
   #root {
     @apply h-full;
   }
@@ -841,3 +918,37 @@ header {
   background-color: var(--writr-scrollbar-thumb-hover);
 }
 
+/* ── No-Transparency: remove all backdrop-filter blur ─────── */
+/* Strip glassmorphism when the user turns off transparent backgrounds */
+.no-transparency .mermaid-toolbar,
+.no-transparency .writr-markdown-toolbar-pill,
+.no-transparency .context-menu-glass {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Tailwind backdrop-blur utilities — cancel them all in one shot */
+.no-transparency [class*="backdrop-blur"],
+.no-transparency [class*="backdrop-saturate"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Code block background: solid when transparency is off */
+.no-transparency .cm-codeblock-line {
+  background-color: rgba(0, 0, 0, 0.055) !important;
+}
+
+.dark.no-transparency .cm-codeblock-line {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+.theme-gruvbox-dark.no-transparency .cm-codeblock-line,
+.theme-catppuccin-dark.no-transparency .cm-codeblock-line {
+  background-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+.theme-gruvbox-light.no-transparency .cm-codeblock-line,
+.theme-catppuccin-light.no-transparency .cm-codeblock-line {
+  background-color: rgba(0, 0, 0, 0.055) !important;
+}

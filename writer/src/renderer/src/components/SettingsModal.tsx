@@ -12,6 +12,7 @@ import {
   vimModeEnabledAtom,
   rememberLastStateAtom,
   accentColorAtom,
+  transparentBgAtom,
   type EditorFontOption,
   type ThemeMode,
 } from '@renderer/store'
@@ -46,6 +47,7 @@ export const SettingsPanel = () => {
   const [rememberLastState, setRememberLastState] = useAtom(rememberLastStateAtom)
   const [aiApiKey, setAiApiKey] = useAtom(aiApiKeyAtom)
   const [accentColor, setAccentColor] = useAtom(accentColorAtom)
+  const [transparentBg, setTransparentBg] = useAtom(transparentBgAtom)
 
 
   const [relativeLineNumbers, setRelativeLineNumbers] = useAtom(relativeLineNumbersEnabledAtom)
@@ -163,6 +165,18 @@ export const SettingsPanel = () => {
                     type="checkbox"
                     checked={showFolderIcons}
                     onChange={(e) => setShowFolderIcons(e.target.checked)}
+                  />
+                </label>
+
+                <label className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className={labelClass}>Transparent background</div>
+                    <div className={helpClass}>Enable glassmorphism — translucent panels with backdrop blur.</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={transparentBg}
+                    onChange={(e) => setTransparentBg(e.target.checked)}
                   />
                 </label>
 

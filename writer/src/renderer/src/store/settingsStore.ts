@@ -43,3 +43,6 @@ export const aiApiKeyAtom = atomWithStorage<string>('writr-openrouter-api-key', 
 
 /** User-chosen primary accent color (hex). Applied to --obsidian-accent via App.tsx. */
 export const accentColorAtom = atomWithStorage<string>('writr-accent-color', '#3b82f6')
+
+/** When true, UI panels use translucent backgrounds with backdrop blur (glassmorphism). */
+export const transparentBgAtom = atomWithStorage<boolean>('writr-transparent-bg', true)
