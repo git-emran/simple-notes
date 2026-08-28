@@ -15,7 +15,7 @@ import {
   FaKeyboard
 } from 'react-icons/fa'
 import { MdHorizontalRule } from 'react-icons/md'
-import { VscSearch, VscSparkle } from 'react-icons/vsc'
+import { VscSparkle } from 'react-icons/vsc'
 import { EditorView } from '@codemirror/view'
 import * as commands from './editorCommands'
 

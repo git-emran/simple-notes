@@ -226,10 +226,10 @@ export const MarkdownToolbar = ({
         className="
           flex items-center gap-0.5 px-2 py-1
           rounded-2xl
-          bg-white/60 dark:bg-[#1e1e2e]/70
-          backdrop-blur-xl
           border border-obsidian-border
-          shadow-[0_4px_24px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.07)]
+          bg-white/70 dark:bg-black/60
+          backdrop-blur-xl backdrop-saturate-150
+          shadow-[0_4px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.07)]
         "
         role="toolbar"
         aria-label="Markdown formatting"

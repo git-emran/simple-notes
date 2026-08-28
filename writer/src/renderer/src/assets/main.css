@@ -76,6 +76,7 @@
     --writr-filetree-indent-guide: rgba(156, 163, 175, 0.22);
     --writr-scrollbar-thumb: rgba(17, 24, 39, 0.22);
     --writr-scrollbar-thumb-hover: rgba(17, 24, 39, 0.32);
+    --toolbar-bg: rgba(255, 255, 255, 0.6);
     color-scheme: light;
   }
 
@@ -108,6 +109,7 @@
     --writr-filetree-indent-guide: rgba(209, 213, 219, 0.14);
     --writr-scrollbar-thumb: rgba(255, 255, 255, 0.18);
     --writr-scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
+    --toolbar-bg: rgba(13, 15, 18, 0.55);
     color-scheme: dark;
   }
 
@@ -141,6 +143,7 @@
     --writr-filetree-indent-guide: rgba(146, 131, 116, 0.2);
     --writr-scrollbar-thumb: rgba(235, 219, 178, 0.2);
     --writr-scrollbar-thumb-hover: rgba(235, 219, 178, 0.32);
+    --toolbar-bg: rgba(29, 32, 33, 0.55);
     color-scheme: dark;
   }
 
@@ -174,6 +177,7 @@
     --writr-filetree-indent-guide: rgba(102, 92, 84, 0.18);
     --writr-scrollbar-thumb: rgba(60, 56, 54, 0.22);
     --writr-scrollbar-thumb-hover: rgba(60, 56, 54, 0.35);
+    --toolbar-bg: rgba(251, 241, 199, 0.6);
     color-scheme: light;
   }
 
@@ -208,6 +212,7 @@
     --writr-filetree-indent-guide: rgba(108, 112, 134, 0.2);
     --writr-scrollbar-thumb: rgba(205, 214, 244, 0.18);
     --writr-scrollbar-thumb-hover: rgba(205, 214, 244, 0.3);
+    --toolbar-bg: rgba(30, 30, 46, 0.55);
     color-scheme: dark;
   }
 
@@ -241,6 +246,7 @@
     --writr-filetree-indent-guide: rgba(156, 160, 176, 0.22);
     --writr-scrollbar-thumb: rgba(76, 79, 105, 0.22);
     --writr-scrollbar-thumb-hover: rgba(76, 79, 105, 0.36);
+    --toolbar-bg: rgba(239, 241, 245, 0.6);
     color-scheme: light;
   }
 

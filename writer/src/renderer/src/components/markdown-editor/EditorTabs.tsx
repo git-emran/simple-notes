@@ -118,7 +118,7 @@ export const EditorTabs = () => {
             }}
             style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
             className={twMerge(
-              'group relative flex h-8 min-w-[128px] max-w-[220px] items-center rounded-md border border-transparent px-2.5 cursor-pointer select-none transition-[background-color,border-color,color,box-shadow]',
+              'group relative flex h-8 flex-1 shrink min-w-[60px] max-w-[220px] items-center rounded-md border border-transparent px-2.5 cursor-pointer select-none transition-[background-color,border-color,color,box-shadow]',
               isActive
                 ? 'bg-[var(--obsidian-workspace)] border-obsidian-border-soft text-[var(--obsidian-text)] shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-10'
                 : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
