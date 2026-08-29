@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { ViewRef } from './types'
 
 export interface TemplateItem {
@@ -18,11 +18,14 @@ interface UseTemplatePaletteParams {
 export function insertTemplateContent(viewRef: ViewRef, content: string) {
   const view = viewRef.current
   if (!view) return
-  const length = view.state.doc.length
+
+  const docLength = view.state.doc.length
+
   view.dispatch({
-    changes: { from: 0, to: length, insert: content },
-    selection: { anchor: content.length }
+    changes: { from: 0, to: docLength, insert: content.trim() },
+    selection: { anchor: content.trim().length }
   })
+
   view.focus()
 }
 
@@ -33,8 +36,7 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
     category: 'Debugging',
     description: "For a bug you've already found the root cause of and are ready to fix",
     keywords: ['bug', 'fix', 'issue', 'patch'],
-    content: `
-## Actual Behavior
+    content: `## Actual Behavior
 
 ## Expected Behavior
 
@@ -46,39 +48,39 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
 
 ## Related Issues
 
- # !Example
+# !Example
 
- ## Actual Behavior
+## Actual Behavior
 
- Clicking "Save" appears to succeed in the UI, but the note is never persisted and no error is shown to the user.
+Clicking "Save" appears to succeed in the UI, but the note is never persisted and no error is shown to the user.
 
- ## Expected Behavior
+## Expected Behavior
 
- Save either succeeds and persists the note, or shows an error if the request fails.
+Save either succeeds and persists the note, or shows an error if the request fails.
 
- ## Steps to Reproduce
+## Steps to Reproduce
 
- 1. Click "Save" on a note.
- 2. The server responds with a 500 for that request.
- 3. No error is shown — the failure is silently swallowed.
+1. Click "Save" on a note.
+2. The server responds with a 500 for that request.
+3. No error is shown — the failure is silently swallowed.
 
- \`\`\`mermaid
- sequenceDiagram
-     participant U as User
-     participant A as App
-     participant S as Server
-     U->>A: Click "Save"
-     A->>S: POST /save
-     S-->>A: 500 Internal Server Error
-     A->>A: Swallows error silently
-     Note over A: Bug: no error shown to user
- \`\`\`
+\`\`\`mermaid
+sequenceDiagram
+    participant U as User
+    participant A as App
+    participant S as Server
+    U->>A: Click "Save"
+    A->>S: POST /save
+    S-->>A: 500 Internal Server Error
+    A->>A: Swallows error silently
+    Note over A: Bug: no error shown to user
+\`\`\`
 
- ## Root Cause
+## Root Cause
 
- ## Fix
+## Fix
 
- ## Related Issues`
+## Related Issues`
   },
   {
     id: 'template-crash-bug',
@@ -86,9 +88,7 @@ export const TEMPLATE_ITEMS: TemplateItem[] = [
     category: 'Debugging',
     description: 'For triaging a crash or unhandled exception from a stack trace or crash log',
     keywords: ['crash', 'exception', 'stack', 'trace', 'error'],
-    content: `
-
-## Crash Summary
+    content: `## Crash Summary
 
 - User report (link, quote, or summary)
 - Related reports (github, forum, etc.)
@@ -102,9 +102,9 @@ STACK TRACE GOES HERE
 
 ## Environment
 
-- Platform: 
-- Platform version: 
-- App version: 
+- Platform:
+- Platform version:
+- App version:
 
 ## Investigation
 
@@ -122,37 +122,108 @@ STACK TRACE GOES HERE
 *Root cause is stated here!*
 
 ## Fix`
-  }, 
-  
+  },
+  {
+    id: 'race-condition-bug',
+    label: 'Race Condition Bug',
+    category: 'Debugging',
+    description: 'To Identify a race condition within an application.',
+    keywords: ['crash', 'race-condition'],
+    content: `## Symptom
+
+- User report (link, quote, or summary)
+- How often does it happen? (always / sometimes / rarely)
+- Related reports (github, forum, etc.)
+- Timeline / flow of events leading up to the bug (if known)
+
+## Environment
+
+- Platform:
+- Platform version:
+- App version:
+
+## Investigation
+
+- What are the two (or more) operations that might be racing?
+- Is something (DB, cache, config) being read before it's marked ready/loaded? What event or flag should it wait on instead (e.g. \`onLocalDBLoad\`, \`cacheReady\`)?
+- Could messages/events (webhooks, IPC, sync) be arriving or processing out of order?
+- Is there an \`await\`/\`setTimeout\`/async gap where state can change underneath you?
+- Does it only reproduce on one machine/platform, or everywhere?
+- Does adding an artificial delay, or disabling a feature/extension, change the frequency?
+- Trace the actual sequence of events step by step — where do they interleave?
+
+## Root Cause
+
+## Fix`
+  },
+  {
+    id: 'security-bug',
+    label: 'Security Bug',
+    category: 'Debugging',
+    description: 'Find out the severity of an issue in-terms of security.',
+    keywords: ['vulnerability', 'security'],
+    content: `
+## Report
+
+- Report (link, quote, or summary — e.g. a researcher disclosure, forum report, or internal review):
+- Severity (critical / high / moderate / low):
+- Component:
+
+## Vulnerability
+
+- Where is the flaw (file, endpoint, code path)?
+- What's the risk if exploited — what could an attacker actually do?
+- Is it already being exploited, or only theoretical?
+
+## Root Cause
+
+## Fix
+
+## Verification
+
+- Does anything need to be rotated (a leaked secret, key, or token)?
+- Does this need a responsible-disclosure reply, or a security advisory/CVE?
+- Has the fix been tested against the original report/reproduction?`
+  }
 ]
 
 export function useTemplatePalette({ viewRef, isActive }: UseTemplatePaletteParams) {
   const [isTemplatePaletteOpen, setIsTemplatePaletteOpen] = useState(false)
 
+  const insertTemplate = useCallback(
+    (content: string) => {
+      insertTemplateContent(viewRef, content)
+    },
+    [viewRef]
+  )
+
   useEffect(() => {
+    if (!isActive) return
+
     const onKeyDown = (e: KeyboardEvent) => {
-      if (!isActive) return
       const isAltT = e.code === 'KeyT' && e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey
       if (!isAltT) return
 
       const view = viewRef.current
       if (!view) return
 
-      // Only open if the document is completely empty
-      if (view.state.doc.length === 0) {
+      // Use string trimming so whitespace/empty lines count as empty
+      const isEmpty = view.state.doc.toString().trim().length === 0
+
+      if (isEmpty) {
         e.preventDefault()
         e.stopPropagation()
         setIsTemplatePaletteOpen(true)
       }
     }
 
-    window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [isActive, viewRef])
 
   return {
     isTemplatePaletteOpen,
     setIsTemplatePaletteOpen,
-    insertTemplate: (content: string) => insertTemplateContent(viewRef, content)
+    insertTemplate
   }
 }
