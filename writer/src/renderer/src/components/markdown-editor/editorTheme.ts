@@ -20,7 +20,7 @@ export const getEditorTheme = (isDark: boolean) =>
       height: '100%',
       fontSize: editorFontSizeVar,
       lineHeight: '1.68',
-      backgroundColor: 'transparent',
+      backgroundColor: 'var(--obsidian-base)',
       color: 'var(--obsidian-text)',
       letterSpacing: '0'
     },
@@ -30,7 +30,7 @@ export const getEditorTheme = (isDark: boolean) =>
     '.cm-scroller': {
       fontFamily: editorFontFamilyVar,
       padding: '0',
-      backgroundColor: 'transparent',
+      backgroundColor: 'inherit',
       overflowX: 'auto'
     },
     '.cm-focused': {
@@ -51,9 +51,19 @@ export const getEditorTheme = (isDark: boolean) =>
       overflowWrap: 'break-word'
     },
     '.cm-gutters': {
-      backgroundColor: 'transparent',
+      backgroundColor: 'var(--obsidian-base)',
+      zIndex: '5',
       paddingLeft: '0',
       borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(0, 0, 0, 0.16)'
+    },
+    '.cm-gutter': {
+      backgroundColor: 'inherit'
+    },
+    '.cm-relativeLineNumbers': {
+      backgroundColor: 'var(--obsidian-base)'
+    },
+    '.cm-relativeLineNumbers .cm-gutterElement': {
+      backgroundColor: 'inherit'
     },
     '.cm-foldGutter .cm-gutterElement': {
       fontSize: editorFontSizeVar

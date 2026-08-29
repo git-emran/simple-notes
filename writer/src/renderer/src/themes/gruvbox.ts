@@ -117,9 +117,12 @@ export const gruvboxDark = [
       '.cm-content': { caretColor: gruvbox.dark.yellow },
       '.cm-cursor, .cm-dropcursor': { borderLeftColor: gruvbox.dark.yellow },
       '.cm-gutters': {
-        backgroundColor: gruvbox.dark.bg1,
+        backgroundColor: gruvbox.dark.bg,
         color: gruvbox.dark.gray,
         borderRight: `1px solid ${gruvbox.dark.bg2}`,
+      },
+      '.cm-relativeLineNumbers': {
+        backgroundColor: gruvbox.dark.bg,
       },
       '.cm-selectionBackground': { backgroundColor: gruvbox.dark.selection },
       '&.cm-focused .cm-selectionBackground': { backgroundColor: gruvbox.dark.selection },
@@ -139,9 +142,12 @@ export const gruvboxLight = [
       '.cm-content': { caretColor: gruvbox.light.orange },
       '.cm-cursor, .cm-dropcursor': { borderLeftColor: gruvbox.light.orange },
       '.cm-gutters': {
-        backgroundColor: gruvbox.light.bg1,
+        backgroundColor: gruvbox.light.bg,
         color: gruvbox.light.gray,
         borderRight: `1px solid ${gruvbox.light.bg2}`,
+      },
+      '.cm-relativeLineNumbers': {
+        backgroundColor: gruvbox.light.bg,
       },
       '.cm-selectionBackground': { backgroundColor: gruvbox.light.selection },
       '&.cm-focused .cm-selectionBackground': { backgroundColor: gruvbox.light.selection },

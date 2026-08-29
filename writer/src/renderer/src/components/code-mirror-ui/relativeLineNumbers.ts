@@ -1,5 +1,5 @@
 import { StateField, Transaction } from '@codemirror/state'
-import { gutter, GutterMarker } from '@codemirror/view'
+import { EditorView, gutter, GutterMarker } from '@codemirror/view'
 
 class RelativeNumberMarker extends GutterMarker {
   constructor(
@@ -44,6 +44,7 @@ export function relativeLineNumbers() {
   return [
     selectionVersionField,
     gutter({
+      class: 'cm-relativeLineNumbers',
       lineMarker(view, line) {
         const currentLine = view.state.doc.lineAt(view.state.selection.main.head).number
         const lineNum = view.state.doc.lineAt(line.from).number
@@ -65,6 +66,12 @@ export function relativeLineNumbers() {
       initialSpacer() {
         return new RelativeNumberMarker('999', false)
       }
+    }),
+    EditorView.theme({
+      '.cm-relativeLineNumbers, .cm-relativeLineNumbers .cm-gutterElement': {
+        backgroundColor: 'inherit'
+      }
     })
   ]
 }
+

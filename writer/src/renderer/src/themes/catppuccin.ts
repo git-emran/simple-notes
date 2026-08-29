@@ -134,9 +134,12 @@ export const catppuccinDark = [
       '.cm-content': { caretColor: catppuccin.mocha.rosewater },
       '.cm-cursor, .cm-dropcursor': { borderLeftColor: catppuccin.mocha.rosewater },
       '.cm-gutters': {
-        backgroundColor: catppuccin.mocha.mantle,
+        backgroundColor: catppuccin.mocha.base,
         color: catppuccin.mocha.overlay0,
         borderRight: `1px solid ${catppuccin.mocha.surface0}`,
+      },
+      '.cm-relativeLineNumbers': {
+        backgroundColor: catppuccin.mocha.base,
       },
       '.cm-selectionBackground': { backgroundColor: catppuccin.mocha.selection },
       '&.cm-focused .cm-selectionBackground': { backgroundColor: catppuccin.mocha.selection },
@@ -156,9 +159,12 @@ export const catppuccinLight = [
       '.cm-content': { caretColor: catppuccin.latte.rosewater },
       '.cm-cursor, .cm-dropcursor': { borderLeftColor: catppuccin.latte.rosewater },
       '.cm-gutters': {
-        backgroundColor: catppuccin.latte.mantle,
+        backgroundColor: catppuccin.latte.base,
         color: catppuccin.latte.overlay0,
         borderRight: `1px solid ${catppuccin.latte.surface0}`,
+      },
+      '.cm-relativeLineNumbers': {
+        backgroundColor: catppuccin.latte.base,
       },
       '.cm-selectionBackground': { backgroundColor: catppuccin.latte.selection },
       '&.cm-focused .cm-selectionBackground': { backgroundColor: catppuccin.latte.selection },
