@@ -1,7 +1,9 @@
 import '@xterm/xterm/css/xterm.css'
 
 import { FitAddon } from '@xterm/addon-fit'
+import { LigaturesAddon } from '@xterm/addon-ligatures'
 import { WebLinksAddon } from '@xterm/addon-web-links'
+import { WebglAddon } from '@xterm/addon-webgl'
 import { Terminal } from '@xterm/xterm'
 import type { TerminalDataEvent } from '@shared/types'
 import {
@@ -259,6 +261,24 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
 
     term.loadAddon(fitAddon)
     term.loadAddon(linksAddon)
+
+    try {
+      const ligaturesAddon = new LigaturesAddon()
+      term.loadAddon(ligaturesAddon)
+    } catch {
+      // Ignore if ligatures cannot be enabled
+    }
+
+    try {
+      const webglAddon = new WebglAddon()
+      webglAddon.onContextLoss(() => {
+        webglAddon.dispose()
+      })
+      term.loadAddon(webglAddon)
+    } catch {
+      // Fallback to default canvas renderer if WebGL is unavailable
+    }
+
     term.open(element)
 
     const flushWriteQueue = () => {
