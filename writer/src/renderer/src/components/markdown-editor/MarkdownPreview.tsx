@@ -13,6 +13,8 @@ import {
   groupMarkdownSections,
   slugifyMarkdownHeading
 } from './MarkdownPreview.helpers'
+import { TableOfContents } from './TableOfContents'
+import { FiList } from 'react-icons/fi'
 import { toLocalFileUrl } from './localFileUrl'
 
 /* ─── Language icon map (SVG strings) ───────────────────────────────────── */
@@ -280,21 +282,10 @@ export const MarkdownPreview = memo(
     isFullPreview
   }: MarkdownPreviewProps) => {
     const toc = useMemo(() => buildMarkdownToc(previewMarkdown), [previewMarkdown])
-    const minTocLevel = useMemo(
-      () => (toc.length > 0 ? Math.min(...toc.map((item) => item.level)) : 1),
-      [toc]
-    )
-
     const containerRef = useRef<HTMLDivElement>(null)
-    const [selectedTocId, setSelectedTocId] = useState<string | null>(null)
+    const [showFloatingToc, setShowFloatingToc] = useState(false)
 
-    useEffect(() => {
-      if (!selectedTocId) return
-      if (toc.some((item) => item.id === selectedTocId)) return
-      setSelectedTocId(null)
-    }, [selectedTocId, toc])
-
-    const scrollToHeader = (id: string) => {
+    const scrollToHeader = useCallback((id: string) => {
       const previewRoot = containerRef.current
       const scrollContainer = getPreviewScrollContainer(previewRoot)
       if (!previewRoot) return
@@ -310,7 +301,7 @@ export const MarkdownPreview = memo(
       } else {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
-    }
+    }, [])
 
     return (
       <div ref={containerRef} className="flex flex-row w-full gap-8 relative items-start">
@@ -571,50 +562,43 @@ export const MarkdownPreview = memo(
           </ReactMarkdown>
         </div>
 
-        {toc.length > 0 && isFullPreview && (
-          <nav
-            className="w-52 flex-shrink-0 hidden xl:block sticky top-2 max-h-[calc(100vh-8rem)] overflow-hidden"
-            aria-label="Table of contents"
-          >
-            <div className="font-semibold mb-3 uppercase tracking-wider text-[10px] text-[var(--obsidian-text-muted)]">
-              On this page
+        {toc.length > 0 && (
+          <>
+            {/* Inline TOC Sidebar for desktop view */}
+            <div className={twMerge('hidden xl:block shrink-0 sticky top-2 self-start z-10', isFullPreview ? 'block' : '!hidden')}>
+              <TableOfContents
+                items={toc}
+                onSelectTocItem={scrollToHeader}
+                containerRef={containerRef}
+              />
             </div>
-            <ul className="space-y-0.5 max-h-[calc(100vh-10rem)] overflow-y-auto preview-scrollbar pr-1">
-              {toc.map((item) => {
-                const depth = item.level - minTocLevel
-                const isNested = depth > 0
 
-                return (
-                  <li key={item.id} className="flex items-stretch">
-                    {Array.from({ length: depth }).map((_, d) => (
-                      <div key={d} className="flex-shrink-0 w-2.5 flex justify-center">
-                        <div className="w-px bg-[var(--obsidian-border)] opacity-40 h-full" />
-                      </div>
-                    ))}
-
-                    <button
-                      onClick={() => {
-                        setSelectedTocId(item.id)
-                        scrollToHeader(item.id)
-                      }}
-                      title={item.text}
-                      aria-current={selectedTocId === item.id ? 'location' : undefined}
-                      className={twMerge(
-                        'flex-1 text-left py-1 px-1.5 rounded-sm text-[11px] leading-snug truncate transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--obsidian-accent)] hover:bg-[var(--obsidian-hover-soft)] hover:text-[var(--obsidian-text)]',
-                        selectedTocId === item.id
-                          ? 'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)]'
-                          : isNested
-                            ? 'text-[var(--obsidian-text-muted)] opacity-70'
-                            : 'font-medium text-[var(--obsidian-text-muted)]'
-                      )}
-                    >
-                      {item.text}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </nav>
+            {/* Floating TOC Trigger Button & Popover (for smaller viewports or split view mode) */}
+            <div className={twMerge('fixed bottom-6 right-6 z-30', isFullPreview ? 'xl:hidden' : 'block')}>
+              {!showFloatingToc ? (
+                <button
+                  onClick={() => setShowFloatingToc(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-[var(--obsidian-pane)] border border-[var(--obsidian-border)] shadow-xl text-[var(--obsidian-text)] text-xs font-medium hover:bg-[var(--obsidian-hover-soft)] transition-all hover:scale-105 active:scale-95 cursor-pointer select-none"
+                >
+                  <FiList className="w-4 h-4 text-[var(--obsidian-accent)]" />
+                  <span>Contents</span>
+                  <span className="px-1.5 py-0.5 rounded-full bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] text-[10px] font-mono font-semibold">
+                    {toc.length}
+                  </span>
+                </button>
+              ) : (
+                <div className="relative shadow-2xl rounded-xl">
+                  <TableOfContents
+                    items={toc}
+                    onSelectTocItem={scrollToHeader}
+                    containerRef={containerRef}
+                    isMobilePopover
+                    onClosePopover={() => setShowFloatingToc(false)}
+                  />
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     )
