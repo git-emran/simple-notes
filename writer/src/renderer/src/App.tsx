@@ -10,16 +10,17 @@ import {
   FolderNotesPanel
 } from './components'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
-import { CanvasEditor } from './components/canvas/CanvasEditor'
-import { SettingsPanel } from './components/SettingsModal'
-import { KanbanBoard } from './components/kanban/KanbanBoard'
-import { KanbanReminderHost } from './components/kanban/KanbanReminderHost'
-import { SpreadsheetPanel } from './components/spreadsheet/SpreadsheetPanel'
-import { TerminalTab } from './components/terminal/TerminalTab'
 import { Tooltip } from './components/Tooltip'
 import { UpdateManager } from './components/updater/UpdateManager'
 import { MIN_SIDEBAR_WIDTH } from './constants/sidebarLayout'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, lazy, Suspense } from 'react'
+
+const CanvasEditor = lazy(() => import('./components/canvas/CanvasEditor').then((m) => ({ default: m.CanvasEditor })))
+const SettingsPanel = lazy(() => import('./components/SettingsModal').then((m) => ({ default: m.SettingsPanel })))
+const KanbanBoard = lazy(() => import('./components/kanban/KanbanBoard').then((m) => ({ default: m.KanbanBoard })))
+const KanbanReminderHost = lazy(() => import('./components/kanban/KanbanReminderHost').then((m) => ({ default: m.KanbanReminderHost })))
+const SpreadsheetPanel = lazy(() => import('./components/spreadsheet/SpreadsheetPanel').then((m) => ({ default: m.SpreadsheetPanel })))
+const TerminalTab = lazy(() => import('./components/terminal/TerminalTab').then((m) => ({ default: m.TerminalTab })))
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
   activeTabAtom,
@@ -615,7 +616,9 @@ const App = () => {
                     {appMode === 'editor' ? (
                       <MarkdownEditor tabId={tab.id} path={tab.path} isActive={isActive} />
                     ) : (
-                      <CanvasEditor tabId={tab.id} path={tab.path} isActive={isActive} />
+                      <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">Loading Canvas...</div>}>
+                        <CanvasEditor tabId={tab.id} path={tab.path} isActive={isActive} />
+                      </Suspense>
                     )}
                   </div>
                 )
@@ -633,7 +636,9 @@ const App = () => {
                       flexDirection: 'column'
                     }}
                   >
-                    <KanbanBoard />
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">Loading Kanban...</div>}>
+                      <KanbanBoard />
+                    </Suspense>
                   </div>
                 )
               })()}
@@ -650,7 +655,9 @@ const App = () => {
                       flexDirection: 'column'
                     }}
                   >
-                    <SpreadsheetPanel />
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">Loading Spreadsheet...</div>}>
+                      <SpreadsheetPanel />
+                    </Suspense>
                   </div>
                 )
               })()}
@@ -669,10 +676,12 @@ const App = () => {
                       flexDirection: 'column'
                     }}
                   >
-                    <TerminalTab
-                      tab={termTab as typeof termTab & { kind: 'terminal' }}
-                      isActive={isTermActive}
-                    />
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">Loading Terminal...</div>}>
+                      <TerminalTab
+                        tab={termTab as typeof termTab & { kind: 'terminal' }}
+                        isActive={isTermActive}
+                      />
+                    </Suspense>
                   </div>
                 )
               })()}
@@ -689,12 +698,16 @@ const App = () => {
                       flexDirection: 'column'
                     }}
                   >
-                    <SettingsPanel />
+                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">Loading Settings...</div>}>
+                      <SettingsPanel />
+                    </Suspense>
                   </div>
                 )
               })()}
             </div>
-            <KanbanReminderHost />
+            <Suspense fallback={null}>
+              <KanbanReminderHost />
+            </Suspense>
             <UpdateManager />
           </Content>
         </div>

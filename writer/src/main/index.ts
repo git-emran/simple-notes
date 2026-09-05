@@ -206,7 +206,12 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  initializeUpdater(mainWindow)
+  // Defer updater initialization so startup is not blocked by auto-update network/disk checks
+  setTimeout(() => {
+    if (!mainWindow.isDestroyed()) {
+      initializeUpdater(mainWindow)
+    }
+  }, 3000)
 }
 
 const configureApplicationMenu = () => {

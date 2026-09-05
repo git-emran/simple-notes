@@ -1,11 +1,10 @@
 'use client'
-import { Children, memo, useCallback, useEffect, useState, useMemo, useRef, type ReactNode } from 'react'
+import { Children, memo, useCallback, useEffect, useState, useMemo, useRef, lazy, Suspense, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import SyntaxHighlighter from 'react-syntax-highlighter'
 import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import remarkGfm from 'remark-gfm'
 import { twMerge } from 'tailwind-merge'
-import { MermaidDiagram } from './MermaidDiagram'
 import {
   buildMarkdownToc,
   findScopedHeadingById,
@@ -16,6 +15,10 @@ import {
 import { TableOfContents } from './TableOfContents'
 import { FiList } from 'react-icons/fi'
 import { toLocalFileUrl } from './localFileUrl'
+
+const MermaidDiagram = lazy(() =>
+  import('./MermaidDiagram').then((m) => ({ default: m.MermaidDiagram }))
+)
 
 /* ─── Language icon map (SVG strings) ───────────────────────────────────── */
 const LANG_ICONS: Record<string, string> = {
@@ -513,7 +516,11 @@ export const MarkdownPreview = memo(
                 const codeContent = String(children).replace(/\n$/, '')
 
                 if (language === 'mermaid') {
-                  return <MermaidDiagram chart={codeContent} />
+                  return (
+                    <Suspense fallback={<div className="p-3 text-xs text-[var(--obsidian-text-muted)] animate-pulse border border-[var(--obsidian-border)] rounded-lg">Loading diagram...</div>}>
+                      <MermaidDiagram chart={codeContent} />
+                    </Suspense>
+                  )
                 }
 
                 if (isInline && codeContent.toLowerCase().startsWith('kbd:')) {

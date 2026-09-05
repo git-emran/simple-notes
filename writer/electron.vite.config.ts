@@ -61,7 +61,21 @@ if (buildRenderer) {
     plugins: [react()],
     build: {
       rollupOptions: {
-        onwarn: onRendererWarn
+        onwarn: onRendererWarn,
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('mermaid')) return 'vendor-mermaid'
+              if (id.includes('katex')) return 'vendor-katex'
+              if (id.includes('@xterm') || id.includes('xterm')) return 'vendor-xterm'
+              if (id.includes('@xyflow')) return 'vendor-xyflow'
+              if (id.includes('react-syntax-highlighter') || id.includes('refractor') || id.includes('highlight.js')) return 'vendor-syntax-highlighter'
+              if (id.includes('@codemirror') || id.includes('@lezer')) return 'vendor-codemirror'
+              if (id.includes('react') || id.includes('react-dom') || id.includes('jotai')) return 'vendor-core'
+            }
+            return undefined
+          }
+        }
       }
     },
     /* ** Add this css block for Tailwind CSS ** */
