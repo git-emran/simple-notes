@@ -297,7 +297,9 @@ export const writeFileNew: WriteFile = async (filePath, content) => {
       if (await pathExists(tmpPath)) {
         await writeFile(tmpPath, '')
       }
-    } catch {}
+    } catch {
+      // Ignore errors when resetting tmpPath
+    }
     throw err
   }
 }

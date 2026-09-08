@@ -1,5 +1,5 @@
 import { resolve } from 'path'
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
+import { defineConfig, externalizeDepsPlugin, UserConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 /* Import tailwindcss as a plugin for Vite's PostCSS */
 import tailwindcss from 'tailwindcss' // For Tailwind CSS v3
@@ -16,7 +16,12 @@ const ignoredRendererWarnings = [
   '@codemirror/lang-javascript'
 ]
 
-const onRendererWarn = (warning: any, warn: (warning: any) => void) => {
+type WarningHandler = Extract<
+  NonNullable<NonNullable<UserConfig['renderer']>['build']>['rollupOptions'],
+  object
+>['onwarn']
+
+const onRendererWarn: WarningHandler = (warning, warn) => {
   const message = typeof warning === 'string' ? warning : warning.message
   if (message?.includes('is dynamically imported by') && ignoredRendererWarnings.some((text) => message.includes(text))) {
     return
@@ -24,7 +29,7 @@ const onRendererWarn = (warning: any, warn: (warning: any) => void) => {
   warn(warning)
 }
 
-const config: any = {}
+const config: UserConfig = {}
 
 if (buildMain) {
   config.main = {
@@ -59,6 +64,9 @@ if (buildRenderer) {
       }
     },
     plugins: [react()],
+    define: {
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
+    },
     build: {
       rollupOptions: {
         onwarn: onRendererWarn,
@@ -76,9 +84,6 @@ if (buildRenderer) {
             return undefined
           }
         }
-      },
-      define: {
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
       }
     },
     /* ** Add this css block for Tailwind CSS ** */
