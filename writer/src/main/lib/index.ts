@@ -288,9 +288,18 @@ export const readFileNew: ReadFile = async (filePath) => {
 
 export const writeFileNew: WriteFile = async (filePath, content) => {
   const safePath = ensurePathWithinRoot(filePath)
-  const tmpPath = `${safePath}.tmp`
-  await writeFile(tmpPath, content, { encoding: fileEncoding })
-  await move(tmpPath, safePath, { overwrite: true })
+  const tmpPath = `${safePath}.${Date.now()}-${Math.random().toString(36).substring(2, 8)}.tmp`
+  try {
+    await writeFile(tmpPath, content, { encoding: fileEncoding })
+    await move(tmpPath, safePath, { overwrite: true })
+  } catch (err) {
+    try {
+      if (await pathExists(tmpPath)) {
+        await writeFile(tmpPath, '')
+      }
+    } catch {}
+    throw err
+  }
 }
 
 export const createNoteNew: CreateNoteNew = async (parentDir) => {
@@ -340,7 +349,7 @@ export const createCanvasNew = async (parentDir?: string) => {
   }
 
   /* Initialize with an empty canvas structure */
-  const emptyCanvas = { nodes: [], edges: [] }
+  const emptyCanvas = { elements: [], appState: { viewBackgroundColor: '#1e1e1e' }, files: {} }
   await writeFile(filePath, JSON.stringify(emptyCanvas, null, 2))
   return filePath
 }

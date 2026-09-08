@@ -1,192 +1,133 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  ReactFlow,
-  addEdge,
-  Background,
-  Controls,
-  Connection,
-  useNodesState,
-  useEdgesState,
-  Panel,
-  MarkerType,
-  reconnectEdge,
-  type Node,
-  type Edge,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { useAtomValue, useSetAtom } from 'jotai';
-import { noteByPathAtomFamily, saveCanvasAtom, movePathAtom } from '../../store';
-import { VscTypeHierarchy, VscFilePdf, VscNote, VscSymbolString } from 'react-icons/vsc';
-import { FaRegSquare, FaRegCircle, } from 'react-icons/fa';
-import { TbDiamond } from 'react-icons/tb';
-import { EditableNode, DiamondNode, StickyNoteNode, CircleNode, TextNode } from './CustomNodes';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { Excalidraw } from '@excalidraw/excalidraw'
+import '@excalidraw/excalidraw/index.css'
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
+type ExcalidrawOnChange = NonNullable<React.ComponentProps<typeof Excalidraw>['onChange']>
+type ExcalidrawOnChangeParams = Parameters<ExcalidrawOnChange>
+import { useAtomValue, useSetAtom } from 'jotai'
+import { noteByPathAtomFamily, saveCanvasAtom, movePathAtom } from '../../store'
+import { VscTypeHierarchy, VscFilePdf } from 'react-icons/vsc'
 
-const nodeTypes = {
-  editable: EditableNode,
-  diamond: DiamondNode,
-  sticky: StickyNoteNode,
-  circle: CircleNode,
-  text: TextNode,
-};
+/**
+ * Parse canvas content string into Excalidraw-compatible data.
+ * Returns null if content looks like it hasn't loaded yet (empty string
+ * from the async atom's unwrap default).
+ */
+function parseCanvasContent(content: string) {
+  if (!content) return null
+  try {
+    const parsed = JSON.parse(content)
+    /* If old React Flow format (nodes/edges), return fresh empty canvas */
+    if (parsed.nodes || parsed.edges) {
+      return { elements: [] as const, appState: { theme: 'dark' as const }, files: {} }
+    }
+    return {
+      elements: parsed.elements || [],
+      appState: { ...(parsed.appState || {}), theme: 'dark' as const },
+      files: parsed.files || {}
+    }
+  } catch {
+    /* Genuinely malformed content — treat as a loaded but empty canvas */
+    return { elements: [] as const, appState: { theme: 'dark' as const }, files: {} }
+  }
+}
 
-export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { path: string | null; tabId: string; isActive: boolean }) => {
-  const selectedNote = useAtomValue(noteByPathAtomFamily(path));
-  const saveCanvas = useSetAtom(saveCanvasAtom);
+export const CanvasEditor = ({
+  path,
+  tabId: _tabId,
+  isActive: _isActive
+}: {
+  path: string | null
+  tabId: string
+  isActive: boolean
+}) => {
+  const selectedNote = useAtomValue(noteByPathAtomFamily(path))
+  const saveCanvas = useSetAtom(saveCanvasAtom)
+  const movePath = useSetAtom(movePathAtom)
   const rootRef = useRef<HTMLDivElement>(null)
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [isLoaded, setIsLoaded] = React.useState(false);
-  const [isRenaming, setIsRenaming] = React.useState(false);
-  const [editTitle, setEditTitle] = React.useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const movePath = useSetAtom(movePathAtom);
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const canvasTitle = selectedNote?.title || 'Canvas'
   const isCanvasFile = !!selectedNote?.path && selectedNote.path.endsWith('.canvas')
-  const isCanvasEmpty = isLoaded && nodes.length === 0 && edges.length === 0
-
-  const onChangeLabel = useCallback((nodeId: string, label: string) => {
-    setNodes((prev) =>
-      prev.map((node) => {
-        if (node.id !== nodeId) return node
-        return {
-          ...node,
-          data: {
-            ...(node.data ?? {}),
-            label
-          }
-        }
-      })
-    )
-  }, [setNodes])
-
-  const hydrateNodes = useCallback((rawNodes: Node[]) => {
-    return (rawNodes ?? []).map((node) => ({
-      ...node,
-      data: {
-        ...(node.data ?? {}),
-        onChangeLabel,
-      },
-    }))
-  }, [onChangeLabel])
-
   const canvasPath = selectedNote?.path ?? ''
   const canvasContent = selectedNote?.content ?? ''
 
-  /* Reset state when switching between canvas files */
+  /* ── Determine if the atom has actually resolved ──────────────── */
+  const parsedData = useMemo(() => parseCanvasContent(canvasContent), [canvasContent])
+  const hasLoaded = parsedData !== null
+
+  /*
+   * `readyRef` guards onChange from saving before the Excalidraw instance
+   * has been hydrated with file content. It is flipped to true only AFTER
+   * the first Excalidraw onChange fires following initialData hydration,
+   * which means we safely skip the very first (empty) onChange that
+   * Excalidraw emits on mount.
+   */
+  const readyRef = useRef(false)
+  const mountCountRef = useRef(0)
+
+  /* Reset readiness when the canvas path or parsed data changes, which
+     also causes a new Excalidraw key and therefore a fresh mount. */
   useEffect(() => {
-    if (!isCanvasFile) return
-    setIsLoaded(false)
-    setNodes([])
-    setEdges([])
-  }, [canvasPath, isCanvasFile, setEdges, setNodes])
+    readyRef.current = false
+  }, [canvasPath, hasLoaded])
 
-  /* Load from file content */
-  React.useEffect(() => {
-    if (!isCanvasFile) return
+  /* Debounced auto-save canvas edits */
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-    if (canvasContent && !isLoaded) {
-      try {
-        const parsed = JSON.parse(canvasContent);
-        if (parsed.nodes) setNodes(hydrateNodes(parsed.nodes));
-        if (parsed.edges) setEdges(parsed.edges);
-        setIsLoaded(true);
-      } catch (e) {
-        setIsLoaded(true);
-      }
-    } else if (!canvasContent && !isLoaded) {
-      setIsLoaded(true);
-    }
-  }, [canvasContent, hydrateNodes, isCanvasFile, isLoaded, setEdges, setNodes]);
+  const handleChange = useCallback(
+    (elements: ExcalidrawOnChangeParams[0], appState: ExcalidrawOnChangeParams[1], files: ExcalidrawOnChangeParams[2]) => {
+      if (!isCanvasFile || !selectedNote?.path) return
 
-  /* Persistence effect - save on change */
-  React.useEffect(() => {
-    if (!isLoaded) return;
-    if (!isCanvasFile) return
-
-    const timeout = setTimeout(() => {
-      if (selectedNote?.path) {
-        saveCanvas({ path: selectedNote.path, jsonContent: JSON.stringify({ nodes, edges }, null, 2) });
-      }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [nodes, edges, isCanvasFile, isLoaded, saveCanvas, selectedNote?.path]);
-
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge({
-      ...params,
-      animated: true,
-      style: { stroke: 'var(--obsidian-accent)', strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--obsidian-accent)' }
-    }, eds)),
-    [setEdges]
-  );
-
-  const edgeReconnectSuccessful = useRef(true);
-  const onReconnectStart = useCallback(() => {
-    edgeReconnectSuccessful.current = false;
-  }, []);
-  const onReconnect = useCallback(
-    (oldEdge: Edge, newConnection: Connection) => {
-      edgeReconnectSuccessful.current = true;
-      setEdges((eds) => reconnectEdge(oldEdge, newConnection, eds));
-    },
-    [setEdges]
-  );
-  const onReconnectEnd = useCallback(
-    (_: unknown, edge: Edge) => {
-      if (!edgeReconnectSuccessful.current) {
-        setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+      /*
+       * Excalidraw fires onChange once right after mounting with
+       * initialData.  We skip that first call by checking readyRef,
+       * then enable saving for all subsequent calls.
+       */
+      if (!readyRef.current) {
+        readyRef.current = true
+        return
       }
 
-      edgeReconnectSuccessful.current = true;
-    },
-    [setEdges]
-  );
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
 
-  const onNodeDragStart = useCallback(
-    (event: React.MouseEvent, node: Node) => {
-      /* If Alt is pressed, duplicate the node */
-      if (event.altKey) {
-        const newNode = {
-          ...node,
-          id: `${node.type}-${Date.now()}`,
-          position: {
-            x: node.position.x + 20,
-            y: node.position.y + 20,
+      saveTimeoutRef.current = setTimeout(() => {
+        const contentToSave = JSON.stringify(
+          {
+            elements,
+            appState: {
+              viewBackgroundColor: appState.viewBackgroundColor,
+              gridSize: appState.gridSize,
+              theme: appState.theme
+            },
+            files
           },
-          selected: false,
-        };
-        setNodes((nds) => nds.concat(newNode));
-      }
-    },
-    [setNodes]
-  );
+          null,
+          2
+        )
 
-  const addNode = (type: 'editable' | 'diamond' | 'sticky' | 'circle' | 'arrow' | 'text') => {
-    const id = `${type}-${Date.now()}`;
-    const newNode = {
-      id,
-      type,
-      position: { x: 200 + Math.random() * 200, y: 200 + Math.random() * 200 },
-      data: {
-        label: type === 'sticky' ? 'Note...' : type === 'diamond' ? 'Decision' : type === 'circle' ? 'Start/End' : type === 'arrow' ? '' : type === 'text' ? '' : 'Process',
-        onChangeLabel,
-      },
-    };
-    setNodes((nds) => nds.concat(newNode));
-  };
+        saveCanvas({ path: selectedNote.path, jsonContent: contentToSave })
+      }, 500)
+    },
+    [isCanvasFile, selectedNote?.path, saveCanvas]
+  )
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+    }
+  }, [])
 
   const exportAsPdf = async () => {
-    const canvasPath = selectedNote?.path
-    if (!canvasPath) return
+    const currentPath = selectedNote?.path
+    if (!currentPath) return
 
-    const flowEl = rootRef.current?.querySelector('.react-flow') as HTMLElement | null
-    if (!flowEl) return
+    const canvasEl = rootRef.current?.querySelector('.excalidraw') as HTMLElement | null
+    if (!canvasEl) return
 
     document.documentElement.classList.add('canvas-exporting')
     await new Promise<void>((resolve) => {
@@ -194,27 +135,34 @@ export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { pat
     })
 
     try {
-      const rect = flowEl.getBoundingClientRect()
-      await window.context.exportCanvasToPdf(canvasPath, canvasTitle, {
+      const rect = canvasEl.getBoundingClientRect()
+      await window.context.exportCanvasToPdf(currentPath, canvasTitle, {
         x: rect.left,
         y: rect.top,
         width: rect.width,
-        height: rect.height,
+        height: rect.height
       })
     } finally {
       document.documentElement.classList.remove('canvas-exporting')
     }
-  };
+  }
 
   const handleRename = () => {
     setIsRenaming(false)
     if (editTitle.trim() && editTitle !== canvasTitle && selectedNote?.path) {
       const currentPath = selectedNote.path
-      const currentName = currentPath.substring(Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\')) + 1)
+      const currentName = currentPath.substring(
+        Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\')) + 1
+      )
       const ext = currentName.includes('.') ? currentName.substring(currentName.lastIndexOf('.')) : ''
-      const newFileName = editTitle.trim().endsWith(ext) ? editTitle.trim() : `${editTitle.trim()}${ext}`
-      
-      const parentPath = currentPath.substring(0, Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\')))
+      const newFileName = editTitle.trim().endsWith(ext)
+        ? editTitle.trim()
+        : `${editTitle.trim()}${ext}`
+
+      const parentPath = currentPath.substring(
+        0,
+        Math.max(currentPath.lastIndexOf('/'), currentPath.lastIndexOf('\\'))
+      )
       const separator = currentPath.includes('\\') ? '\\' : '/'
       const newPath = parentPath ? `${parentPath}${separator}${newFileName}` : newFileName
 
@@ -224,7 +172,7 @@ export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { pat
     }
   }
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isRenaming) {
       setEditTitle(canvasTitle)
       setTimeout(() => {
@@ -247,83 +195,45 @@ export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { pat
     )
   }
 
+  /* ── Wait for atom to resolve before rendering Excalidraw ──── */
+  if (!hasLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full bg-[var(--obsidian-workspace)]">
+        <div className="text-sm text-[var(--obsidian-text-muted)]">Loading Canvas...</div>
+      </div>
+    )
+  }
+
+  /*
+   * Use a key that changes whenever the canvas path or content identity
+   * changes, so Excalidraw re-mounts cleanly with fresh initialData
+   * instead of keeping stale internal state.
+   */
+  const excalidrawKey = `${canvasPath}-${mountCountRef.current}`
+
   return (
     <div ref={rootRef} className="w-full h-full bg-[var(--obsidian-workspace)] relative overflow-hidden">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeDragStart={onNodeDragStart}
-        onReconnectStart={onReconnectStart}
-        onReconnectEnd={onReconnectEnd}
-        onReconnect={onReconnect}
-        fitView
-        style={{ background: 'var(--obsidian-workspace)' }}
-      >
-        <Background color="var(--obsidian-border)" gap={24} size={1} />
-        <Controls />
-        <Panel position="top-right" className="flex gap-2">
-          <div className="flex gap-1 bg-[var(--obsidian-pane)]/80 backdrop-blur-md p-1.5 rounded-xl border border-obsidian-border shadow-2xl">
-            <button
-              onClick={() => addNode('editable')}
-              className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-[var(--obsidian-text)] transition-all active:scale-95"
-              title="Add Process Square"
-            >
-              <FaRegSquare className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => addNode('diamond')}
-              className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-[var(--obsidian-text)] transition-all active:scale-95"
-              title="Add Decision Diamond"
-            >
-              <TbDiamond className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => addNode('sticky')}
-              className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-[var(--obsidian-text)] transition-all active:scale-95"
-              title="Add Sticky Note"
-            >
-              <VscNote className="w-5 h-5 text-yellow-500" />
-            </button>
-            <button
-              onClick={() => addNode('circle')}
-              className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-[var(--obsidian-text)] transition-all active:scale-95"
-              title="Add Circle"
-            >
-              <FaRegCircle className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => addNode('text')}
-              className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-[var(--obsidian-text)] transition-all active:scale-95"
-              title="Add Text"
-            >
-              <VscSymbolString className="w-5 h-5" />
-            </button>
-            <div className="w-[1px] h-8 bg-[var(--obsidian-border)] my-auto mx-1" />
-            <button
-              onClick={exportAsPdf}
-              className="p-2.5 hover:bg-[var(--obsidian-hover)] rounded-lg text-red-500 transition-all active:scale-95"
-              title="Export as PDF"
-            >
-              <VscFilePdf className="w-5 h-5" />
-            </button>
-          </div>
-        </Panel>
-      </ReactFlow>
-
-      {isCanvasEmpty && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="px-4 py-2 rounded-lg text-sm text-[var(--obsidian-text-muted)] bg-[var(--obsidian-pane)]/70 backdrop-blur border border-obsidian-border shadow-sm transition-opacity duration-200 opacity-100">
-            Drag and drop items to start
-          </div>
-        </div>
-      )}
+      <Excalidraw
+        key={excalidrawKey}
+        theme="dark"
+        initialData={{
+          elements: parsedData.elements,
+          appState: parsedData.appState,
+          files: parsedData.files
+        }}
+        onChange={handleChange}
+        UIOptions={{
+          canvasActions: {
+            toggleTheme: true,
+            export: {
+              saveFileToDisk: true
+            }
+          }
+        }}
+      />
 
       {/* Floating Header */}
-      <div className="absolute top-4 left-4 z-10 pointer-events-none">
+      <div className="absolute top-4 left-16 z-20 pointer-events-none">
         <div className="bg-[var(--obsidian-pane)]/90 backdrop-blur-md px-4 py-2 rounded-full border border-obsidian-border shadow-lg flex items-center gap-2 pointer-events-auto">
           <VscTypeHierarchy className="w-4 h-4 text-[var(--obsidian-accent)]" />
           {isRenaming ? (
@@ -340,15 +250,23 @@ export const CanvasEditor = ({ path, tabId: _tabId, isActive: _isActive }: { pat
               }}
             />
           ) : (
-            <span 
+            <span
               className="text-xs font-bold tracking-wider text-[var(--obsidian-text)] uppercase cursor-text"
               onDoubleClick={() => setIsRenaming(true)}
             >
               {canvasTitle}
             </span>
           )}
+
+          <button
+            onClick={exportAsPdf}
+            className="p-1 hover:bg-[var(--obsidian-hover)] rounded text-red-500 transition-all active:scale-95 ml-2"
+            title="Export as PDF"
+          >
+            <VscFilePdf className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

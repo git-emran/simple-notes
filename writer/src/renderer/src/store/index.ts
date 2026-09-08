@@ -21,6 +21,14 @@ export const saveCanvasAtom = atom(
     if (!path || !path.endsWith('.canvas')) return
 
     await window.context.writeFileNew(path, jsonContent)
+
+    /* Keep renderer cache in sync so the next tab-switch is instant */
+    set(noteContentCacheAtom, (prev) => {
+      const next = new Map(prev)
+      next.set(path, jsonContent)
+      return next
+    })
+
     const currentTree = get(fileTreeAtom) ?? []
     if (currentTree.length > 0) {
       set(

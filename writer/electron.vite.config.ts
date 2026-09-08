@@ -68,7 +68,7 @@ if (buildRenderer) {
               if (id.includes('mermaid')) return 'vendor-mermaid'
               if (id.includes('katex')) return 'vendor-katex'
               if (id.includes('@xterm') || id.includes('xterm')) return 'vendor-xterm'
-              if (id.includes('@xyflow')) return 'vendor-xyflow'
+              if (id.includes('@excalidraw')) return 'vendor-excalidraw'
               if (id.includes('react-syntax-highlighter') || id.includes('refractor') || id.includes('highlight.js')) return 'vendor-syntax-highlighter'
               if (id.includes('@codemirror') || id.includes('@lezer')) return 'vendor-codemirror'
               if (id.includes('react') || id.includes('react-dom') || id.includes('jotai')) return 'vendor-core'
@@ -76,6 +76,9 @@ if (buildRenderer) {
             return undefined
           }
         }
+      },
+      define: {
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
       }
     },
     /* ** Add this css block for Tailwind CSS ** */
