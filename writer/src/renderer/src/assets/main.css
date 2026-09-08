@@ -952,3 +952,24 @@ header {
 .theme-catppuccin-light.no-transparency .cm-codeblock-line {
   background-color: rgba(0, 0, 0, 0.055) !important;
 }
+
+/* ── Excalidraw theme-awareness overrides ────────────────────
+   Excalidraw ships its own CSS that hard-codes --color-surface-lowest
+   to #ffffff in light mode. We override the *host container* background
+   so the area around the canvas matches the app theme. The actual canvas
+   drawing background is set via initialData.appState.viewBackgroundColor
+   in CanvasEditor.tsx, always derived from isDarkMode.                  */
+
+/* Make the Excalidraw wrapper transparent — our parent div carries the bg */
+.excalidraw {
+  background: transparent !important;
+}
+
+/* Dark mode: override Excalidraw's own --color-surface-lowest so any
+   internal surfaces it renders also go dark */
+.dark .excalidraw,
+.theme-gruvbox-dark .excalidraw,
+.theme-catppuccin-dark .excalidraw {
+  --color-surface-lowest: #121212 !important;
+  --color-surface-low: #1a1a1a !important;
+}
