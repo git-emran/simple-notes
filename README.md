@@ -4,30 +4,31 @@
 
 **Writer** is an engineered-to-order, distraction-free Markdown text editor designed for Cross platform use (Currently only macOS and Linux have not tested on windows). Architected for developers, students, and power users, it fuses the efficiency of Vim motions with modern development tools. Whether you are documenting complex system architectures, practicing DSA implementations, or capturing rapid brain dumps, Writer brings IDE-grade utility directly to your writing workflow.
 
-<img width="1364" height="1015" alt="hero" src="https://github.com/user-attachments/assets/aa55e7c5-aaf0-43ab-b0c8-fd408572b022" />
+<img width="2876" height="2078" alt="new-writer" src="https://github.com/user-attachments/assets/c887f5a2-0fe5-4546-bd03-4314a3a69f73" />
+
 
 
 # Key Features
 ### **Interactive Canvas**
 
-- **Visual Logic Flows:** Model architectural patterns, flowcharts, and system designs directly in an interactive sandbox.
+- **Free form Canvas:** Model architectural patterns, flowcharts, and system designs or just simply draw directly in an interactive sandbox.
 - **Vector Export:** Easily export your canvas layouts to high-fidelity PDF format for documentation or distribution.
 
-  ![canvas](https://github.com/user-attachments/assets/0fa0e1c1-89e4-4da1-8f6e-9150e95c5f55)
+<img width="2876" height="2078" alt="canvas-new" src="https://github.com/user-attachments/assets/09d256a8-f2bc-424c-8ac3-d88410fb17da" />
+
 
 
 ### **Agile Kanban Boards**
 
 - **Task Management:** Maintain project velocity with an integrated Kanban board to organize backlog tasks, in-progress items, and milestones.
 
-<img width="1378" height="1053" alt="kanban" src="https://github.com/user-attachments/assets/41f337c0-de43-4c39-87e4-2aa11ebd3506" />
-
+<img width="1059" height="933" alt="kanban" src="https://github.com/user-attachments/assets/795be23f-81ec-4704-b040-926295764a3c" />
 
 ### **Spreadsheet**
 
-- **Spreadsheet Management:** Maintain a small scale database with the spreadsheet. Possible usecase is: Let's say you have some leads on your hand and you want to track how everything plays out by tracking informations in a table format. That's when the spreadsheet comes in handy with its custom tags and pre-built data types.
+- **Spreadsheet Management:** Maintain a small scale database with the spreadsheet.
 
-<img width="1001" height="700" alt="Spreadsheet" src="https://github.com/user-attachments/assets/13242ce0-3dcd-4c52-84b4-a542ebea4f06" />
+<img width="898" height="870" alt="spreadsheet" src="https://github.com/user-attachments/assets/adfb487d-4141-43c1-80d3-65eff821f769" />
 
 ### **Automated Daily Notes**
 
@@ -39,6 +40,10 @@
 
 <img width="1335" height="145" alt="header" src="https://github.com/user-attachments/assets/bd42c48c-e08d-453a-a7fd-be70ade7f496" />
 
+### **New Terminal Engine**
+- Upgraded terminal rendering with WebGL graphics acceleration and font ligature support.
+
+<img width="1054" height="936" alt="terminal" src="https://github.com/user-attachments/assets/5ae46eb4-ed36-471b-b298-e98f6c10e692" />
 
 ### **Structured Note Metadata and Status**
 
