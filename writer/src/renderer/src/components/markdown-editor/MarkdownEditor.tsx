@@ -1,7 +1,7 @@
 'use client'
 import { createNoteAtom, fileTreeAtom, isDarkModeAtom, noteByPathAtomFamily, vaultRootDirAtom } from '@renderer/store'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { isValidElement, memo, useCallback, useEffect, useRef, useState } from 'react'
+import { isValidElement, memo, useCallback, useEffect, useRef } from 'react'
 import React from 'react'
 import { MdDragIndicator } from 'react-icons/md'
 import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
