@@ -38,7 +38,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Bold',
     icon: <FaBold className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+B',
-    keywords: ['strong'],
+    keywords: ['strong', 'bold'],
     run: (view) => commands.applyFormat(view, '**', '**')
   },
   {
@@ -47,7 +47,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Italic',
     icon: <FaItalic className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+I',
-    keywords: ['emphasis'],
+    keywords: ['emphasis', 'italic'],
     run: (view) => commands.applyFormat(view, '*', '*')
   },
   {
@@ -56,7 +56,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Strikethrough',
     icon: <FaStrikethrough className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+D',
-    keywords: ['strike'],
+    keywords: ['strike', 'strikethrough'],
     run: (view) => commands.applyFormat(view, '~~', '~~')
   },
   {
@@ -64,7 +64,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'kbd',
     label: 'Keyboard Key',
     icon: <FaKeyboard className="h-3 w-3 opacity-60" />,
-    keywords: ['kbd', 'keyboard', 'key', 'shortcut'],
+    keywords: ['kbd', 'keyboard', 'key', 'shortcut', 'keyboardkey'],
     run: (view) => commands.insertKbd(view)
   },
 
@@ -73,7 +73,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'write-with-ai',
     label: 'Write with AI',
     icon: <VscSparkle className="h-3 w-3 opacity-60" />,
-    keywords: ['ai', 'generate', 'rewrite'],
+    keywords: ['ai', 'generate', 'rewrite', 'writewithai'],
     run: () => void openAiModal()
   },
   { type: 'separator', id: 'sep-1' },
@@ -82,7 +82,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'header-1',
     label: 'Header 1',
     icon: <FaHeading className="h-3 w-3 opacity-60" />,
-    keywords: ['heading', 'h1', 'title'],
+    keywords: ['heading', 'h1', 'title', 'header1'],
     run: (view) => commands.applyHeaderFormat(view, 1)
   },
   {
@@ -90,7 +90,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'header-2',
     label: 'Header 2',
     icon: <FaHeading className="h-3 w-3 opacity-60" />,
-    keywords: ['heading', 'h2'],
+    keywords: ['heading', 'h2', 'header2'],
     run: (view) => commands.applyHeaderFormat(view, 2)
   },
   {
@@ -98,7 +98,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'header-3',
     label: 'Header 3',
     icon: <FaHeading className="h-3 w-3 opacity-60" />,
-    keywords: ['heading', 'h3'],
+    keywords: ['heading', 'h3', 'header3'],
     run: (view) => commands.applyHeaderFormat(view, 3)
   },
   { type: 'separator', id: 'sep-2' },
@@ -108,7 +108,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Quote',
     icon: <FaQuoteRight className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+Q',
-    keywords: ['blockquote'],
+    keywords: ['blockquote', 'quote'],
     run: (view) => commands.applyLineFormat(view, '> ')
   },
   {
@@ -117,7 +117,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Bullet List',
     icon: <FaListUl className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+L',
-    keywords: ['list', 'unordered'],
+    keywords: ['list', 'unordered', 'bullet', 'bulletlist'],
     run: (view) => commands.applyLineFormat(view, '- ')
   },
   {
@@ -126,7 +126,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Task List',
     icon: <FaCheckSquare className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+T',
-    keywords: ['checkbox', 'todo'],
+    keywords: ['checkbox', 'todo', 'task', 'tasklist'],
     run: (view) => commands.insertCheckbox(view)
   },
   { type: 'separator', id: 'sep-3' },
@@ -136,7 +136,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Link',
     icon: <FaLink className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+K',
-    keywords: ['url', 'hyperlink'],
+    keywords: ['url', 'hyperlink', 'link'],
     run: (view) => commands.applyLinkFormat(view)
   },
   {
@@ -144,7 +144,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'image',
     label: 'Image',
     icon: <FaImage className="h-3 w-3 opacity-60" />,
-    keywords: ['img', 'picture'],
+    keywords: ['img', 'picture', 'image'],
     run: (view) => commands.applyImageFormat(view)
   },
   {
@@ -153,7 +153,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Table',
     icon: <FaTable className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+Shift+T',
-    keywords: ['grid'],
+    keywords: ['grid', 'table'],
     run: (view) => commands.insertTable(view)
   },
   {
@@ -162,7 +162,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Horizontal Rule',
     icon: <MdHorizontalRule className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+H',
-    keywords: ['divider', 'hr'],
+    keywords: ['divider', 'hr', 'rule', 'horizontalrule'],
     run: (view) => commands.insertHorizontalRule(view)
   },
   { type: 'separator', id: 'sep-4' },
@@ -172,7 +172,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     label: 'Code Block',
     icon: <FaCode className="h-3 w-3 opacity-60" />,
     shortcut: 'Ctrl+Shift+`',
-    keywords: ['code', 'fence', 'triple backtick'],
+    keywords: ['code', 'fence', 'triple backtick', 'codeblock', 'code-block'],
     run: (view) => commands.insertCodeBlock(view)
   },
   { type: 'separator', id: 'sep-5' },
@@ -181,7 +181,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'alert-note',
     label: 'Note Alert',
     shortcut: '> [!NOTE]',
-    keywords: ['github', 'alert', 'note', 'info'],
+    keywords: ['github', 'alert', 'note', 'info', 'notealert'],
     run: (view) => commands.insertGithubAlert(view, 'NOTE')
   },
   {
@@ -189,7 +189,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'alert-tip',
     label: 'Tip Alert',
     shortcut: '> [!TIP]',
-    keywords: ['github', 'alert', 'tip', 'hint'],
+    keywords: ['github', 'alert', 'tip', 'hint', 'tipalert'],
     run: (view) => commands.insertGithubAlert(view, 'TIP')
   },
   {
@@ -197,7 +197,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'alert-important',
     label: 'Important Alert',
     shortcut: '> [!IMPORTANT]',
-    keywords: ['github', 'alert', 'important'],
+    keywords: ['github', 'alert', 'important', 'importantalert'],
     run: (view) => commands.insertGithubAlert(view, 'IMPORTANT')
   },
   {
@@ -205,7 +205,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'alert-warning',
     label: 'Warning Alert',
     shortcut: '> [!WARNING]',
-    keywords: ['github', 'alert', 'warning', 'warn'],
+    keywords: ['github', 'alert', 'warning', 'warn', 'warningalert'],
     run: (view) => commands.insertGithubAlert(view, 'WARNING')
   },
   {
@@ -213,7 +213,7 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     id: 'alert-caution',
     label: 'Caution Alert',
     shortcut: '> [!CAUTION]',
-    keywords: ['github', 'alert', 'caution', 'danger', 'error'],
+    keywords: ['github', 'alert', 'caution', 'danger', 'error', 'cautionalert'],
     run: (view) => commands.insertGithubAlert(view, 'CAUTION')
   }
 ]

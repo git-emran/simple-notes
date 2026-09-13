@@ -180,6 +180,11 @@ export function useCommandPalette({
     [panelCommandItems, searchNoteItems]
   )
 
+  const slashCommandItems: CommandPaletteItem[] = useMemo(
+    () => [...editorCommandItems, ...panelCommandItems],
+    [editorCommandItems, panelCommandItems]
+  )
+
   return {
     showToolbar,
     isCommandPaletteOpen,
@@ -187,5 +192,6 @@ export function useCommandPalette({
     commandPaletteItems,
     editorMenuEntries,
     editorCommandItems,
+    slashCommandItems
   }
 }

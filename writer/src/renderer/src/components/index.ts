@@ -8,3 +8,5 @@ export * from './FileExplorer'
 export * from './SidebarSearch'
 export * from './FolderNotesPanel'
 export * from './canvas/CanvasEditor'
+export * from './spreadsheet'
+

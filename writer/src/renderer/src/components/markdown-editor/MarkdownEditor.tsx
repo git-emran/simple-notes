@@ -5,7 +5,6 @@ import { isValidElement, memo, useCallback, useEffect, useRef, useState } from '
 import React from 'react'
 import { MdDragIndicator } from 'react-icons/md'
 import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
-import { ContextMenu, ContextMenuItem } from '../ContextMenu'
 import { AiModal } from './AiModal'
 import { CommandPaletteModal } from './CommandPaletteModal'
 import { TemplatePaletteModal } from './TemplatePaletteModal'
@@ -34,26 +33,9 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
 
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
-  const nativeSpellcheckMenuUntilRef = useRef(0)
-  const contextMenuTimerRef = useRef<number | null>(null)
   const splitViewModeRef = useRef({ isFullPreview: false })
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   const previewReadableWidthClass = 'w-full min-w-0 max-w-[860px]'
-
-  useEffect(() => {
-    const unsubscribe = window.context.onNativeSpellcheckMenu(() => {
-      nativeSpellcheckMenuUntilRef.current = Date.now() + 500
-      setContextMenu(null)
-    })
-
-    return () => {
-      unsubscribe()
-      if (contextMenuTimerRef.current) {
-        window.clearTimeout(contextMenuTimerRef.current)
-      }
-    }
-  }, [])
 
   // ── Callout / react-node helpers (passed to MarkdownPreview) ──────────────
   const getReactNodeText = useCallback((node: unknown): string => {
@@ -163,7 +145,7 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     tabIndentUnit: editorSettings.tabIndentUnit,
     rootDir,
     reconfigureLanguage,
-    commandPaletteItems: palette.editorCommandItems,
+    commandPaletteItems: palette.slashCommandItems,
     onOpenTemplatePalette: useCallback(
       () => setIsTemplatePaletteOpen(true),
       [setIsTemplatePaletteOpen]
@@ -252,19 +234,6 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
         <div
           ref={splitView.containerRef}
           className="flex-1 flex h-full overflow-hidden relative"
-          onContextMenu={(e) => {
-            if (splitView.isFullPreview) return
-            e.preventDefault()
-            const point = { x: e.clientX, y: e.clientY }
-            if (contextMenuTimerRef.current) {
-              window.clearTimeout(contextMenuTimerRef.current)
-            }
-            contextMenuTimerRef.current = window.setTimeout(() => {
-              contextMenuTimerRef.current = null
-              if (Date.now() < nativeSpellcheckMenuUntilRef.current) return
-              setContextMenu(point)
-            }, 160)
-          }}
         >
           {/* Floating Format Toolbar */}
           {!splitView.isFullPreview && palette.showToolbar && (
@@ -355,37 +324,6 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
         currentNotePath={selectedNote?.path ?? null}
       />
 
-      {/* Context menu */}
-      {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          onClose={() => setContextMenu(null)}
-          className="fixed z-50 bg-[var(--obsidian-surface)] border border-obsidian-border shadow-xl rounded-md py-1 min-w-[180px] max-h-[350px] overflow-y-auto preview-scrollbar backdrop-blur-sm"
-        >
-          {palette.editorMenuEntries.map((entry) => {
-            if (entry.type === 'separator') {
-              return <div key={entry.id} className="my-1 h-px bg-[var(--obsidian-border-soft)]" />
-            }
-
-            return (
-              <ContextMenuItem
-                key={entry.id}
-                onClick={() => {
-                  setContextMenu(null)
-                  entry.run(viewRef.current)
-                }}
-              >
-                {entry.icon}
-                <span>{entry.label}</span>
-                {entry.shortcut ? (
-                  <span className="ml-auto text-[10px] opacity-40">{entry.shortcut}</span>
-                ) : null}
-              </ContextMenuItem>
-            )
-          })}
-        </ContextMenu>
-      )}
 
       {/* Command palette */}
       <CommandPaletteModal

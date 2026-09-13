@@ -19,7 +19,7 @@ import { useRef, useState, useEffect, lazy, Suspense } from 'react'
 const SettingsPanel = lazy(() => import('./components/SettingsModal').then((m) => ({ default: m.SettingsPanel })))
 const KanbanBoard = lazy(() => import('./components/kanban/KanbanBoard').then((m) => ({ default: m.KanbanBoard })))
 const KanbanReminderHost = lazy(() => import('./components/kanban/KanbanReminderHost').then((m) => ({ default: m.KanbanReminderHost })))
-const SpreadsheetPanel = lazy(() => import('./components/spreadsheet/SpreadsheetPanel').then((m) => ({ default: m.SpreadsheetPanel })))
+const SpreadsheetPanel = lazy(() => import('./components/spreadsheet').then((m) => ({ default: m.SpreadsheetPanel })))
 const TerminalTab = lazy(() => import('./components/terminal/TerminalTab').then((m) => ({ default: m.TerminalTab })))
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import {
@@ -646,16 +646,17 @@ const App = () => {
               {(() => {
                 const sheetTab = tabs.find((t) => t.kind === 'spreadsheet')
                 if (!sheetTab) return null
+                const isSheetActive = activeTab?.kind === 'spreadsheet'
                 return (
                   <div
                     className="h-full w-full"
                     style={{
-                      display: activeTab?.kind === 'spreadsheet' ? 'flex' : 'none',
+                      display: isSheetActive ? 'flex' : 'none',
                       flexDirection: 'column'
                     }}
                   >
                     <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">Loading Spreadsheet...</div>}>
-                      <SpreadsheetPanel />
+                      <SpreadsheetPanel isActive={isSheetActive} />
                     </Suspense>
                   </div>
                 )
