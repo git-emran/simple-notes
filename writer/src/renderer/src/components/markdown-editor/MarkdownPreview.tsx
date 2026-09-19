@@ -571,8 +571,8 @@ export const MarkdownPreview = memo(
 
         {toc.length > 0 && (
           <>
-            {/* Inline TOC Sidebar for desktop view */}
-            <div className={twMerge('hidden xl:block shrink-0 sticky top-2 self-start z-10', isFullPreview ? 'block' : '!hidden')}>
+            {/* Inline TOC Sidebar — only visible at xl+ in full-preview mode */}
+            <div className={twMerge('hidden shrink-0 sticky top-2 self-start z-10', isFullPreview ? 'xl:block' : '')}>
               <TableOfContents
                 items={toc}
                 onSelectTocItem={scrollToHeader}
@@ -580,7 +580,7 @@ export const MarkdownPreview = memo(
               />
             </div>
 
-            {/* Floating TOC Trigger Button & Popover (for smaller viewports or split view mode) */}
+            {/* Floating TOC FAB — visible below xl in full-preview, always in split view */}
             <div className={twMerge('fixed bottom-6 right-6 z-30', isFullPreview ? 'xl:hidden' : 'block')}>
               {!showFloatingToc ? (
                 <button
