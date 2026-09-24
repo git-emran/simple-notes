@@ -357,7 +357,8 @@
   font-family: var(--writr-preview-font-family) !important;
 }
 
-header {
+header.draggable-top-bar,
+.draggable-top-bar {
   -webkit-app-region: drag;
 }
 
@@ -973,3 +974,20 @@ header {
   --color-surface-lowest: #121212 !important;
   --color-surface-low: #1a1a1a !important;
 }
+
+/* ── Univer Spreadsheet UI customizations ─────────────────── */
+#univer-container,
+#univer-container header,
+#univer-container * {
+  -webkit-app-region: no-drag !important;
+}
+
+#univer-container [data-u-comp="ribbon-header-menu"] {
+  display: none !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+

@@ -63,7 +63,10 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
       header: true,
       toolbar: true,
       footer: { sheetBar: true },
-      formulaBar: true
+      formulaBar: true,
+      formula: {
+        initialFormulaComputing: 0
+      }
     })
 
     preset.plugins.forEach((item) => {
@@ -169,7 +172,7 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-[var(--obsidian-workspace)] relative overflow-hidden select-none">
+    <div className="h-full w-full flex flex-col bg-[var(--obsidian-workspace)] relative overflow-hidden">
       {/* Spreadsheet Header Bar */}
       <div className="h-10 px-4 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
