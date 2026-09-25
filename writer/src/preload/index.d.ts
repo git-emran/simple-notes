@@ -19,6 +19,10 @@ import {
   ImportImageToNoteFolder,
   ImportImageToRootImageFolder,
   GetRootDir,
+  GetDefaultRootDir,
+  SelectVaultDirectory,
+  SetVaultDirectory,
+  ResetVaultDirectory,
   ListFreeAiModels,
   GenerateWithAi,
   StreamWithAi,
@@ -53,6 +57,10 @@ declare global {
       importImageToNoteFolder: ImportImageToNoteFolder
       importImageToRootImageFolder: ImportImageToRootImageFolder
       getRootDir: GetRootDir
+      getDefaultRootDir: GetDefaultRootDir
+      selectVaultDirectory: SelectVaultDirectory
+      setVaultDirectory: SetVaultDirectory
+      resetVaultDirectory: ResetVaultDirectory
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi
       streamWithAi: StreamWithAi
@@ -70,6 +78,8 @@ declare global {
       dismissWelcome: (version: string) => Promise<boolean>
       onUpdaterStatus: (callback: (data: { event: string; payload?: unknown }) => void) => () => void
       onNativeSpellcheckMenu: (callback: () => void) => () => void
+      onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
+      isFullscreen: () => Promise<boolean>
     }
   }
 }

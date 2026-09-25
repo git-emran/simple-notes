@@ -23,6 +23,10 @@ export type ExportCanvasToPdf = (
   rect: { x: number; y: number; width: number; height: number }
 ) => Promise<boolean>
 export type GetRootDir = () => Promise<string>
+export type GetDefaultRootDir = () => Promise<string>
+export type SelectVaultDirectory = () => Promise<{ canceled: boolean; path?: string }>
+export type SetVaultDirectory = (dirPath: string) => Promise<{ success: boolean; path: string }>
+export type ResetVaultDirectory = () => Promise<{ success: boolean; path: string }>
 export type ImportImageToNoteFolder = (
   notePath: string,
   sourceImagePath: string

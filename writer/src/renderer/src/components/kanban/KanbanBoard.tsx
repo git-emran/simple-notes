@@ -163,8 +163,6 @@ export const KanbanBoard = () => {
     description: string;
     priority: KanbanCardPriority;
     todos: KanbanTodo[];
-    remindAt: string | null;
-    reminderFiredAt: string | null;
   }) => {
     if (!selectedCardId) return;
     setState((prev) => {

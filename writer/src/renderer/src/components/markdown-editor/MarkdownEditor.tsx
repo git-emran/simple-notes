@@ -6,7 +6,6 @@ import React from 'react'
 import { MdDragIndicator } from 'react-icons/md'
 import { VscError, VscInfo, VscLightbulb, VscWarning } from 'react-icons/vsc'
 import { AiModal } from './AiModal'
-import { CommandPaletteModal } from './CommandPaletteModal'
 import { TemplatePaletteModal } from './TemplatePaletteModal'
 import { EditorFAB } from './EditorFAB'
 import { EditorHeader } from './EditorHeader'
@@ -324,16 +323,6 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
         currentNotePath={selectedNote?.path ?? null}
       />
 
-
-      {/* Command palette */}
-      <CommandPaletteModal
-        isOpen={palette.isCommandPaletteOpen}
-        items={palette.commandPaletteItems}
-        onClose={() => {
-          palette.setIsCommandPaletteOpen(false)
-          viewRef.current?.focus()
-        }}
-      />
 
       {/* Template palette */}
       <TemplatePaletteModal

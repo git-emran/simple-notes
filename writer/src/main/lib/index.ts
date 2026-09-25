@@ -1,4 +1,4 @@
-import { appDirectoryName, fileEncoding, welcomeNoteFileName } from '@shared/constants'
+import { fileEncoding, welcomeNoteFileName } from '@shared/constants'
 import { NoteInfo, FileNode } from '@shared/models'
 import {
   CreateNote,
@@ -24,12 +24,24 @@ import { BrowserWindow, dialog, shell } from 'electron'
 import { copy, readFile, writeFile, move, pathExists } from 'fs-extra'
 import { ensureDir, readdir, stat } from 'fs-extra'
 import { isEmpty } from 'lodash'
-import { homedir } from 'os'
 import path from 'path'
 import welcomeNoteFile from '../../../resources/welcomeNote.md?asset'
 
-export const getRootDir = () => {
-  return `${homedir()}/${appDirectoryName}`
+import {
+  getRootDir,
+  getDefaultRootDir,
+  selectVaultDirectory,
+  setVaultDirectory,
+  resetVaultDirectory,
+  isCustomVaultSet
+} from './vaultConfig'
+
+export {
+  getRootDir,
+  getDefaultRootDir,
+  selectVaultDirectory,
+  setVaultDirectory,
+  resetVaultDirectory
 }
 
 const ensurePathWithinRoot = (candidatePath: string, options?: { allowRoot?: boolean }) => {
@@ -151,15 +163,65 @@ export const deleteNote: DeleteNote = async (filename) => {
   return true
 }
 
+const SUPPORTED_FILE_EXTENSIONS = new Set([
+  '.md',
+  '.markdown',
+  '.txt',
+  '.canvas',
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.mjs',
+  '.cjs',
+  '.py',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.json',
+  '.css',
+  '.scss',
+  '.html',
+  '.htm',
+  '.xml',
+  '.sql',
+  '.php',
+  '.java',
+  '.cpp',
+  '.c',
+  '.h',
+  '.hpp',
+  '.rs',
+  '.go',
+  '.yaml',
+  '.yml',
+  '.toml',
+  '.env',
+  '.csv'
+])
+
+const IGNORED_DIRECTORY_NAMES = new Set([
+  'node_modules',
+  '.git',
+  '.svn',
+  '.hg',
+  'dist',
+  'out',
+  'build',
+  '.next',
+  '.cache',
+  '.turbo'
+])
+
 export const getFileTree: GetFileTree = async () => {
   const rootDir = getRootDir()
   await ensureDir(rootDir)
 
-  /* Show welcome note only when the app root has no files at all. */
+  /* Show welcome note only on fresh default vault if it has no files at all. */
   const dirents = await readdir(rootDir, { withFileTypes: true })
   const hasRootFile = dirents.some((d) => d.isFile())
 
-  if (!hasRootFile) {
+  if (!isCustomVaultSet() && !hasRootFile && dirents.length === 0) {
     await ensureWelcomeNote(rootDir)
   }
 
@@ -174,6 +236,8 @@ export const getFileTree: GetFileTree = async () => {
         const isDirectory = dirent.isDirectory()
 
         if (isDirectory) {
+          if (IGNORED_DIRECTORY_NAMES.has(dirent.name)) return null
+
           /* Hide the root-level image storage folder from the notes file tree */
           if (currentDir === rootDir && dirent.name === 'image') return null
 
@@ -186,7 +250,8 @@ export const getFileTree: GetFileTree = async () => {
             isExpanded: false
           } as FileNode
         } else {
-          if (!dirent.name.endsWith('.md') && !dirent.name.endsWith('.canvas')) return null
+          const ext = path.extname(dirent.name).toLowerCase()
+          if (!SUPPORTED_FILE_EXTENSIONS.has(ext)) return null
 
           return {
             id: res,

@@ -14,8 +14,6 @@ type TaskDetailsPanelProps = {
     description: string
     priority: KanbanCardPriority
     todos: KanbanTodo[]
-    remindAt: string | null
-    reminderFiredAt: string | null
   }) => void
 }
 
@@ -86,7 +84,6 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
 
   if (!internalCard) return null
 
-
   const prefixTint =
     internalCard.priority && internalCard.priority !== null ? getPriorityChipTint(internalCard.priority).borderActive : undefined
 
@@ -96,9 +93,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
       text: titleDraft.trim(),
       description: descriptionDraft.trim(),
       priority: priorityDraft,
-      todos: todosDraft,
-      remindAt: internalCard.remindAt ?? null,
-      reminderFiredAt: internalCard.reminderFiredAt ?? null,
+      todos: todosDraft
     })
     setIsEditing(false)
   }
@@ -381,9 +376,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                               text: internalCard.text,
                               description: internalCard.description || '',
                               priority: internalCard.priority ?? null,
-                              todos: nextTodos,
-                              remindAt: internalCard.remindAt ?? null,
-                              reminderFiredAt: internalCard.reminderFiredAt ?? null,
+                              todos: nextTodos
                             })
                           }}
                           className="mt-1 shrink-0 accent-[var(--obsidian-accent)]"

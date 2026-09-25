@@ -33,6 +33,10 @@ import {
   importImageToNoteFolder,
   importImageToRootImageFolder,
   getRootDir,
+  getDefaultRootDir,
+  selectVaultDirectory,
+  setVaultDirectory,
+  resetVaultDirectory,
   listFreeAiModels,
   generateWithAi,
   streamWithAiMain
@@ -65,6 +69,9 @@ import {
   ExportNoteToPdf,
   ExportCanvasToPdf,
   GetRootDir,
+  GetDefaultRootDir,
+  SetVaultDirectory,
+  ResetVaultDirectory,
   ImportImageToNoteFolder,
   ImportImageToRootImageFolder,
   ListFreeAiModels,
@@ -182,6 +189,21 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  const notifyFullscreen = () => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('window:fullscreen-changed', mainWindow.isFullScreen())
+    }
+  }
+
+  /* Forward macOS fullscreen state so the renderer can hide the traffic-light spacer */
+  mainWindow.on('enter-full-screen', () => notifyFullscreen())
+  mainWindow.on('leave-full-screen', () => notifyFullscreen())
+  mainWindow.on('enter-html-full-screen', () => notifyFullscreen())
+  mainWindow.on('leave-html-full-screen', () => notifyFullscreen())
+  mainWindow.on('resize', () => notifyFullscreen())
+  mainWindow.on('focus', () => notifyFullscreen())
+  mainWindow.webContents.on('did-finish-load', () => notifyFullscreen())
+
   mainWindow.webContents.once('destroyed', () => {
     disposeTerminalSessionsForSender(mainWindow.webContents)
   })
@@ -295,6 +317,17 @@ app.whenReady().then(() => {
     importImageToRootImageFolder(...args)
   )
   ipcMain.handle('getRootDir', (_, ...args: Parameters<GetRootDir>) => getRootDir(...args))
+  ipcMain.handle('getDefaultRootDir', (_, ...args: Parameters<GetDefaultRootDir>) => getDefaultRootDir(...args))
+  ipcMain.handle('selectVaultDirectory', (event) => {
+    const parent = BrowserWindow.fromWebContents(event.sender)
+    return selectVaultDirectory(parent ?? undefined)
+  })
+  ipcMain.handle('setVaultDirectory', (_, ...args: Parameters<SetVaultDirectory>) => setVaultDirectory(...args))
+  ipcMain.handle('resetVaultDirectory', (_, ...args: Parameters<ResetVaultDirectory>) => resetVaultDirectory(...args))
+  ipcMain.handle('window:is-fullscreen', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return win?.isFullScreen() ?? false
+  })
   ipcMain.handle('listFreeAiModels', (_, ...args: Parameters<ListFreeAiModels>) =>
     listFreeAiModels(...args)
   )
