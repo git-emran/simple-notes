@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import { Univer, LocaleType } from '@univerjs/core'
 import { FUniver } from '@univerjs/core/facade'
 import { UniverSheetsCorePreset } from '@univerjs/preset-sheets-core'
@@ -8,7 +8,8 @@ import UniverSheetsCorePresetEnUS from '@univerjs/preset-sheets-core/locales/en-
 import {
   DEFAULT_UNIVER_WORKBOOK_DATA,
   isValidWorkbookData,
-  univerWorkbookAtom
+  univerWorkbookAtom,
+  isDarkModeAtom
 } from '@renderer/store'
 import { VscRefresh, VscTable } from 'react-icons/vsc'
 
@@ -23,6 +24,7 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
   const containerRef = useRef<HTMLDivElement>(null)
   const univerRef = useRef<Univer | null>(null)
   const univerAPIRef = useRef<FUniver | null>(null)
+  const isDarkMode = useAtomValue(isDarkModeAtom)
   const [workbookData, setWorkbookData] = useAtom(univerWorkbookAtom)
 
   const initUniverInstance = (data: typeof DEFAULT_UNIVER_WORKBOOK_DATA) => {
@@ -51,6 +53,7 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
     // 1. Create Univer Instance with English Locale and Theme
     const univer = new Univer({
       theme: defaultTheme,
+      darkMode: isDarkMode,
       locale: LocaleType.EN_US,
       locales: {
         [LocaleType.EN_US]: UniverSheetsCorePresetEnUS
@@ -161,6 +164,18 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Synchronize dark mode dynamically when theme changes
+  useEffect(() => {
+    if (univerAPIRef.current) {
+      try {
+        univerAPIRef.current.toggleDarkMode(isDarkMode)
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error toggling Univer dark mode:', err)
+      }
+    }
+  }, [isDarkMode])
+
   const handleReset = () => {
     if (!window.confirm('Reset spreadsheet to default sheets (Roadmap, Tasks, Expenses)?')) return
     const freshDefaults = {
@@ -172,7 +187,7 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-[var(--obsidian-workspace)] relative overflow-hidden">
+    <div className={`h-full w-full flex flex-col bg-[var(--obsidian-workspace)] relative overflow-hidden ${isDarkMode ? 'univer-dark' : ''}`}>
       {/* Spreadsheet Header Bar */}
       <div className="h-10 px-4 border-b border-[var(--obsidian-border)] bg-[var(--obsidian-pane)] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
@@ -199,7 +214,7 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
         <div
           ref={containerRef}
           id="univer-container"
-          className="h-full w-full relative"
+          className={`h-full w-full relative ${isDarkMode ? 'univer-dark' : ''}`}
           style={{ width: '100%', height: '100%' }}
         />
       </div>
