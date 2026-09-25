@@ -19,6 +19,10 @@ import {
   ImportImageToNoteFolder,
   ImportImageToRootImageFolder,
   GetRootDir,
+  GetDefaultRootDir,
+  SelectVaultDirectory,
+  SetVaultDirectory,
+  ResetVaultDirectory,
   ListFreeAiModels,
   GenerateWithAi,
   CreateTerminalSession,
@@ -61,6 +65,13 @@ contextBridge.exposeInMainWorld('context', {
   importImageToRootImageFolder: (...args: Parameters<ImportImageToRootImageFolder>) =>
     ipcRenderer.invoke('importImageToRootImageFolder', ...args),
   getRootDir: (...args: Parameters<GetRootDir>) => ipcRenderer.invoke('getRootDir', ...args),
+  getDefaultRootDir: (...args: Parameters<GetDefaultRootDir>) => ipcRenderer.invoke('getDefaultRootDir', ...args),
+  selectVaultDirectory: (...args: Parameters<SelectVaultDirectory>) =>
+    ipcRenderer.invoke('selectVaultDirectory', ...args),
+  setVaultDirectory: (...args: Parameters<SetVaultDirectory>) =>
+    ipcRenderer.invoke('setVaultDirectory', ...args),
+  resetVaultDirectory: (...args: Parameters<ResetVaultDirectory>) =>
+    ipcRenderer.invoke('resetVaultDirectory', ...args),
   listFreeAiModels: (...args: Parameters<ListFreeAiModels>) => ipcRenderer.invoke('listFreeAiModels', ...args),
   generateWithAi: (...args: Parameters<GenerateWithAi>) => ipcRenderer.invoke('generateWithAi', ...args),
   streamWithAi: (
@@ -124,5 +135,11 @@ contextBridge.exposeInMainWorld('context', {
     const listener = () => callback()
     ipcRenderer.on('spellcheck:native-menu', listener)
     return () => ipcRenderer.removeListener('spellcheck:native-menu', listener)
-  }
+  },
+  onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => {
+    const listener = (_event: IpcRendererEvent, isFullscreen: boolean) => callback(isFullscreen)
+    ipcRenderer.on('window:fullscreen-changed', listener)
+    return () => ipcRenderer.removeListener('window:fullscreen-changed', listener)
+  },
+  isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen')
 })

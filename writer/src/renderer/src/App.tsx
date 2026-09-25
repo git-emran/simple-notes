@@ -8,7 +8,8 @@ import {
   FileExplorer,
   SidebarSearch,
   FolderNotesPanel,
-  CanvasEditor
+  CanvasEditor,
+  GlobalCommandPalette
 } from './components'
 import { MarkdownEditor } from './components/markdown-editor/MarkdownEditor'
 import { Tooltip } from './components/Tooltip'
@@ -18,7 +19,6 @@ import { useRef, useState, useEffect, lazy, Suspense } from 'react'
 
 const SettingsPanel = lazy(() => import('./components/SettingsModal').then((m) => ({ default: m.SettingsPanel })))
 const KanbanBoard = lazy(() => import('./components/kanban/KanbanBoard').then((m) => ({ default: m.KanbanBoard })))
-const KanbanReminderHost = lazy(() => import('./components/kanban/KanbanReminderHost').then((m) => ({ default: m.KanbanReminderHost })))
 const SpreadsheetPanel = lazy(() => import('./components/spreadsheet').then((m) => ({ default: m.SpreadsheetPanel })))
 const TerminalTab = lazy(() => import('./components/terminal/TerminalTab').then((m) => ({ default: m.TerminalTab })))
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -47,6 +47,7 @@ import {
   isDarkModeAtom,
   accentColorAtom,
   transparentBgAtom,
+  isCommandPaletteOpenAtom,
   type EditorFontOption
 } from '@renderer/store'
 import {
@@ -116,10 +117,39 @@ const applyTheme = (resolvedMode: string) => {
 const App = () => {
   const contentContainerRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
   const [sidebarView, setSidebarView] = useState<'files' | 'search'>('files')
   const [appMode, setAppMode] = useState<'editor' | 'canvas'>('editor')
   const [sidebarWidth, setSidebarWidth] = useState(MIN_SIDEBAR_WIDTH) // default width for FileExplorer
   const [notesPanelWidth, setNotesPanelWidth] = useState(240) // default width for FolderNotesPanel
+
+  useEffect(() => {
+    let isMounted = true
+
+    if (window.context?.isFullscreen) {
+      window.context
+        .isFullscreen()
+        .then((fs) => {
+          if (isMounted) setIsFullScreen(Boolean(fs))
+        })
+        .catch(() => {})
+    }
+
+    if (window.context?.onFullscreenChanged) {
+      const unsub = window.context.onFullscreenChanged((fullscreen) => {
+        if (isMounted) setIsFullScreen(Boolean(fullscreen))
+      })
+      return () => {
+        isMounted = false
+        unsub()
+      }
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const isDragging = useRef(false)
   const isDraggingNotes = useRef(false)
@@ -162,6 +192,7 @@ const App = () => {
   const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom)
   const [rememberLastState] = useAtom(rememberLastStateAtom)
   const setIsDarkMode = useSetAtom(isDarkModeAtom)
+  const setIsCommandPaletteOpen = useSetAtom(isCommandPaletteOpenAtom)
 
   /* Startup session state loading / resetting */
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,11 +325,13 @@ const App = () => {
         e.preventDefault()
         e.stopPropagation()
         isDraggingNotes.current = true
+        setIsResizing(true)
         lockResizeInteraction()
       } else if (target?.closest('[data-sidebar-resize-handle="true"]')) {
         e.preventDefault()
         e.stopPropagation()
         isDragging.current = true
+        setIsResizing(true)
         lockResizeInteraction()
       }
     }
@@ -317,11 +350,20 @@ const App = () => {
       if (isDragging.current || isDraggingNotes.current) {
         isDragging.current = false
         isDraggingNotes.current = false
+        setIsResizing(false)
         unlockResizeInteraction()
       }
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      /* Cmd + P (or Ctrl + P) */
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsCommandPaletteOpen((prev) => !prev)
+        return
+      }
+
       /* Cmd + , */
       if ((e.metaKey || e.ctrlKey) && (e.key === ',' || e.code === 'Comma')) {
         e.preventDefault()
@@ -419,20 +461,34 @@ const App = () => {
         >
           {/* Spacer for Ribbon + Sidebar + Traffic Lights */}
           <div
-            className="flex shrink-0 items-center transition-[width] duration-200 ease-out"
+            className={`flex shrink-0 items-center ${
+              isResizing ? '' : 'transition-[width] duration-200 ease-out'
+            }`}
             style={{
-              width: Math.max(
-                112,
-                58 +
-                  (collapsed ? 0 : sidebarWidth) +
-                  (!collapsed && sidebarView === 'files' ? notesPanelWidth : 0)
-              )
+              width: isFullScreen
+                ? (collapsed ? 42 : 42 + sidebarWidth + (sidebarView === 'files' ? notesPanelWidth : 0))
+                : Math.max(
+                    112,
+                    58 +
+                      (collapsed ? 0 : sidebarWidth) +
+                      (!collapsed && sidebarView === 'files' ? notesPanelWidth : 0)
+                  )
             }}
           >
-            {/* macOS traffic lights safe area */}
-            <div className="shrink-0 w-[82px]" />
+            {/* macOS traffic lights safe area (windowed mode only) */}
+            {!isFullScreen && (
+              <div
+                className={`shrink-0 overflow-hidden ${
+                  isResizing ? '' : 'transition-[width] duration-200 ease-out'
+                } w-[82px]`}
+              />
+            )}
             <div className="flex-1" />
-            <div className="flex h-full items-center pr-2">
+            <div
+              className={`flex h-full items-center ${
+                isFullScreen && collapsed ? 'justify-center w-full' : 'pr-2'
+              }`}
+            >
               <Tooltip content={collapsed ? 'Show sidebar' : 'Hide sidebar'} position="bottom">
                 <button
                   className="writr-titlebar-sidebar-toggle"
@@ -557,7 +613,8 @@ const App = () => {
           </aside>
 
           <Sidebar
-            className={collapsed ? 'hidden' : ''}
+            collapsed={collapsed}
+            isResizing={isResizing}
             width={sidebarWidth}
             minWidth={MIN_SIDEBAR_WIDTH}
             onClose={() => setCollapsed(true)}
@@ -579,9 +636,18 @@ const App = () => {
             )}
           </Sidebar>
 
-          {!collapsed && sidebarView === 'files' && (
-            <FolderNotesPanel style={{ width: notesPanelWidth }} className="shrink-0" />
-          )}
+          <div
+            className={`h-full flex flex-col relative shrink-0 overflow-hidden ${
+              isResizing ? '' : 'transition-[width] duration-200 ease-out'
+            }`}
+            style={{
+              width: !collapsed && sidebarView === 'files' ? notesPanelWidth : 0
+            }}
+          >
+            <div style={{ width: notesPanelWidth, minWidth: notesPanelWidth, height: '100%' }}>
+              <FolderNotesPanel style={{ width: notesPanelWidth, height: '100%' }} className="shrink-0" />
+            </div>
+          </div>
 
           <Content
             ref={contentContainerRef}
@@ -705,10 +771,8 @@ const App = () => {
                 )
               })()}
             </div>
-            <Suspense fallback={null}>
-              <KanbanReminderHost />
-            </Suspense>
             <UpdateManager />
+            <GlobalCommandPalette />
           </Content>
         </div>
       </RootLayout>

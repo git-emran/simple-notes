@@ -8,6 +8,8 @@ import {
   fileTreeUiByRootAtom,
   movePathAtom,
   notesRootDirAtom,
+  vaultRootDirAtom,
+  selectVaultDirectoryAtom,
   noteStatusByPathAtom,
   noteTagByPathAtom,
   openTabAtom,
@@ -68,6 +70,8 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const fileTree = useAtomValue(fileTreeAtom)
   const fileTreeIndex = useAtomValue(fileTreeIndexAtom)
   const notesRootDir = useAtomValue(notesRootDirAtom)
+  const vaultRootDir = useAtomValue(vaultRootDirAtom)
+  const selectVaultDirectory = useSetAtom(selectVaultDirectoryAtom)
   const activeTabPath = useAtomValue(activeTabPathAtom)
   const [selectedNode, setSelectedNode] = useAtom(selectedNodeAtom)
   const [activeFilter, setActiveFilter] = useAtom(activeFilterAtom)
@@ -81,6 +85,14 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
   const movePath = useSetAtom(movePathAtom)
   const openTab = useSetAtom(openTabAtom)
   const reindexTodoStats = useSetAtom(reindexTodoStatsAtom)
+
+  const activeVaultPath = notesRootDir || vaultRootDir
+  const vaultName = useMemo(() => {
+    if (!activeVaultPath) return 'Choose Notes Directory...'
+    const normalized = activeVaultPath.replace(/\\/g, '/')
+    const lastSegment = normalized.split('/').filter(Boolean).pop()
+    return lastSegment || 'Vault'
+  }, [activeVaultPath])
 
   const rootKey = notesRootDir ?? '__no_root__'
   const expandedNodeList = useMemo(
@@ -585,10 +597,16 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
       style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
       {...props}
     >
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-obsidian-border-soft select-none">
-        <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85">
-          Notebooks
-        </span>
+      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-obsidian-border-soft select-none min-w-0">
+        <div
+          className="flex items-center gap-1.5 min-w-0 cursor-pointer group flex-1"
+          onClick={() => void selectVaultDirectory()}
+          title={`Active Notes Directory:\n${activeVaultPath || 'Default (~/Writr)'}\n\nClick to choose another directory`}
+        >
+          <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] group-hover:text-[var(--obsidian-text)] truncate transition-colors">
+            {vaultName}
+          </span>
+        </div>
         <div className="flex items-center gap-0.5 shrink-0">
           <button
             type="button"
@@ -705,10 +723,72 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
             )}
           </ul>
         ) : (
-          <div className="px-4 mt-4 text-center text-xs text-[var(--obsidian-text-muted)]">
-            No files found.
-            <br />
-            Create a file to start.
+          <div className="flex flex-col items-center justify-center px-4 py-8 text-center select-none">
+            {activeFilter ? (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs text-[var(--obsidian-text-muted)]">
+                  No notes match the active filter.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter(null)}
+                  className="mt-1 px-3 py-1 text-xs rounded bg-[var(--obsidian-hover)] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)] border border-[var(--obsidian-border-soft)] transition-colors"
+                >
+                  Clear Filter
+                </button>
+              </div>
+            ) : !activeVaultPath ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--obsidian-hover)] flex items-center justify-center text-[var(--obsidian-text-muted)]">
+                  <VscFolderOpened className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-[var(--obsidian-text)]">
+                    No Vault Selected
+                  </p>
+                  <p className="text-[11px] text-[var(--obsidian-text-muted)] leading-relaxed max-w-[200px]">
+                    Choose a folder on your computer to open as your notes workspace.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void selectVaultDirectory()}
+                  className="mt-1 px-3.5 py-1.5 text-xs font-medium rounded-md bg-[var(--obsidian-accent)] text-white hover:opacity-90 shadow-sm transition-opacity"
+                >
+                  Open Folder...
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[var(--obsidian-hover)] flex items-center justify-center text-[var(--obsidian-text-muted)]">
+                  <VscNewFile className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-[var(--obsidian-text)]">
+                    Vault is Empty
+                  </p>
+                  <p className="text-[11px] text-[var(--obsidian-text-muted)] leading-relaxed max-w-[200px]">
+                    This folder has no markdown notes or scripts yet.
+                  </p>
+                </div>
+                <div className="flex flex-col w-full max-w-[190px] gap-1.5 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCreateFile()}
+                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--obsidian-accent)] text-white hover:opacity-90 shadow-sm transition-opacity"
+                  >
+                    New Note
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void selectVaultDirectory()}
+                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--obsidian-hover)] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)] border border-[var(--obsidian-border-soft)] transition-colors"
+                  >
+                    Switch Vault...
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

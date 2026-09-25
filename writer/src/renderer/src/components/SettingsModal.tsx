@@ -1,4 +1,6 @@
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useState } from 'react'
+import { VscFolderOpened, VscFolder, VscCopy, VscCheck, VscRefresh } from 'react-icons/vsc'
 import {
   aiApiKeyAtom,
   editorFontAtom,
@@ -13,6 +15,10 @@ import {
   rememberLastStateAtom,
   accentColorAtom,
   transparentBgAtom,
+  vaultRootDirAtom,
+  defaultVaultRootDirAtom,
+  selectVaultDirectoryAtom,
+  resetVaultDirectoryAtom,
   type EditorFontOption,
   type ThemeMode,
 } from '@renderer/store'
@@ -56,6 +62,27 @@ export const SettingsPanel = () => {
   const [fontSize, setFontSize] = useAtom(editorFontSizeAtom)
   const [editorFont, setEditorFont] = useAtom(editorFontAtom)
 
+  const vaultRootDir = useAtomValue(vaultRootDirAtom)
+  const defaultVaultRootDir = useAtomValue(defaultVaultRootDirAtom)
+  const selectVaultDirectory = useSetAtom(selectVaultDirectoryAtom)
+  const resetVaultDirectory = useSetAtom(resetVaultDirectoryAtom)
+  const [copied, setCopied] = useState(false)
+
+  const isCustomVault = Boolean(vaultRootDir && defaultVaultRootDir && vaultRootDir !== defaultVaultRootDir)
+
+  const handleCopyPath = () => {
+    if (!vaultRootDir) return
+    void navigator.clipboard.writeText(vaultRootDir)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRevealVault = () => {
+    if (vaultRootDir && window.context?.revealPath) {
+      void window.context.revealPath(vaultRootDir)
+    }
+  }
+
   const themeOptions: Array<{ label: string; value: ThemeMode }> = [
     { label: 'System', value: 'system' },
     { label: 'Light', value: 'light' },
@@ -84,6 +111,76 @@ export const SettingsPanel = () => {
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto w-full max-w-4xl space-y-6">
+          <div className="space-y-2">
+            <div className={sectionTitleClass}>VAULT / NOTES DIRECTORY</div>
+            <div className={cardClass}>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className={labelClass}>Notes Location</div>
+                    <div className={helpClass}>
+                      The root folder containing your markdown files, canvas boards, and scripts.
+                    </div>
+                  </div>
+                  {isCustomVault && (
+                    <span className="rounded bg-[var(--obsidian-accent-dim)] px-2 py-0.5 text-[11px] font-medium text-[var(--obsidian-accent)]">
+                      Custom Directory
+                    </span>
+                  )}
+                </div>
+
+                {/* Path display box */}
+                <div className="flex items-center gap-2 rounded border border-obsidian-border bg-[var(--obsidian-base)] p-2">
+                  <VscFolder className="h-4 w-4 shrink-0 text-[var(--obsidian-accent)]" />
+                  <span className="flex-1 truncate font-mono text-xs text-[var(--obsidian-text)] select-all">
+                    {vaultRootDir || 'Loading...'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyPath}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] transition-colors"
+                    title="Copy path"
+                  >
+                    {copied ? <VscCheck className="h-3.5 w-3.5 text-green-500" /> : <VscCopy className="h-3.5 w-3.5" />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRevealVault}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] transition-colors"
+                    title="Reveal in file manager"
+                  >
+                    <span>Reveal</span>
+                  </button>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => void selectVaultDirectory()}
+                    className="inline-flex items-center gap-2 rounded bg-[var(--obsidian-accent)] px-3 py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity"
+                  >
+                    <VscFolderOpened className="h-3.5 w-3.5" />
+                    <span>Choose Directory / Vault...</span>
+                  </button>
+
+                  {isCustomVault && (
+                    <button
+                      type="button"
+                      onClick={() => void resetVaultDirectory()}
+                      className="inline-flex items-center gap-1.5 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] transition-colors"
+                      title="Reset to default directory (~/Writr)"
+                    >
+                      <VscRefresh className="h-3.5 w-3.5" />
+                      <span>Reset to Default (~/Writr)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <div className={sectionTitleClass}>EDITING</div>
             <div className={cardClass}>

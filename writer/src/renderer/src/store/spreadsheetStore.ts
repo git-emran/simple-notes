@@ -101,7 +101,7 @@ export const DEFAULT_UNIVER_WORKBOOK_DATA: IWorkbookData = {
         4: {
           0: { v: 'Total Expenses', s: { bl: 1 } },
           1: { v: '' },
-          2: { f: '=SUM(C2:C4)', s: { bl: 1 } }
+          2: { f: '=SUM(C2:C4)', v: 194, s: { bl: 1 } }
         }
       }
     }

@@ -56,11 +56,10 @@ const inferRootDirFromTree = (nodes: FileNode[]) => {
   return firstPath.substring(0, maxIndex)
 }
 
-export const notesRootDirAtom = atom<string | null>((get) =>
-  inferRootDirFromTree(get(fileTreeAtom) ?? [])
-)
+export const vaultRefreshVersionAtom = atom(0)
 
-export const vaultRootDirAtomAsync = atom(async () => {
+export const vaultRootDirAtomAsync = atom(async (get) => {
+  get(vaultRefreshVersionAtom)
   if (!window.context) return ''
   try {
     return await window.context.getRootDir()
@@ -69,6 +68,65 @@ export const vaultRootDirAtomAsync = atom(async () => {
   }
 })
 export const vaultRootDirAtom = unwrap(vaultRootDirAtomAsync, (prev) => prev ?? '')
+
+export const defaultVaultRootDirAtomAsync = atom(async () => {
+  if (!window.context) return ''
+  try {
+    return await window.context.getDefaultRootDir()
+  } catch {
+    return ''
+  }
+})
+export const defaultVaultRootDirAtom = unwrap(defaultVaultRootDirAtomAsync, (prev) => prev ?? '')
+
+export const notesRootDirAtom = atom<string | null>((get) => {
+  const inferred = inferRootDirFromTree(get(fileTreeAtom) ?? [])
+  if (inferred) return inferred
+  return get(vaultRootDirAtom) || null
+})
+
+export const reloadVaultAtom = atom(null, async (_get, set) => {
+  if (!window.context) return
+  set(vaultRefreshVersionAtom, (v) => v + 1)
+  const newTree = await window.context.getFileTree()
+  set(fileTreeAtom, newTree)
+  set(noteContentCacheAtom, new Map())
+  set(selectedNodeAtom, null)
+  set(activeFilterAtom, null)
+
+  const emptyTab = createEmptyTab()
+  set(tabsAtom, [emptyTab])
+  set(activeTabIdAtom, emptyTab.id)
+  set(navigationHistoryAtom, [null])
+  set(navigationIndexAtom, 0)
+})
+
+export const selectVaultDirectoryAtom = atom(null, async (_get, set) => {
+  if (!window.context) return { canceled: true }
+  const result = await window.context.selectVaultDirectory()
+  if (!result.canceled && result.path) {
+    await set(reloadVaultAtom)
+  }
+  return result
+})
+
+export const setVaultDirectoryAtom = atom(null, async (_get, set, customPath: string) => {
+  if (!window.context) return { success: false, path: '' }
+  const result = await window.context.setVaultDirectory(customPath)
+  if (result.success) {
+    await set(reloadVaultAtom)
+  }
+  return result
+})
+
+export const resetVaultDirectoryAtom = atom(null, async (_get, set) => {
+  if (!window.context) return { success: false, path: '' }
+  const result = await window.context.resetVaultDirectory()
+  if (result.success) {
+    await set(reloadVaultAtom)
+  }
+  return result
+})
 
 export const fileTreeIndexAtom = atom<Map<string, FileNode>>((get) => {
   const tree = get(fileTreeAtom) ?? []
@@ -1266,3 +1324,4 @@ export const createDailyNoteAtom = atom(null, async (get, set) => {
   return finalPath
 })
 export const renamingPathAtom = atom<string | null>(null)
+export const isCommandPaletteOpenAtom = atom<boolean>(false)

@@ -19,9 +19,18 @@ import {
   ImportImageToNoteFolder,
   ImportImageToRootImageFolder,
   GetRootDir,
+  GetDefaultRootDir,
+  SelectVaultDirectory,
+  SetVaultDirectory,
+  ResetVaultDirectory,
   ListFreeAiModels,
   GenerateWithAi,
-  StreamWithAi
+  StreamWithAi,
+  CreateTerminalSession,
+  GetTerminalSnapshot,
+  CloseTerminalSession,
+  TerminalDataEvent,
+  TerminalExitEvent
 } from '@shared/types'
 
 declare global {
@@ -34,23 +43,45 @@ declare global {
       createNote: CreateNote
       deleteNote: DeleteNote
       getFileTree: GetFileTree
-      createNoteNew: CreateNoteNew
-      createCanvasNew: CreateCanvasNew
-      createDirectory: CreateDirectory
-      ensureDirectory: EnsureDirectory
-      deletePath: DeletePath
-      revealPath: RevealPath
       readFileNew: ReadFile
       writeFileNew: WriteFile
+      createNoteNew: CreateNoteNew
+      createCanvasNew: CreateCanvasNew
+      deletePath: DeletePath
+      revealPath: RevealPath
+      createDirectory: CreateDirectory
+      ensureDirectory: EnsureDirectory
       movePath: MovePath
       exportNoteToPdf: ExportNoteToPdf
       exportCanvasToPdf: ExportCanvasToPdf
       importImageToNoteFolder: ImportImageToNoteFolder
       importImageToRootImageFolder: ImportImageToRootImageFolder
       getRootDir: GetRootDir
+      getDefaultRootDir: GetDefaultRootDir
+      selectVaultDirectory: SelectVaultDirectory
+      setVaultDirectory: SetVaultDirectory
+      resetVaultDirectory: ResetVaultDirectory
       listFreeAiModels: ListFreeAiModels
       generateWithAi: GenerateWithAi
       streamWithAi: StreamWithAi
+      createTerminalSession: CreateTerminalSession
+      getTerminalSnapshot: GetTerminalSnapshot
+      closeTerminalSession: CloseTerminalSession
+      writeTerminalInput: (sessionId: string, data: string) => void
+      resizeTerminalSession: (sessionId: string, cols: number, rows: number) => void
+      onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void
+      onTerminalExit: (callback: (event: TerminalExitEvent) => void) => () => void
+      checkForUpdates: (force?: boolean) => Promise<{ status: string; error?: string }>
+      restartAndInstall: () => Promise<void>
+      getUpdateConfig: () => Promise<{ uuid: string; bucket: number; lastPromptedVersion?: string }>
+      getAppVersion: () => Promise<string>
+      dismissWelcome: (version: string) => Promise<boolean>
+      onUpdaterStatus: (callback: (data: { event: string; payload?: unknown }) => void) => () => void
+      onNativeSpellcheckMenu: (callback: () => void) => () => void
+      onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
+      isFullscreen: () => Promise<boolean>
     }
   }
 }
+
+export {}
