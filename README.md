@@ -28,7 +28,7 @@
 
 - **Spreadsheet Management:** Maintain a small scale database with the spreadsheet.
 
-<img width="898" height="870" alt="spreadsheet" src="https://github.com/user-attachments/assets/adfb487d-4141-43c1-80d3-65eff821f769" />
+<img width="857" height="550" alt="Screenshot 2026-09-25 at 10 02 07 PM" src="https://github.com/user-attachments/assets/aa1586ac-525b-4dde-aede-abc33e9d4c66" />
 
 ### **Automated Daily Notes**
 
