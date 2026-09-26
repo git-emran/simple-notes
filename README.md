@@ -6,7 +6,36 @@
 
 <img width="2876" height="2078" alt="new-writer" src="https://github.com/user-attachments/assets/c887f5a2-0fe5-4546-bd03-4314a3a69f73" />
 
+## 📥 Download & Install
 
+Download the latest release from the [**Releases page**](https://github.com/git-emran/simple-notes/releases).
+
+| Platform | File | Notes |
+|---|---|---|
+| **macOS (Apple Silicon)** | `writer-x.x.x-arm64.dmg` | M1/M2/M3/M4 Macs |
+| **macOS (Intel)** | `writer-x.x.x-x64.dmg` | Older Intel Macs |
+| **Windows** | `writer-x.x.x-setup.exe` | Windows 10+ |
+| **Linux** | `writer-x.x.x.AppImage` | Universal Linux |
+| **Linux (Debian/Ubuntu)** | `writer-x.x.x.deb` | Debian-based distros |
+
+### ⚠️ macOS: "App is damaged" fix
+
+Since Writer is not notarized with Apple, macOS may block it. After installing, open **Terminal** and run:
+
+```bash
+xattr -cr /Applications/Writer.app
+```
+
+Then open the app normally. You only need to do this once.
+
+<details>
+<summary>Why does this happen?</summary>
+
+macOS Gatekeeper quarantines apps that aren't signed with an Apple Developer certificate. The `xattr -cr` command removes the quarantine flag so macOS trusts the app. This is standard for open-source apps distributed outside the Mac App Store.
+
+</details>
+
+---
 
 # Key Features
 ### **Interactive Canvas**
