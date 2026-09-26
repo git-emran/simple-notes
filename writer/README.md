@@ -1,10 +1,10 @@
-# Writr
+# Writer
 
-Welcome to my Simple notes series. My First project of this series is WritR.
+Welcome to my Simple notes series. My First project of this series is Writer.
 
-# What is WritR
+# What is Writer
 
-WritR is a Desktop markdown application. Currently available only on macOS. It has the basic markdown feature.
+Writer is a Desktop markdown application. Currently available only on macOS. It has the basic markdown feature.
 
 # Tech Stack
 
