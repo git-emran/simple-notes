@@ -249,14 +249,13 @@ export const TemplatePaletteModal = ({
       {/* Modal shell */}
       <div
         className={twMerge(
-          'relative z-10 w-full max-w-4xl overflow-hidden rounded-xl border border-obsidian-border bg-[var(--obsidian-surface)] shadow-2xl flex flex-col transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
-          'max-h-[78vh]',
+          'app-modal-dialog max-w-4xl max-h-[78vh] transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
           easing,
           isShown ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-2 scale-[0.98] opacity-0'
         )}
       >
         {/* ── Header ── */}
-        <div className="flex items-center gap-2 border-b border-obsidian-border px-4 py-3 bg-[var(--obsidian-workspace)] flex-shrink-0">
+        <div className="app-modal-header gap-2 flex-shrink-0">
           {/* Pencil icon */}
           <svg
             className="w-4 h-4 text-[var(--obsidian-text-muted)] flex-shrink-0"

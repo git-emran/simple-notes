@@ -38,14 +38,14 @@ export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: tions
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const btnClass = 'flex items-center gap-2 w-full px-4 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors text-left'
+  const btnClass = 'context-menu-item px-4 py-2 text-sm'
 
   return (
     <div className="relative">
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1.5 rounded-md text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-all"
+        className="app-btn-icon-md"
         title="More actions"
       >
         <VscEllipsis className="w-5 h-5" />
@@ -54,7 +54,7 @@ export const MoreActionsMenu = ({ notePath, onExportPdf, isExportingPdf }: tions
       {isOpen && createPortal(
         <div
           ref={menuRef}
-          className="fixed bg-[var(--obsidian-surface)] border border-obsidian-border rounded-md shadow-xl z-[9999] py-1 min-w-[180px] backdrop-blur-sm"
+          className="context-menu-glass min-w-[180px] z-[9999]"
           style={{
             top: buttonRef.current ? buttonRef.current.getBoundingClientRect().bottom + 5 : 0,
             right: buttonRef.current ? window.innerWidth - buttonRef.current.getBoundingClientRect().right : 0

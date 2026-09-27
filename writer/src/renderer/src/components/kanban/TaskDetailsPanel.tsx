@@ -139,40 +139,37 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                   type="button"
                   onClick={save}
                   disabled={!canSave}
-                  className={twMerge(
-                    'inline-flex items-center gap-2 rounded bg-[var(--obsidian-accent)] px-3 py-2 text-sm font-medium text-white hover:opacity-90',
-                    !canSave && 'opacity-50 pointer-events-none'
-                  )}
+                  className="app-btn-primary text-sm px-3 py-2"
                   title="Save"
                 >
                   <VscSave className="h-4 w-4" />
-                  Save
+                  <span>Save</span>
                 </button>
                 <button
                   type="button"
                   onClick={cancel}
-                  className="inline-flex items-center gap-2 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                  className="app-btn-secondary text-sm px-3 py-2"
                   title="Cancel"
                 >
                   <VscDiscard className="h-4 w-4" />
-                  Cancel
+                  <span>Cancel</span>
                 </button>
               </>
             ) : (
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
-                className="inline-flex items-center gap-2 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]"
+                className="app-btn-secondary text-sm px-3 py-2"
                 title="Edit"
               >
                 <VscEdit className="h-4 w-4" />
-                Edit
+                <span>Edit</span>
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-9 w-9 items-center justify-center rounded hover:bg-[var(--obsidian-hover-soft)] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]"
+              className="app-btn-icon-md"
               title="Close"
             >
               <VscClose className="h-5 w-5" />
@@ -191,7 +188,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                   spellCheck={false}
                   autoCorrect="off"
                   autoCapitalize="off"
-                  className="mt-2 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-base text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
+                  className="app-input mt-2 text-base px-3 py-2"
                   placeholder="Task name"
                 />
               </div>
@@ -207,7 +204,7 @@ export const TaskDetailsPanel = ({ isOpen, card, onClose, onUpdate }: TaskDetail
                       save()
                     }
                   }}
-                  className="mt-2 w-full resize-none rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm leading-6 text-[var(--obsidian-text)] outline-none shadow-sm focus:shadow-[0_0_0_2px_var(--obsidian-accent)]"
+                  className="app-input mt-2 resize-none leading-6 px-3 py-2"
                   rows={6}
                   spellCheck={false}
                   autoCorrect="off"

@@ -139,7 +139,7 @@ export const EditorHeader = ({
         <div className="flex items-center flex-1 mr-4 min-w-0">
           <div className="relative group mr-2 shrink-0" ref={emojiPickerRef}>
             <button
-              className="text-xl w-7 h-7 flex items-center justify-center hover:bg-[var(--obsidian-hover)] rounded transition-colors text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]"
+              className="app-btn-icon-md text-xl w-7 h-7"
               onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
               title={currentEmoji ? "Change emoji" : "Add emoji"}
             >
@@ -151,7 +151,7 @@ export const EditorHeader = ({
                   {POPULAR_EMOJIS.map(emoji => (
                     <button
                       key={emoji}
-                      className="text-xl w-8 h-8 flex items-center justify-center hover:bg-[var(--obsidian-hover)] rounded transition-colors"
+                      className="app-btn-icon-md text-xl w-8 h-8"
                       onClick={() => {
                         handleEmojiSelect(emoji)
                         setIsEmojiPickerOpen(false)
@@ -229,7 +229,7 @@ export const EditorHeader = ({
             {currentStatus ? (
               <span
                 className={twMerge(
-                  'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase',
+                  'app-status-badge',
                   NOTE_STATUS_META[currentStatus as keyof typeof NOTE_STATUS_META]?.className
                 )}
               >
@@ -260,7 +260,7 @@ export const EditorHeader = ({
         <div className="flex items-center gap-2">
           {currentTag ? (
             <div
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-colors ${CUSTOM_TAG_STYLE}`}
+              className={`app-tag-pill ${CUSTOM_TAG_STYLE}`}
             >
               <span>{currentTag}</span>
               <button

@@ -63,17 +63,14 @@ export const SidebarSearch = ({ className, onCloseRequested, ...props }: Sidebar
     >
       <div className="px-3 py-2 border-b border-obsidian-border-soft">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-[10px] font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]">
+          <div className="app-sidebar-title text-[10px]">
             SEARCH
           </div>
           <button
             type="button"
             onClick={onCloseRequested}
             disabled={!onCloseRequested}
-            className={twMerge(
-              'p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors',
-              'disabled:opacity-60 disabled:hover:text-[var(--obsidian-text-muted)] disabled:hover:bg-transparent'
-            )}
+            className="app-btn-icon"
             title="Close search"
           >
             <VscClose className="w-4 h-4" />
@@ -95,7 +92,7 @@ export const SidebarSearch = ({ className, onCloseRequested, ...props }: Sidebar
             autoCorrect="off"
             autoCapitalize="off"
             placeholder="Search files, status or tags..."
-            className="w-full pl-8 pr-2 py-1.5 text-xs rounded bg-[var(--obsidian-workspace)] border border-obsidian-border text-[var(--obsidian-text)] placeholder:text-[var(--obsidian-text-muted)] outline-none focus:border-[var(--obsidian-accent)]"
+            className="app-input pl-8 pr-2 py-1.5 text-xs"
           />
         </div>
       </div>

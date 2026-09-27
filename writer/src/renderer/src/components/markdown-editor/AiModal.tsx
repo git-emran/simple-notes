@@ -341,7 +341,7 @@ export const AiModal = ({
               value={selectedAiModel}
               onChange={(e) => setSelectedAiModel(e.target.value)}
               disabled={isLoadingAiModels || isGeneratingWithAi}
-              className="rounded-md border border-obsidian-border bg-transparent px-2 py-1 text-[11px] text-[var(--obsidian-text-muted)] outline-none hover:border-[var(--obsidian-accent)] hover:text-[var(--obsidian-text)] transition-colors disabled:opacity-50"
+              className="app-select-sm"
             >
               {aiModels.map((model) => (
                 <option key={model.id} value={model.id}>
@@ -359,17 +359,17 @@ export const AiModal = ({
               <button
                 type="button"
                 onClick={onStop}
-                className="rounded-md bg-[var(--obsidian-border)] px-3 py-1.5 text-xs font-medium text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors flex items-center gap-1"
+                className="app-btn-secondary"
               >
                 <div className="w-2 h-2 rounded-sm bg-red-400 animate-pulse" />
-                Stop Generating
+                <span>Stop Generating</span>
               </button>
             ) : (
               <>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-md px-3 py-1.5 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] transition-colors"
+                  className="app-btn-ghost"
                 >
                   Cancel
                 </button>
@@ -377,7 +377,7 @@ export const AiModal = ({
                   type="button"
                   onClick={() => onGenerate(selectedPaths)}
                   disabled={isLoadingAiModels || !aiPrompt.trim()}
-                  className="rounded-md bg-[var(--obsidian-accent)] px-4 py-1.5 text-xs font-medium text-white transition-all hover:brightness-110 disabled:opacity-50 shadow-sm active:scale-[0.98]"
+                  className="app-btn-primary"
                 >
                   Submit
                 </button>

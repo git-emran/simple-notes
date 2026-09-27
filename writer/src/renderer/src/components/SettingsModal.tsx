@@ -38,10 +38,10 @@ const ACCENT_PRESETS = [
   { label: 'Sky',     value: '#0ea5e9' },
 ]
 
-const sectionTitleClass = 'text-xs font-semibold tracking-[0.12em] text-[var(--obsidian-text-muted)]'
-const labelClass = 'text-sm text-[var(--obsidian-text)]'
-const helpClass = 'text-xs text-[var(--obsidian-text-muted)]'
-const cardClass = 'rounded-lg border border-obsidian-border bg-[var(--obsidian-workspace)] p-4'
+const sectionTitleClass = 'app-section-title'
+const labelClass = 'app-label'
+const helpClass = 'app-help-text'
+const cardClass = 'app-card'
 
 const fontOptions: EditorFontOption[] = ['SF Pro', 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Martian Mono', 'Courier']
 
@@ -138,7 +138,7 @@ export const SettingsPanel = () => {
                   <button
                     type="button"
                     onClick={handleCopyPath}
-                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] transition-colors"
+                    className="app-btn-ghost flex items-center gap-1 rounded px-2 py-1 text-xs"
                     title="Copy path"
                   >
                     {copied ? <VscCheck className="h-3.5 w-3.5 text-green-500" /> : <VscCopy className="h-3.5 w-3.5" />}
@@ -147,7 +147,7 @@ export const SettingsPanel = () => {
                   <button
                     type="button"
                     onClick={handleRevealVault}
-                    className="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] transition-colors"
+                    className="app-btn-ghost flex items-center gap-1 rounded px-2 py-1 text-xs"
                     title="Reveal in file manager"
                   >
                     <span>Reveal</span>
@@ -159,7 +159,7 @@ export const SettingsPanel = () => {
                   <button
                     type="button"
                     onClick={() => void selectVaultDirectory()}
-                    className="inline-flex items-center gap-2 rounded bg-[var(--obsidian-accent)] px-3 py-2 text-xs font-medium text-white hover:opacity-90 transition-opacity"
+                    className="app-btn-primary px-3 py-2"
                   >
                     <VscFolderOpened className="h-3.5 w-3.5" />
                     <span>Choose Directory / Vault...</span>
@@ -169,7 +169,7 @@ export const SettingsPanel = () => {
                     <button
                       type="button"
                       onClick={() => void resetVaultDirectory()}
-                      className="inline-flex items-center gap-1.5 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] transition-colors"
+                      className="app-btn-secondary px-3 py-2"
                       title="Reset to default directory (~/Writr)"
                     >
                       <VscRefresh className="h-3.5 w-3.5" />
@@ -216,7 +216,7 @@ export const SettingsPanel = () => {
                 <select
                   value={themeMode}
                   onChange={(e) => setThemeMode(e.target.value as ThemeMode)}
-                  className="rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                  className="app-select"
                 >
                   <optgroup label="Base">
                     {themeOptions.map((opt) => (
@@ -336,7 +336,7 @@ export const SettingsPanel = () => {
                       const current = Number(tabIndentUnit)
                       if (!current || current < 1) setTabIndentUnit(1)
                     }}
-                    className="w-20 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                    className="app-input w-20 px-2 py-1.5"
                   />
                 </div>
 
@@ -367,7 +367,7 @@ export const SettingsPanel = () => {
                           setFontSize(9)
                         }
                       }}
-                      className="w-20 rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-2 py-1.5 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                      className="app-input w-20 px-2 py-1.5"
                     />
                     <div className="text-xs text-[var(--obsidian-text-muted)]">px</div>
                   </div>
@@ -381,7 +381,7 @@ export const SettingsPanel = () => {
                   <select
                     value={editorFont}
                     onChange={(e) => setEditorFont(e.target.value as EditorFontOption)}
-                    className="rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none focus:border-[var(--obsidian-accent)]"
+                    className="app-select"
                   >
                     {fontOptions.map((font) => (
                       <option key={font} value={font}>
@@ -450,7 +450,7 @@ export const SettingsPanel = () => {
                   autoCorrect="off"
                   autoCapitalize="off"
                   placeholder="sk-or-v1-..."
-                  className="mt-3 w-full rounded border border-obsidian-border bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none placeholder:opacity-30 focus:border-[var(--obsidian-accent)]"
+                  className="app-input mt-3 placeholder:opacity-30"
                 />
               </label>
             </div>
@@ -462,14 +462,14 @@ export const SettingsPanel = () => {
 }
 
 export const SettingsModal = ({ onClose }: { onClose: () => void }) => (
-  <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4">
-    <div className="h-[85vh] w-full max-w-3xl overflow-hidden rounded-lg border border-obsidian-border bg-[var(--obsidian-pane)] shadow-xl">
+  <div className="app-modal-backdrop">
+    <div className="app-modal-dialog h-[85vh] max-w-3xl">
       <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-obsidian-border-soft px-4 py-3">
+        <div className="app-modal-header">
           <h3 className="text-sm font-semibold text-[var(--obsidian-text)]">Settings</h3>
           <button
             type="button"
-            className="rounded px-2 py-1 text-xs text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]"
+            className="app-btn-ghost px-2 py-1 text-xs"
             onClick={onClose}
           >
             Close

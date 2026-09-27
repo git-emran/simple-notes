@@ -597,13 +597,13 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
       style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
       {...props}
     >
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-obsidian-border-soft select-none min-w-0">
+      <div className="app-sidebar-header">
         <div
           className="flex items-center gap-1.5 min-w-0 cursor-pointer group flex-1"
           onClick={() => void selectVaultDirectory()}
           title={`Active Notes Directory:\n${activeVaultPath || 'Default (~/Writr)'}\n\nClick to choose another directory`}
         >
-          <span className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] group-hover:text-[var(--obsidian-text)] truncate transition-colors">
+          <span className="app-sidebar-title group-hover:text-[var(--obsidian-text)] transition-colors">
             {vaultName}
           </span>
         </div>
@@ -612,7 +612,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
             type="button"
             onClick={onSearchRequested}
             disabled={!onSearchRequested}
-            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors disabled:opacity-50"
+            className="app-btn-icon"
             title="Search files"
           >
             <VscSearch className="w-4 h-4" />
@@ -620,7 +620,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
 
           <button
             onClick={() => handleCreateFolder()}
-            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+            className="app-btn-icon"
             title="New Folder"
           >
             <VscNewFolder className="w-4 h-4" />
@@ -629,7 +629,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           {hasAnyExpanded ? (
             <button
               onClick={handleCollapseAll}
-              className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+              className="app-btn-icon"
               title="Collapse All"
             >
               <VscCollapseAll className="w-4 h-4" />
@@ -637,7 +637,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
           ) : (
             <button
               onClick={handleExpandAll}
-              className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors"
+              className="app-btn-icon"
               title="Expand All"
             >
               <VscExpandAll className="w-4 h-4" />
@@ -753,7 +753,7 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
                 <button
                   type="button"
                   onClick={() => void selectVaultDirectory()}
-                  className="mt-1 px-3.5 py-1.5 text-xs font-medium rounded-md bg-[var(--obsidian-accent)] text-white hover:opacity-90 shadow-sm transition-opacity"
+                  className="app-btn-primary mt-1 px-3.5 py-1.5"
                 >
                   Open Folder...
                 </button>
@@ -775,14 +775,14 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
                   <button
                     type="button"
                     onClick={() => handleCreateFile()}
-                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--obsidian-accent)] text-white hover:opacity-90 shadow-sm transition-opacity"
+                    className="app-btn-primary w-full py-1.5"
                   >
                     New Note
                   </button>
                   <button
                     type="button"
                     onClick={() => void selectVaultDirectory()}
-                    className="w-full px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--obsidian-hover)] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)] border border-[var(--obsidian-border-soft)] transition-colors"
+                    className="app-btn-secondary w-full py-1.5"
                   >
                     Switch Vault...
                   </button>
@@ -820,9 +820,8 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
                     <div
                       key={status}
                       className={twMerge(
-                        'flex items-center justify-between px-6 py-1.5 hover:bg-[var(--obsidian-hover-soft)] cursor-pointer text-[13px]',
-                        isActive &&
-                          'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)]'
+                        'app-nav-filter-row',
+                        isActive && 'app-nav-filter-active'
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -882,9 +881,8 @@ export const FileExplorer = ({ className, onSearchRequested, ...props }: FileExp
                       <div
                         key={tag}
                         className={twMerge(
-                          'flex items-center justify-between px-6 py-1.5 hover:bg-[var(--obsidian-hover-soft)] cursor-pointer text-[13px]',
-                          isActive &&
-                            'bg-[var(--obsidian-accent-dim)] text-[var(--obsidian-text)] font-semibold shadow-[inset_3px_0_0_0_var(--obsidian-accent)]'
+                          'app-nav-filter-row',
+                          isActive && 'app-nav-filter-active'
                         )}
                         onClick={(e) => {
                           e.stopPropagation()

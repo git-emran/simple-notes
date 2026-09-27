@@ -39,14 +39,7 @@ const ToolBtn = ({
     onClick={onClick}
     disabled={disabled}
     title={title}
-    className="
-      relative flex items-center justify-center w-8 h-8 rounded-lg
-      text-[var(--obsidian-text-muted)] transition-all duration-150
-      hover:text-[var(--obsidian-text)] hover:bg-white/10 dark:hover:bg-white/10
-      disabled:opacity-35 disabled:cursor-not-allowed
-      focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--obsidian-accent)]
-      active:scale-95
-    "
+    className="writr-markdown-toolbar-btn"
   >
     {children}
   </button>
@@ -223,14 +216,7 @@ export const MarkdownToolbar = ({
     <div className="flex justify-center items-center bg-transparent shrink-0">
       {/* macOS Dock pill */}
       <div
-        className="
-          flex items-center gap-0.5 px-2 py-1
-          rounded-2xl
-          border border-obsidian-border
-          bg-white/70 dark:bg-black/60
-          backdrop-blur-xl backdrop-saturate-150
-          shadow-[0_4px_24px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.07)]
-        "
+        className="writr-markdown-toolbar-pill"
         role="toolbar"
         aria-label="Markdown formatting"
       >
