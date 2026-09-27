@@ -250,14 +250,14 @@ export const KanbanBoard = () => {
             onChange={(e) => setNewColumnTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addColumn()}
             placeholder="Add board name"
-            className="w-52 rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-obsidian-border focus:border-[var(--obsidian-accent)]/50 transition-colors"
+            className="app-input w-52"
           />
           <button
             onClick={addColumn}
-            className="inline-flex items-center gap-2 rounded bg-[var(--obsidian-accent)] px-3 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+            className="app-btn-primary"
           >
             <VscAdd className="w-4 h-4" />
-            Add board
+            <span>Add board</span>
           </button>
         </div>
       </div>
@@ -290,8 +290,8 @@ export const KanbanBoard = () => {
       />
 
       {isWorkspaceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-md rounded-xl border border-obsidian-border bg-[var(--obsidian-pane)] p-5 shadow-2xl">
+        <div className="app-modal-backdrop">
+          <div className="app-modal-dialog max-w-md p-5">
             <div className="text-lg font-semibold text-[var(--obsidian-text)]">Create workspace</div>
             <input
               ref={newWorkspaceInputRef}
@@ -302,18 +302,18 @@ export const KanbanBoard = () => {
                 if (e.key === "Escape") setIsWorkspaceModalOpen(false);
               }}
               placeholder="Workspace name"
-              className="mt-4 w-full rounded bg-[var(--obsidian-workspace)] px-3 py-2 text-sm text-[var(--obsidian-text)] outline-none border border-obsidian-border focus:border-[var(--obsidian-accent)]/50 transition-colors"
+              className="app-input mt-4"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setIsWorkspaceModalOpen(false)}
-                className="rounded px-3 py-2 text-sm text-[var(--obsidian-text-muted)] hover:bg-[var(--obsidian-hover)]"
+                className="app-btn-ghost"
               >
                 Cancel
               </button>
               <button
                 onClick={addWorkspace}
-                className="rounded bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500"
+                className="app-btn-primary"
               >
                 Create
               </button>

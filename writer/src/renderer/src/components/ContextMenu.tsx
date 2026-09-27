@@ -49,10 +49,7 @@ export const ContextMenu = ({ x, y, onClose, children, className, style, ...prop
   return (
     <div
       ref={ref}
-      className={twMerge(
-        'fixed z-50 rounded-md py-1 min-w-[150px] max-h-[400px] overflow-y-auto preview-scrollbar bg-[var(--obsidian-surface)] border border-obsidian-border shadow-lg backdrop-blur-sm',
-        className
-      )}
+      className={twMerge('context-menu-glass', className)}
       style={{
         ...style,
         top: position.top,
@@ -66,15 +63,15 @@ export const ContextMenu = ({ x, y, onClose, children, className, style, ...prop
   )
 }
 
-export const ContextMenuItem = ({ children, onClick, ...props }: ComponentProps<'button'>) => (
-    <button
-        onClick={(e) => {
-            e.stopPropagation()
-            onClick?.(e)
-        }}
-        className="w-full text-left px-3 py-1.5 text-[13px] text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] hover:text-[var(--obsidian-text)] flex items-center gap-2 transition-colors"
-        {...props}
-    >
-        {children}
-    </button>
+export const ContextMenuItem = ({ children, onClick, className, ...props }: ComponentProps<'button'>) => (
+  <button
+    onClick={(e) => {
+      e.stopPropagation()
+      onClick?.(e)
+    }}
+    className={twMerge('context-menu-item', className)}
+    {...props}
+  >
+    {children}
+  </button>
 )

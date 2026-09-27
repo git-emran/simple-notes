@@ -183,9 +183,9 @@ export const FolderNotesPanel = ({
       style={{ fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
       {...props}
     >
-      <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-obsidian-border-soft select-none">
+      <div className="app-sidebar-header">
         <span
-          className="font-bold text-[10px] tracking-wider uppercase text-[var(--obsidian-text-muted)] opacity-85 truncate"
+          className="app-sidebar-title opacity-85"
           title={activeFilter ? `${activeFilter.type}: ${activeFilter.value}` : activeFolder?.name}
         >
           {activeFilter ? `${activeFilter.type}: ${activeFilter.value}` : activeFolder?.name}
@@ -194,7 +194,7 @@ export const FolderNotesPanel = ({
           <button
             onClick={() => handleCreateFile()}
             disabled={!activeFolder}
-            className="p-1 rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover)] transition-colors disabled:opacity-50"
+            className="app-btn-icon"
             title="New File"
           >
             <VscNewFile className="w-4 h-4" />
