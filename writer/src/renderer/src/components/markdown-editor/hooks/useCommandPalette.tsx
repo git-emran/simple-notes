@@ -65,7 +65,7 @@ export function useCommandPalette({
   // Close palette when note is deselected
   useEffect(() => {
     if (!selectedNote?.path) setIsCommandPaletteOpen(false)
-  }, [selectedNote?.path])
+  }, [selectedNote?.path, setIsCommandPaletteOpen])
 
   // Keyboard shortcuts: Ctrl+Alt+T (toolbar toggle)
   useEffect(() => {

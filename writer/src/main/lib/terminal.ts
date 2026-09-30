@@ -29,85 +29,190 @@ let hasEnsuredSpawnHelperPermissions = false
 const toUnpackedAsarPath = (targetPath: string) =>
   targetPath.replace(/([\\/])app\.asar([\\/])/, '$1app.asar.unpacked$2')
 
-const resolveSpawnHelperPath = () => {
-  const nodePtyDir = path.dirname(require.resolve('node-pty/package.json'))
-  const helperPath = path.join(nodePtyDir, 'prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper')
-  if (existsSync(helperPath)) return helperPath
+const resolveSpawnHelperCandidates = (): string[] => {
+  const candidates: string[] = []
 
-  const unpackedHelperPath = toUnpackedAsarPath(helperPath)
-  if (unpackedHelperPath !== helperPath && existsSync(unpackedHelperPath)) {
-    return unpackedHelperPath
+  let nodePtyDir: string | null = null
+  try {
+    nodePtyDir = path.dirname(require.resolve('node-pty/package.json'))
+  } catch {
+    nodePtyDir = null
   }
 
-  return null
+  const relativeHelperSubpaths = [
+    path.join('prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper'),
+    path.join('build', 'Release', 'spawn-helper'),
+    path.join('build', 'Debug', 'spawn-helper'),
+    path.join('bin', `${process.platform}-${process.arch}`, 'spawn-helper'),
+  ]
+
+  const baseDirs: string[] = []
+  if (nodePtyDir) {
+    baseDirs.push(nodePtyDir)
+  }
+  if (process.resourcesPath) {
+    baseDirs.push(
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'node-pty'),
+      path.join(process.resourcesPath, 'node_modules', 'node-pty')
+    )
+  }
+
+  for (const base of baseDirs) {
+    for (const sub of relativeHelperSubpaths) {
+      const fullPath = path.join(base, sub)
+      candidates.push(fullPath)
+      const unpacked = toUnpackedAsarPath(fullPath)
+      if (unpacked !== fullPath) {
+        candidates.push(unpacked)
+      }
+    }
+  }
+
+  return Array.from(new Set(candidates))
 }
 
 const ensureNodePtySpawnHelperExecutable = () => {
   if (hasEnsuredSpawnHelperPermissions || process.platform === 'win32') return
 
-  const helperPath = resolveSpawnHelperPath()
-  if (!helperPath) {
-    hasEnsuredSpawnHelperPermissions = true
-    return
-  }
-
-  try {
-    const mode = statSync(helperPath).mode & 0o777
-    if ((mode & 0o111) === 0) {
-      chmodSync(helperPath, mode | 0o755)
+  const candidatePaths = resolveSpawnHelperCandidates()
+  for (const helperPath of candidatePaths) {
+    try {
+      if (existsSync(helperPath)) {
+        const mode = statSync(helperPath).mode & 0o777
+        if ((mode & 0o111) === 0) {
+          chmodSync(helperPath, mode | 0o755)
+        }
+      }
+    } catch {
+      // Ignore filesystem permission read/write errors on non-writable paths
     }
-  } catch {
-    void 0
   }
 
   hasEnsuredSpawnHelperPermissions = true
 }
 
-const getShellCandidates = () => {
+const getShellCandidates = (): string[] => {
   if (process.platform === 'win32') {
+    const systemRoot = process.env['SystemRoot'] || 'C:\\Windows'
+    const programFiles = process.env['ProgramFiles'] || 'C:\\Program Files'
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)'
+    const localAppData = process.env['LocalAppData'] || ''
+
     return [
       process.env['COMSPEC'],
+      path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+      path.join(systemRoot, 'System32', 'cmd.exe'),
+      path.join(programFiles, 'PowerShell', '7', 'pwsh.exe'),
+      path.join(programFiles, 'Git', 'bin', 'bash.exe'),
+      path.join(programFilesX86, 'Git', 'bin', 'bash.exe'),
+      localAppData ? path.join(localAppData, 'Programs', 'Git', 'bin', 'bash.exe') : '',
       'pwsh.exe',
       'powershell.exe',
       'cmd.exe',
     ].filter(Boolean) as string[]
   }
 
-  const candidates = [
-    process.env['SHELL'],
-    process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash',
-    '/bin/bash',
-    '/bin/sh',
-  ].filter(Boolean) as string[]
+  const userHome = homedir()
+  const candidates: string[] = []
 
-  return Array.from(new Set(candidates))
+  if (process.env['SHELL']) {
+    candidates.push(process.env['SHELL'])
+  }
+
+  if (process.platform === 'darwin') {
+    candidates.push(
+      '/bin/zsh',
+      '/bin/bash',
+      '/opt/homebrew/bin/zsh',
+      '/opt/homebrew/bin/bash',
+      '/usr/local/bin/zsh',
+      '/usr/local/bin/bash',
+      '/usr/bin/zsh',
+      '/usr/bin/bash',
+      path.join(userHome, '.nix-profile/bin/zsh'),
+      path.join(userHome, '.nix-profile/bin/bash'),
+      '/bin/sh',
+      '/usr/bin/sh'
+    )
+  } else {
+    // Linux and other Unixes
+    candidates.push(
+      '/bin/bash',
+      '/usr/bin/bash',
+      '/bin/zsh',
+      '/usr/bin/zsh',
+      '/usr/bin/fish',
+      '/bin/sh',
+      '/usr/bin/sh'
+    )
+  }
+
+  return Array.from(new Set(candidates.filter(Boolean)))
 }
 
-const getShellArgs = (shellPath: string) => {
+const getShellArgs = (shellPath: string): string[] => {
+  const lower = shellPath.toLowerCase()
   if (process.platform === 'win32') {
-    const lower = shellPath.toLowerCase()
     if (lower.includes('powershell') || lower.includes('pwsh')) {
       return ['-NoLogo']
     }
+    if (lower.includes('bash')) {
+      return ['-l']
+    }
+    return []
+  }
+
+  // On POSIX, 'sh' and 'dash' may not support login option '-l'
+  const base = path.basename(lower)
+  if (base === 'sh' || base === 'dash') {
     return []
   }
 
   return ['-l']
 }
 
-const resolveCwd = (candidate?: string) => {
-  if (candidate && existsSync(candidate)) {
-    return path.resolve(candidate)
+const resolveCwd = (candidate?: string): string => {
+  if (candidate) {
+    try {
+      const resolved = path.resolve(candidate)
+      if (existsSync(resolved)) {
+        const stat = statSync(resolved)
+        if (stat.isDirectory()) {
+          return resolved
+        }
+        return path.dirname(resolved)
+      }
+    } catch {
+      // fallback
+    }
   }
 
-  return homedir()
-}
-
-const isShellUsable = (shellPath: string) => {
-  if (!shellPath) return false
-  if (process.platform === 'win32') return true
+  try {
+    const home = homedir()
+    if (existsSync(home)) return home
+  } catch {
+    // fallback
+  }
 
   try {
+    return process.cwd()
+  } catch {
+    return process.platform === 'win32' ? 'C:\\' : '/'
+  }
+}
+
+const isShellUsable = (shellPath: string): boolean => {
+  if (!shellPath) return false
+
+  if (process.platform === 'win32') {
+    if (path.isAbsolute(shellPath)) {
+      return existsSync(shellPath)
+    }
+    return true
+  }
+
+  try {
+    if (!existsSync(shellPath)) return false
     accessSync(shellPath, constants.X_OK)
     return true
   } catch {
@@ -115,15 +220,75 @@ const isShellUsable = (shellPath: string) => {
   }
 }
 
+const buildAugmentedPath = (): string => {
+  const pathSeparator = process.platform === 'win32' ? ';' : ':'
+  const existingPath = process.env['PATH'] || ''
+  const existingParts = existingPath.split(pathSeparator).filter(Boolean)
+
+  const additionalParts: string[] = []
+  const userHome = homedir()
+
+  if (process.platform === 'darwin') {
+    additionalParts.push(
+      '/opt/homebrew/bin',
+      '/opt/homebrew/sbin',
+      '/usr/local/bin',
+      '/usr/local/sbin',
+      path.join(userHome, '.local', 'bin'),
+      path.join(userHome, '.cargo', 'bin'),
+      path.join(userHome, 'bin'),
+      '/usr/bin',
+      '/bin',
+      '/usr/sbin',
+      '/sbin'
+    )
+  } else if (process.platform === 'linux') {
+    additionalParts.push(
+      '/usr/local/sbin',
+      '/usr/local/bin',
+      '/usr/sbin',
+      '/usr/bin',
+      '/sbin',
+      '/bin',
+      path.join(userHome, '.local', 'bin'),
+      path.join(userHome, 'bin'),
+      path.join(userHome, '.cargo', 'bin')
+    )
+  } else if (process.platform === 'win32') {
+    const systemRoot = process.env['SystemRoot'] || 'C:\\Windows'
+    additionalParts.push(
+      path.join(systemRoot, 'System32'),
+      systemRoot,
+      path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0')
+    )
+  }
+
+  const combined = [...existingParts, ...additionalParts]
+  const deduplicated: string[] = []
+  const seen = new Set<string>()
+
+  for (const part of combined) {
+    const normalized = process.platform === 'win32' ? part.toLowerCase() : part
+    if (!seen.has(normalized)) {
+      seen.add(normalized)
+      deduplicated.push(part)
+    }
+  }
+
+  return deduplicated.join(pathSeparator)
+}
+
 const getTerminalEnv = () => {
-  const fallbackPath =
-    process.platform === 'darwin'
-      ? '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'
-      : '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  const home = homedir()
+  const user = process.env['USER'] || process.env['LOGNAME'] || process.env['USERNAME'] || ''
 
   return {
     ...process.env,
-    PATH: process.env['PATH'] || fallbackPath,
+    PATH: buildAugmentedPath(),
+    HOME: process.env['HOME'] || home,
+    USER: user,
+    LOGNAME: user,
+    LANG: process.env['LANG'] || 'en_US.UTF-8',
     TERM: 'xterm-256color',
     COLORTERM: 'truecolor',
     TERM_PROGRAM: 'Writr',
@@ -132,28 +297,72 @@ const getTerminalEnv = () => {
 
 const spawnTerminalProcess = (cwd: string, cols: number, rows: number) => {
   const errors: string[] = []
-  for (const shell of getShellCandidates()) {
+  const candidates = getShellCandidates()
+  const env = getTerminalEnv()
+
+  for (const shell of candidates) {
     if (!isShellUsable(shell)) {
-      errors.push(`Shell not executable: ${shell}`)
+      errors.push(`Shell not accessible: ${shell}`)
       continue
     }
 
-    try {
-      const terminalProcess = pty.spawn(shell, getShellArgs(shell), {
-        name: 'xterm-256color',
-        cols,
-        rows,
-        cwd,
-        env: getTerminalEnv(),
-      })
-      return { shell, terminalProcess }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      errors.push(`Spawn failed for ${shell}: ${message}`)
+    const defaultArgs = getShellArgs(shell)
+    // Try with preferred args first, then with empty args [] if preferred args fail
+    const argAttempts = defaultArgs.length > 0 ? [defaultArgs, []] : [[]]
+
+    for (const args of argAttempts) {
+      if (process.platform === 'win32') {
+        // First try ConPTY on Windows
+        try {
+          const terminalProcess = pty.spawn(shell, args, {
+            name: 'xterm-256color',
+            cols,
+            rows,
+            cwd,
+            env,
+            useConpty: true,
+          })
+          return { shell, terminalProcess }
+        } catch (conptyError) {
+          const conptyMsg = conptyError instanceof Error ? conptyError.message : String(conptyError)
+          errors.push(`ConPTY spawn failed for ${shell} (${JSON.stringify(args)}): ${conptyMsg}`)
+
+          // Fallback to WinPTY on Windows
+          try {
+            const terminalProcess = pty.spawn(shell, args, {
+              name: 'xterm-256color',
+              cols,
+              rows,
+              cwd,
+              env,
+              useConpty: false,
+            })
+            return { shell, terminalProcess }
+          } catch (winptyError) {
+            const winptyMsg = winptyError instanceof Error ? winptyError.message : String(winptyError)
+            errors.push(`WinPTY spawn failed for ${shell} (${JSON.stringify(args)}): ${winptyMsg}`)
+          }
+        }
+      } else {
+        // POSIX (macOS & Linux)
+        try {
+          const terminalProcess = pty.spawn(shell, args, {
+            name: 'xterm-256color',
+            cols,
+            rows,
+            cwd,
+            env,
+          })
+          return { shell, terminalProcess }
+        } catch (posixError) {
+          const posixMsg = posixError instanceof Error ? posixError.message : String(posixError)
+          errors.push(`Spawn failed for ${shell} (${JSON.stringify(args)}): ${posixMsg}`)
+        }
+      }
     }
   }
 
-  throw new Error(errors.join(' | ') || 'No shell candidates available')
+  throw new Error(`Failed to start terminal: ${errors.join(' | ') || 'No usable shell candidates available'}`)
 }
 
 const appendToBuffer = (session: TerminalSessionRecord, chunk: string) => {
@@ -233,7 +442,11 @@ export const getTerminalSnapshot = (
 export const writeTerminalInput = (sender: WebContents, sessionId: string, data: string) => {
   const session = getSessionForSender(sessionId, sender)
   if (!session || !data) return
-  session.pty.write(data)
+  try {
+    session.pty.write(data)
+  } catch {
+    // Process might have closed
+  }
 }
 
 export const resizeTerminalSession = (

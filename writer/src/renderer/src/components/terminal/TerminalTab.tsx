@@ -125,6 +125,8 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
   const [cwdLabel, setCwdLabel] = useState(notesRootDir ?? '')
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [statusText, setStatusText] = useState('Starting shell...')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -143,6 +145,7 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
     initRunRef.current = runId
 
     const initializeSession = async () => {
+      setErrorMessage(null)
       const existingSessionId = tab.terminalSessionId
       if (existingSessionId) {
         let snapshot: Awaited<ReturnType<typeof window.context.getTerminalSnapshot>> = null
@@ -172,7 +175,9 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
         })
       } catch (error) {
         if (!cancelled && initRunRef.current === runId) {
+          const message = error instanceof Error ? error.message : String(error)
           setStatusText('Failed to start shell')
+          setErrorMessage(message)
         }
         return
       }
@@ -194,7 +199,7 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
     return () => {
       cancelled = true
     }
-  }, [notesRootDir, setTerminalSessionId, tab.id, tab.terminalSessionId])
+  }, [notesRootDir, retryCount, setTerminalSessionId, tab.id, tab.terminalSessionId])
 
   useEffect(() => {
     const term = terminalRef.current
@@ -567,7 +572,25 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
           {statusText}
         </div>
       </div>
-      <div className="terminal-host min-h-0 flex-1">
+      <div className="terminal-host relative min-h-0 flex-1">
+        {errorMessage && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[var(--obsidian-pane)] p-6 text-center">
+            <div className="text-sm font-semibold text-red-500">Failed to Start Shell</div>
+            <div className="max-w-md text-xs text-[var(--obsidian-text-muted)] break-words">
+              {errorMessage}
+            </div>
+            <button
+              onClick={() => {
+                setStatusText('Starting shell...')
+                setErrorMessage(null)
+                setRetryCount((c) => c + 1)
+              }}
+              className="mt-2 inline-flex items-center gap-2 rounded-md bg-[var(--obsidian-primary,#2563eb)] px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 active:scale-95"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         <div
           ref={containerRef}
           className="h-full w-full overflow-hidden bg-[#16181f]"
