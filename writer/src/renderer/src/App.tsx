@@ -446,6 +446,7 @@ const App = () => {
     closeActiveTab,
     createSettingsTab,
     restoreClosedTab,
+    setIsCommandPaletteOpen,
     switchTabByIndex,
     switchTabNext,
     switchTabPrev
