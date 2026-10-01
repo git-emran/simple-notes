@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useAtom, useAtomValue } from 'jotai'
-import { Univer, LocaleType } from '@univerjs/core'
+import { Univer, LocaleType, IDisposable } from '@univerjs/core'
 import { FUniver } from '@univerjs/core/facade'
 import { UniverSheetsCorePreset } from '@univerjs/preset-sheets-core'
 import { defaultTheme } from '@univerjs/themes'
@@ -16,6 +16,8 @@ import { VscRefresh, VscTable } from 'react-icons/vsc'
 // Import Univer CSS Stylesheet Bundle
 import '@univerjs/preset-sheets-core/lib/index.css'
 
+const STORAGE_KEY = 'writr-univer-workbook-state-v2'
+
 interface UniverSpreadsheetProps {
   isActive?: boolean
 }
@@ -24,8 +26,66 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
   const containerRef = useRef<HTMLDivElement>(null)
   const univerRef = useRef<Univer | null>(null)
   const univerAPIRef = useRef<FUniver | null>(null)
+  const commandListenerRef = useRef<IDisposable | null>(null)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const isDarkMode = useAtomValue(isDarkModeAtom)
   const [workbookData, setWorkbookData] = useAtom(univerWorkbookAtom)
+
+  // Immediately save the active workbook snapshot to Jotai atom and localStorage
+  const saveImmediately = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+
+    if (!univerAPIRef.current) return
+
+    try {
+      const activeWorkbook = univerAPIRef.current.getActiveWorkbook()
+      if (activeWorkbook) {
+        const snapshot = activeWorkbook.save()
+        if (snapshot && isValidWorkbookData(snapshot)) {
+          setWorkbookData(snapshot as typeof DEFAULT_UNIVER_WORKBOOK_DATA)
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+          } catch (storageErr) {
+            // eslint-disable-next-line no-console
+            console.error('Error writing spreadsheet snapshot to localStorage:', storageErr)
+          }
+        }
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Error saving Univer spreadsheet snapshot:', err)
+    }
+  }, [setWorkbookData])
+
+  // Debounced save for continuous user operations (typing, formatting, adding sheets, etc.)
+  const debouncedSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveImmediately()
+    }, 400)
+  }, [saveImmediately])
+
+  // Get the most up-to-date data from localStorage or memory
+  const getStoredWorkbookData = useCallback((): typeof DEFAULT_UNIVER_WORKBOOK_DATA => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (isValidWorkbookData(parsed)) {
+          return parsed
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return isValidWorkbookData(workbookData) ? workbookData : DEFAULT_UNIVER_WORKBOOK_DATA
+  }, [workbookData])
 
   const initUniverInstance = (data: typeof DEFAULT_UNIVER_WORKBOOK_DATA) => {
     if (!containerRef.current) return false
@@ -35,7 +95,21 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
       return false
     }
 
-    // Clean up existing instance if present
+    // Clean up existing listener & instance if present
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = null
+    }
+
+    if (commandListenerRef.current) {
+      try {
+        commandListenerRef.current.dispose()
+      } catch {
+        // ignore
+      }
+      commandListenerRef.current = null
+    }
+
     if (univerRef.current) {
       try {
         univerRef.current.dispose()
@@ -92,6 +166,12 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
 
     univerAPI.createWorkbook(freshData)
 
+    // 4. Listen to user command executions (cell edits, adding sheets, formatting, etc.)
+    const listener = univerAPI.onCommandExecuted(() => {
+      debouncedSave()
+    })
+    commandListenerRef.current = listener
+
     univerRef.current = univer
     univerAPIRef.current = univerAPI
 
@@ -100,11 +180,12 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
 
   // Handle initialization and tab visibility changes
   useEffect(() => {
-    if (!isActive) return
+    if (!isActive) {
+      saveImmediately()
+      return
+    }
 
-    const dataToLoad = isValidWorkbookData(workbookData)
-      ? workbookData
-      : DEFAULT_UNIVER_WORKBOOK_DATA
+    const dataToLoad = getStoredWorkbookData()
 
     if (!univerRef.current) {
       // Defer slightly to ensure layout reflow has computed non-zero dimensions
@@ -122,6 +203,30 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive])
 
+  // Save on window close, blur, or hide
+  useEffect(() => {
+    const handleSaveTrigger = () => {
+      saveImmediately()
+    }
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveImmediately()
+      }
+    }
+
+    window.addEventListener('beforeunload', handleSaveTrigger)
+    window.addEventListener('pagehide', handleSaveTrigger)
+    window.addEventListener('blur', handleSaveTrigger)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleSaveTrigger)
+      window.removeEventListener('pagehide', handleSaveTrigger)
+      window.removeEventListener('blur', handleSaveTrigger)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [saveImmediately])
+
   // Handle container resize & cleanup lifecycle
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
@@ -129,9 +234,7 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
         window.dispatchEvent(new Event('resize'))
       } else if (isActive && !univerRef.current && containerRef.current) {
         if (containerRef.current.offsetWidth > 0 && containerRef.current.offsetHeight > 0) {
-          const dataToLoad = isValidWorkbookData(workbookData)
-            ? workbookData
-            : DEFAULT_UNIVER_WORKBOOK_DATA
+          const dataToLoad = getStoredWorkbookData()
           initUniverInstance(dataToLoad)
         }
       }
@@ -143,6 +246,18 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
 
     return () => {
       resizeObserver.disconnect()
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+        saveTimeoutRef.current = null
+      }
+      if (commandListenerRef.current) {
+        try {
+          commandListenerRef.current.dispose()
+        } catch {
+          // ignore
+        }
+        commandListenerRef.current = null
+      }
       if (univerRef.current && univerAPIRef.current) {
         try {
           const activeWorkbook = univerAPIRef.current.getActiveWorkbook()
@@ -150,6 +265,12 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
             const snapshot = activeWorkbook.save()
             if (snapshot && isValidWorkbookData(snapshot)) {
               setWorkbookData(snapshot as typeof DEFAULT_UNIVER_WORKBOOK_DATA)
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+              } catch (storageErr) {
+                // eslint-disable-next-line no-console
+                console.error('Error writing spreadsheet snapshot to localStorage on unmount:', storageErr)
+              }
             }
           }
           univerRef.current.dispose()
@@ -183,6 +304,12 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
       id: `univer-workbook-${Date.now()}`
     }
     setWorkbookData(freshDefaults)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(freshDefaults))
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e)
+    }
     initUniverInstance(freshDefaults)
   }
 
@@ -197,16 +324,18 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-surface)] transition-colors"
-            title="Reset to default sheets"
-          >
-            <VscRefresh className="w-3.5 h-3.5" />
-            <span>Reset Demo Data</span>
-          </button>
-        </div>
+        {import.meta.env.DEV && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-surface)] transition-colors"
+              title="Reset to default sheets"
+            >
+              <VscRefresh className="w-3.5 h-3.5" />
+              <span>Reset Demo Data</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Univer Canvas Grid Container */}
