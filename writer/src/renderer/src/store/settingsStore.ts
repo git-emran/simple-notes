@@ -46,3 +46,7 @@ export const accentColorAtom = atomWithStorage<string>('writr-accent-color', '#3
 
 /** When true, UI panels use translucent backgrounds with backdrop blur (glassmorphism). */
 export const transparentBgAtom = atomWithStorage<boolean>('writr-transparent-bg', true)
+
+/** Whether to automatically check for updates in the background on startup. */
+export const autoUpdateEnabledAtom = atomWithStorage<boolean>('writr-auto-update-enabled', true)
+

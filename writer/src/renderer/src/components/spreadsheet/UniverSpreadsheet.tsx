@@ -27,7 +27,7 @@ export const UniverSpreadsheet = ({ isActive = true }: UniverSpreadsheetProps) =
   const univerRef = useRef<Univer | null>(null)
   const univerAPIRef = useRef<FUniver | null>(null)
   const commandListenerRef = useRef<IDisposable | null>(null)
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isDarkMode = useAtomValue(isDarkModeAtom)
   const [workbookData, setWorkbookData] = useAtom(univerWorkbookAtom)

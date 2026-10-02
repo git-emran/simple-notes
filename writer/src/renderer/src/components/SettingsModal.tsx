@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { useState } from 'react'
-import { VscFolderOpened, VscFolder, VscCopy, VscCheck, VscRefresh } from 'react-icons/vsc'
+import { useState, useEffect } from 'react'
+import { VscFolderOpened, VscFolder, VscCopy, VscCheck, VscRefresh, VscCloudDownload, VscSync } from 'react-icons/vsc'
 import {
   aiApiKeyAtom,
   editorFontAtom,
@@ -15,6 +15,7 @@ import {
   rememberLastStateAtom,
   accentColorAtom,
   transparentBgAtom,
+  autoUpdateEnabledAtom,
   vaultRootDirAtom,
   defaultVaultRootDirAtom,
   selectVaultDirectoryAtom,
@@ -54,7 +55,15 @@ export const SettingsPanel = () => {
   const [aiApiKey, setAiApiKey] = useAtom(aiApiKeyAtom)
   const [accentColor, setAccentColor] = useAtom(accentColorAtom)
   const [transparentBg, setTransparentBg] = useAtom(transparentBgAtom)
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useAtom(autoUpdateEnabledAtom)
 
+  const [appVersion, setAppVersion] = useState<string>('')
+  const [updateCheckStatus, setUpdateCheckStatus] = useState<
+    'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'downloaded' | 'error' | 'dev-bypass'
+  >('idle')
+  const [downloadProgress, setDownloadProgress] = useState<number>(0)
+  const [availableVersion, setAvailableVersion] = useState<string>('')
+  const [updateError, setUpdateError] = useState<string>('')
 
   const [relativeLineNumbers, setRelativeLineNumbers] = useAtom(relativeLineNumbersEnabledAtom)
   const [lineWrapping, setLineWrapping] = useAtom(lineWrappingEnabledAtom)
@@ -67,6 +76,67 @@ export const SettingsPanel = () => {
   const selectVaultDirectory = useSetAtom(selectVaultDirectoryAtom)
   const resetVaultDirectory = useSetAtom(resetVaultDirectoryAtom)
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!window.context) return
+    window.context.getAppVersion?.().then((v) => {
+      if (v) setAppVersion(v)
+    })
+
+    if (window.context.onUpdaterStatus) {
+      const unsub = window.context.onUpdaterStatus(({ event, payload }) => {
+        const p = payload as Record<string, unknown> | null | undefined
+        if (event === 'checking') {
+          setUpdateCheckStatus('checking')
+          setUpdateError('')
+        } else if (event === 'available') {
+          setUpdateCheckStatus('available')
+          if (p && typeof p.version === 'string') {
+            setAvailableVersion(p.version)
+          }
+        } else if (event === 'not-available') {
+          setUpdateCheckStatus('up-to-date')
+        } else if (event === 'downloading') {
+          setUpdateCheckStatus('downloading')
+        } else if (event === 'progress') {
+          setUpdateCheckStatus('downloading')
+          if (p && typeof p.percent === 'number') {
+            setDownloadProgress(Math.round(p.percent))
+          }
+        } else if (event === 'downloaded') {
+          setUpdateCheckStatus('downloaded')
+          if (p && typeof p.version === 'string') {
+            setAvailableVersion(p.version)
+          }
+        } else if (event === 'error') {
+          setUpdateCheckStatus('error')
+          setUpdateError(typeof payload === 'string' ? payload : 'Failed to check for updates.')
+        }
+      })
+      return unsub
+    }
+  }, [])
+
+  const handleCheckForUpdates = async () => {
+    if (!window.context?.checkForUpdates) return
+    setUpdateCheckStatus('checking')
+    setUpdateError('')
+    try {
+      const res = await window.context.checkForUpdates(true)
+      if (res?.status === 'dev-bypass') {
+        setUpdateCheckStatus('dev-bypass')
+      }
+    } catch (e: unknown) {
+      setUpdateCheckStatus('error')
+      setUpdateError(e instanceof Error ? e.message : 'Failed to check for updates.')
+    }
+  }
+
+  const handleRestartAndInstall = () => {
+    if (window.context?.restartAndInstall) {
+      window.context.restartAndInstall()
+    }
+  }
 
   const isCustomVault = Boolean(vaultRootDir && defaultVaultRootDir && vaultRootDir !== defaultVaultRootDir)
 
@@ -455,8 +525,124 @@ export const SettingsPanel = () => {
               </label>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <div className={sectionTitleClass}>APP UPDATES</div>
+            <div className={cardClass}>
+              <div className="space-y-4">
+                <label className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className={labelClass}>Automatic updates</div>
+                    <div className={helpClass}>
+                      Automatically check for updates in the background on startup.
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={autoUpdateEnabled}
+                    onChange={(e) => setAutoUpdateEnabled(e.target.checked)}
+                  />
+                </label>
+
+                <div className="flex flex-col gap-3 pt-3 border-t border-obsidian-border-soft">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className={labelClass}>App Version</div>
+                      <div className={helpClass}>
+                        {appVersion ? `Installed version: v${appVersion}` : 'Checking version...'}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {updateCheckStatus === 'downloaded' ? (
+                        <button
+                          type="button"
+                          onClick={handleRestartAndInstall}
+                          className="app-btn-primary flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white"
+                        >
+                          <VscSync className="h-3.5 w-3.5" />
+                          <span>Restart & Install</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleCheckForUpdates}
+                          disabled={updateCheckStatus === 'checking' || updateCheckStatus === 'downloading'}
+                          className="app-btn-secondary flex items-center gap-1.5 px-3 py-1.5 text-xs"
+                        >
+                          {updateCheckStatus === 'checking' || updateCheckStatus === 'downloading' ? (
+                            <VscSync className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <VscCloudDownload className="h-3.5 w-3.5" />
+                          )}
+                          <span>
+                            {updateCheckStatus === 'checking'
+                              ? 'Checking...'
+                              : updateCheckStatus === 'downloading'
+                              ? `Downloading (${downloadProgress}%)`
+                              : 'Check for Updates'}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status Badges & Banners */}
+                  {updateCheckStatus === 'up-to-date' && (
+                    <div className="flex items-center gap-2 rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-2 text-xs text-green-400">
+                      <VscCheck className="h-4 w-4 shrink-0 text-green-500" />
+                      <span>You are running the latest version of Writer.</span>
+                    </div>
+                  )}
+
+                  {updateCheckStatus === 'dev-bypass' && (
+                    <div className="flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-400">
+                      <span>Development build — update checks are bypassed in dev mode.</span>
+                    </div>
+                  )}
+
+                  {updateCheckStatus === 'available' && (
+                    <div className="flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-400">
+                      <VscCloudDownload className="h-4 w-4 shrink-0" />
+                      <span>A new version ({availableVersion ? `v${availableVersion}` : 'latest'}) is available and downloading...</span>
+                    </div>
+                  )}
+
+                  {updateCheckStatus === 'downloading' && (
+                    <div className="flex flex-col gap-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-xs text-blue-400">
+                      <div className="flex justify-between items-center font-medium">
+                        <span>Downloading update {availableVersion ? `v${availableVersion}` : ''}...</span>
+                        <span>{downloadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-blue-500 h-full transition-all duration-200 rounded-full"
+                          style={{ width: `${downloadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {updateCheckStatus === 'downloaded' && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-2 text-xs text-green-400">
+                      <div className="flex items-center gap-2">
+                        <VscCheck className="h-4 w-4 shrink-0" />
+                        <span>Version {availableVersion ? `v${availableVersion}` : ''} has been downloaded and is ready to install!</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {updateCheckStatus === 'error' && (
+                    <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
+                      <span>{updateError || 'Check failed. Please check your internet connection.'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
     </div>
   )
 }

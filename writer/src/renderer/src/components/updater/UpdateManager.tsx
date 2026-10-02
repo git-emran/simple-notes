@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { VscClose, VscCloudDownload, VscSparkle, VscSync } from 'react-icons/vsc'
+import { useAtomValue } from 'jotai'
+import { autoUpdateEnabledAtom } from '@renderer/store'
 
 interface UpdateInfo {
   version: string
@@ -9,6 +11,7 @@ interface UpdateInfo {
 }
 
 export const UpdateManager: React.FC = () => {
+  const autoUpdateEnabled = useAtomValue(autoUpdateEnabledAtom)
   const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'gated' | 'error'>('idle')
   const [progress, setProgress] = useState(0)
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
@@ -36,7 +39,7 @@ export const UpdateManager: React.FC = () => {
           break
         case 'available':
           setStatus('available')
-          setUpdateInfo(payload)
+          setUpdateInfo(payload as UpdateInfo)
           break
         case 'not-available':
           setStatus('idle')
@@ -46,19 +49,19 @@ export const UpdateManager: React.FC = () => {
           break
         case 'progress':
           setStatus('downloading')
-          if (payload && typeof payload.percent === 'number') {
-            setProgress(Math.round(payload.percent))
+          if (payload && typeof (payload as any).percent === 'number') {
+            setProgress(Math.round((payload as any).percent))
           }
           break
         case 'downloaded':
           setStatus('downloaded')
           if (payload) {
-            setUpdateInfo(payload)
+            setUpdateInfo(payload as UpdateInfo)
           }
           break
         case 'gated':
           setStatus('gated')
-          if (payload) setUpdateInfo(payload)
+          if (payload) setUpdateInfo(payload as UpdateInfo)
           break
         case 'error':
           setStatus('error')
@@ -69,16 +72,19 @@ export const UpdateManager: React.FC = () => {
       }
     })
 
-    // Silent background check 5s after start
-    const timer = setTimeout(() => {
-      window.context.checkForUpdates()
-    }, 5000)
+    // Silent background check 5s after start only if auto-update is enabled
+    let timer: ReturnType<typeof setTimeout> | null = null
+    if (autoUpdateEnabled) {
+      timer = setTimeout(() => {
+        window.context.checkForUpdates()
+      }, 5000)
+    }
 
     return () => {
       unsubscribe()
-      clearTimeout(timer)
+      if (timer) clearTimeout(timer)
     }
-  }, [])
+  }, [autoUpdateEnabled])
 
   // 2. Check for post-update first launch
   const checkFirstLaunchAfterUpdate = async (v: string) => {
@@ -117,44 +123,44 @@ export const UpdateManager: React.FC = () => {
     <>
       {/* Dynamic Background Download Progress Toast */}
       {status === 'downloading' && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 w-80 p-4 rounded-xl border border-obsidian-border bg-[rgba(30,30,30,0.75)] backdrop-blur-md shadow-2xl animate-slide-up text-white">
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 w-80 p-4 rounded-xl border border-obsidian-border bg-[var(--obsidian-surface)] backdrop-blur-md shadow-2xl animate-slide-up text-[var(--obsidian-text)]">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[rgba(65,105,225,0.2)] text-blue-400">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400">
               <VscCloudDownload className="w-5 h-5 animate-pulse" />
             </div>
             <div className="flex-1">
               <h4 className="text-sm font-semibold tracking-wide">Downloading update...</h4>
-              <p className="text-xs text-gray-400">Downloading Writer {updateInfo?.version || ''}</p>
+              <p className="text-xs text-[var(--obsidian-text-muted)]">Downloading Writer {updateInfo?.version || ''}</p>
             </div>
           </div>
-          <div className="w-full bg-[rgba(255,255,255,0.1)] h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-[var(--obsidian-hover)] h-1.5 rounded-full overflow-hidden">
             <div 
               className="bg-blue-500 h-full transition-all duration-300 rounded-full" 
               style={{ width: `${progress}%` }} 
             />
           </div>
-          <div className="flex justify-between items-center text-[10px] text-gray-400">
+          <div className="flex justify-between items-center text-[10px] text-[var(--obsidian-text-muted)]">
             <span>Progress: {progress}%</span>
-            <span>Local Transfer</span>
+            <span>Update Transfer</span>
           </div>
         </div>
       )}
 
       {/* Ready to Install Banner/Toast */}
       {status === 'downloaded' && !showPromptModal && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 w-80 p-4 rounded-xl border border-green-900/50 bg-[rgba(20,35,20,0.85)] backdrop-blur-md shadow-2xl animate-slide-up text-white">
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 w-80 p-4 rounded-xl border border-green-600/30 bg-[var(--obsidian-surface)] backdrop-blur-md shadow-2xl animate-slide-up text-[var(--obsidian-text)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-500/20 text-green-400">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-500/20 text-green-500">
                 <VscSync className="w-5 h-5 animate-spin" style={{ animationDuration: '3s' }} />
               </div>
               <div className="flex-1">
                 <h4 className="text-sm font-semibold tracking-wide">Update Ready!</h4>
-                <p className="text-xs text-gray-300">Writer v{updateInfo?.version}</p>
+                <p className="text-xs text-[var(--obsidian-text-muted)]">Writer v{updateInfo?.version}</p>
               </div>
             </div>
             <button 
-              className="p-1 hover:bg-white/10 rounded-md transition text-gray-400 hover:text-white"
+              className="p-1 hover:bg-[var(--obsidian-hover)] rounded-md transition text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]"
               onClick={() => setStatus('idle')}
             >
               <VscClose className="w-4 h-4" />
@@ -168,7 +174,7 @@ export const UpdateManager: React.FC = () => {
               Restart & Install
             </button>
             <button 
-              className="py-1.5 px-3 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/15 transition text-gray-300 hover:text-white"
+              className="py-1.5 px-3 rounded-lg text-xs font-semibold bg-[var(--obsidian-hover)] hover:bg-[var(--obsidian-hover-soft)] transition text-[var(--obsidian-text)]"
               onClick={() => setShowPromptModal(true)}
             >
               Details
@@ -180,20 +186,20 @@ export const UpdateManager: React.FC = () => {
       {/* Release Notes / Details Modal (UpdatePromptModal) */}
       {showPromptModal && updateInfo && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="flex flex-col w-[540px] max-h-[80vh] rounded-2xl border border-obsidian-border bg-[var(--obsidian-pane)] shadow-2xl text-[var(--obsidian-text)] animate-scale-up overflow-hidden">
+          <div className="flex flex-col w-[540px] max-h-[80vh] rounded-2xl border border-obsidian-border bg-[var(--obsidian-surface)] shadow-2xl text-[var(--obsidian-text)] animate-scale-up overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b border-obsidian-border">
+            <div className="flex items-center justify-between p-5 border-b border-obsidian-border bg-[var(--obsidian-workspace)]">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400">
                   <VscSparkle className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold tracking-wide">Software Update</h3>
-                  <p className="text-xs text-gray-500">A new version of Writer is available</p>
+                  <p className="text-xs text-[var(--obsidian-text-muted)]">A new version of Writer is available</p>
                 </div>
               </div>
               <button 
-                className="p-2 hover:bg-white/5 rounded-lg transition text-gray-400 hover:text-white"
+                className="p-2 hover:bg-[var(--obsidian-hover)] rounded-lg transition text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]"
                 onClick={() => setShowPromptModal(false)}
               >
                 <VscClose className="w-5 h-5" />
@@ -201,27 +207,27 @@ export const UpdateManager: React.FC = () => {
             </div>
 
             {/* Content (Release Notes) */}
-            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar text-sm leading-relaxed prose prose-invert max-w-none">
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar text-sm leading-relaxed max-w-none bg-[var(--obsidian-surface)]">
               <div className="mb-4">
                 <span className="text-xs font-bold tracking-widest text-blue-400 uppercase">Version {updateInfo.version}</span>
                 {updateInfo.releaseDate && (
-                  <span className="ml-3 text-xs text-gray-500">Released: {new Date(updateInfo.releaseDate).toLocaleDateString()}</span>
+                  <span className="ml-3 text-xs text-[var(--obsidian-text-muted)]">Released: {new Date(updateInfo.releaseDate).toLocaleDateString()}</span>
                 )}
               </div>
-              <h4 className="text-md font-semibold mb-2 text-gray-300">Release Notes:</h4>
-              <div className="p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] text-gray-300">
+              <h4 className="text-md font-semibold mb-2 text-[var(--obsidian-text)]">Release Notes:</h4>
+              <div className="p-4 rounded-xl bg-[var(--obsidian-workspace)] border border-obsidian-border text-[var(--obsidian-text)]">
                 {updateInfo.releaseNotes ? (
                   <ReactMarkdown>{updateInfo.releaseNotes}</ReactMarkdown>
                 ) : (
-                  <p className="italic text-gray-500">No release details provided.</p>
+                  <p className="italic text-[var(--obsidian-text-muted)]">No release details provided.</p>
                 )}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-3 p-5 border-t border-obsidian-border bg-[rgba(0,0,0,0.15)]">
+            <div className="flex justify-end gap-3 p-5 border-t border-obsidian-border bg-[var(--obsidian-workspace)]">
               <button 
-                className="py-2 px-4 rounded-xl text-xs font-semibold border border-obsidian-border hover:bg-white/5 transition"
+                className="py-2 px-4 rounded-xl text-xs font-semibold border border-obsidian-border hover:bg-[var(--obsidian-hover)] transition text-[var(--obsidian-text)]"
                 onClick={() => setShowPromptModal(false)}
               >
                 Remind Me Later
@@ -240,20 +246,20 @@ export const UpdateManager: React.FC = () => {
       {/* Post-Update "What's New" Welcome Modal */}
       {showWelcomeModal && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="flex flex-col w-[540px] max-h-[80vh] rounded-2xl border border-yellow-900/30 bg-[var(--obsidian-pane)] shadow-2xl text-[var(--obsidian-text)] animate-scale-up overflow-hidden">
+          <div className="flex flex-col w-[540px] max-h-[80vh] rounded-2xl border border-obsidian-border bg-[var(--obsidian-surface)] shadow-2xl text-[var(--obsidian-text)] animate-scale-up overflow-hidden">
             {/* Celebrate Header */}
-            <div className="flex items-center justify-between p-6 border-b border-obsidian-border bg-gradient-to-r from-blue-900/10 via-purple-900/10 to-yellow-900/10">
+            <div className="flex items-center justify-between p-6 border-b border-obsidian-border bg-[var(--obsidian-workspace)]">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-yellow-500/20 text-yellow-400 animate-bounce">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-yellow-500/20 text-yellow-500 animate-bounce">
                   <VscSparkle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black tracking-wide">Writer Successfully Updated!</h3>
-                  <p className="text-xs text-gray-500">Welcome to version {currentVersion}</p>
+                  <h3 className="text-xl font-black tracking-wide text-[var(--obsidian-text)]">Writer Successfully Updated!</h3>
+                  <p className="text-xs text-[var(--obsidian-text-muted)]">Welcome to version {currentVersion}</p>
                 </div>
               </div>
               <button 
-                className="p-2 hover:bg-white/5 rounded-lg transition text-gray-400 hover:text-white"
+                className="p-2 hover:bg-[var(--obsidian-hover)] rounded-lg transition text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]"
                 onClick={handleDismissWelcome}
               >
                 <VscClose className="w-5 h-5" />
@@ -261,15 +267,15 @@ export const UpdateManager: React.FC = () => {
             </div>
 
             {/* Markdown Release Notes */}
-            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar text-sm leading-relaxed prose prose-invert max-w-none">
-              <h4 className="text-md font-bold mb-3 text-gray-300">Here is what changed:</h4>
-              <div className="p-5 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] text-gray-300">
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar text-sm leading-relaxed max-w-none bg-[var(--obsidian-surface)] text-[var(--obsidian-text)]">
+              <h4 className="text-md font-bold mb-3 text-[var(--obsidian-text)]">Here is what changed:</h4>
+              <div className="p-5 rounded-xl bg-[var(--obsidian-workspace)] border border-obsidian-border text-[var(--obsidian-text)]">
                 <ReactMarkdown>{welcomeReleaseNotes || '### Core System Upgrades\n\n- General performance and rendering updates.\n- Minor issue corrections.'}</ReactMarkdown>
               </div>
             </div>
 
             {/* Action Footer */}
-            <div className="flex justify-end p-5 border-t border-obsidian-border bg-[rgba(0,0,0,0.15)]">
+            <div className="flex justify-end p-5 border-t border-obsidian-border bg-[var(--obsidian-workspace)]">
               <button 
                 className="py-2.5 px-6 rounded-xl text-xs font-bold bg-yellow-600 hover:bg-yellow-500 transition text-white shadow-lg shadow-yellow-950/20"
                 onClick={handleDismissWelcome}
@@ -283,3 +289,4 @@ export const UpdateManager: React.FC = () => {
     </>
   )
 }
+
