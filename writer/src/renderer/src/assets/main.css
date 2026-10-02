@@ -1193,3 +1193,65 @@ header.draggable-top-bar,
   overflow: hidden !important;
 }
 
+/* ── KaTeX Math Rendering ──────────────────────────────────────────────────── */
+
+/* Preview pane: inline math */
+.writr-markdown-preview .katex {
+  font-size: 1em;
+  color: var(--obsidian-text);
+}
+
+/* Preview pane: block/display math */
+.writr-markdown-preview .math-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.75rem 0;
+  margin: 1.25rem 0;
+  text-align: center;
+}
+
+.writr-markdown-preview .math-display .katex-display {
+  margin: 0;
+}
+
+/* Inline math spacing */
+.writr-markdown-preview .math-inline {
+  display: inline;
+  line-height: inherit;
+}
+
+/* KaTeX error colour */
+.katex-error {
+  color: var(--obsidian-error, #ef4444) !important;
+}
+
+/* Dark mode: override KaTeX text colour */
+.dark .katex {
+  color: var(--obsidian-text);
+}
+
+/* Editor live-preview widgets */
+.cm-katex-inline {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0 2px;
+  vertical-align: middle;
+}
+
+.cm-katex-block {
+  display: block;
+  text-align: center;
+  padding: 8px 4px;
+  cursor: pointer;
+  overflow-x: auto;
+}
+
+.cm-katex-inline .katex,
+.cm-katex-block .katex {
+  color: var(--obsidian-text);
+}
+
+.cm-katex-block .katex-display {
+  margin: 0;
+}

@@ -4,6 +4,9 @@ import ReactMarkdown from 'react-markdown'
 import SyntaxHighlighter from 'react-syntax-highlighter'
 import { vs, vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 import { twMerge } from 'tailwind-merge'
 import {
   buildMarkdownToc,
@@ -310,8 +313,8 @@ export const MarkdownPreview = memo(
       <div ref={containerRef} className="flex flex-row w-full gap-8 relative items-start">
         <div className="flex-1 min-w-0">
           <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeSlugIds, rehypeHeaderSections]}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeSlugIds, rehypeHeaderSections, rehypeKatex]}
             components={{
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               section: ({ children, node }: any) => (

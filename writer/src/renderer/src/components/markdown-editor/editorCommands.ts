@@ -278,3 +278,50 @@ export const insertGithubAlert = (
 
   view.focus()
 }
+
+// ── Math / KaTeX ──────────────────────────────────────────────────────────────
+
+export const insertInlineMath = (view: EditorView | null) => {
+  if (!view) return
+  const { from, to, empty } = view.state.selection.main
+  const selected = view.state.sliceDoc(from, to)
+  if (empty) {
+    const insert = '$formula$'
+    view.dispatch({
+      changes: { from, to, insert },
+      selection: { anchor: from + 1, head: from + 8 }
+    })
+  } else {
+    const insert = `$${selected}$`
+    view.dispatch({
+      changes: { from, to, insert },
+      selection: { anchor: from + 1, head: from + 1 + selected.length }
+    })
+  }
+  view.focus()
+}
+
+export const insertBlockMath = (view: EditorView | null) => {
+  if (!view) return
+  const { from, to, empty } = view.state.selection.main
+  const selected = view.state.sliceDoc(from, to)
+
+  if (empty) {
+    const line = view.state.doc.lineAt(from)
+    const isLineEmpty = line.text.trim().length === 0
+    const prefix = isLineEmpty ? '' : '\n'
+    const block = `${prefix}$$\nformula\n$$\n`
+    const formulaStart = from + prefix.length + 3
+    view.dispatch({
+      changes: { from, to, insert: block },
+      selection: { anchor: formulaStart, head: formulaStart + 7 }
+    })
+  } else {
+    const block = `$$\n${selected}\n$$`
+    view.dispatch({
+      changes: { from, to, insert: block },
+      selection: { anchor: from + 3, head: from + 3 + selected.length }
+    })
+  }
+  view.focus()
+}
