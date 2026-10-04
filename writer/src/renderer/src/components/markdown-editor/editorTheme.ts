@@ -464,26 +464,6 @@ export const getEditorTheme = (isDark: boolean) =>
       whiteSpace: 'pre !important',
       overflowWrap: 'normal !important',
       wordBreak: 'normal !important'
-    },
-    '.cm-codeblock-line': {
-      backgroundColor: isDark ? 'rgba(0, 0, 0, 0.09)' : 'rgba(0, 0, 0, 0.0175)',
-      borderLeft: '1px solid var(--obsidian-border)',
-      borderRight: '1px solid var(--obsidian-border)',
-      lineHeight: '1.62',
-      paddingLeft: '2px',
-      paddingRight: '2px'
-    },
-    '.cm-codeblock-line-first': {
-      borderTop: '1px solid var(--obsidian-border)',
-      borderTopLeftRadius: '4px',
-      borderTopRightRadius: '4px',
-      paddingTop: '2px'
-    },
-    '.cm-codeblock-line-last': {
-      borderBottom: '1px solid var(--obsidian-border)',
-      borderBottomLeftRadius: '4px',
-      borderBottomRightRadius: '4px',
-      paddingBottom: '2px'
     }
   })
 

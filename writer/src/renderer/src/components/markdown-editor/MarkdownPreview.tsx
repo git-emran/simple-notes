@@ -83,7 +83,7 @@ const PreviewCodeBlock = ({ language, codeContent, isDarkMode }: PreviewCodeBloc
   }, [])
 
   return (
-    <div className="preview-code-block group relative my-4 rounded-lg overflow-hidden border border-obsidian-border">
+    <div className="preview-code-block group relative my-4 rounded-lg overflow-hidden border border-obsidian-border bg-[var(--obsidian-surface)] shadow-sm">
       <div
         className="flex items-center justify-between px-3 py-1.5 text-[11px] select-none bg-[var(--obsidian-pane)] border-b border-obsidian-border text-[var(--obsidian-text-muted)]"
       >
@@ -93,52 +93,68 @@ const PreviewCodeBlock = ({ language, codeContent, isDarkMode }: PreviewCodeBloc
             className="inline-flex items-center shrink-0"
             dangerouslySetInnerHTML={{ __html: iconHtml }}
           />
-          <span className="font-semibold tracking-wider uppercase text-[10px]">
+          <span className="font-semibold tracking-wider uppercase text-[10px] text-[var(--obsidian-text)]">
             {language || 'text'}
           </span>
         </div>
-        {/* Right: copy button — visible on hover */}
+        {/* Right: copy button */}
         <button
           onClick={handleCopy}
           className={twMerge(
-            'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+            'flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-150',
             'px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide cursor-pointer border-none',
             copied
-              ? 'opacity-100 text-[var(--obsidian-accent)]'
-              : 'hover:bg-[var(--obsidian-hover-soft)] text-[var(--obsidian-text-muted)]'
+              ? 'opacity-100 text-green-500 bg-green-500/10'
+              : 'hover:bg-[var(--obsidian-hover)] text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)]'
           )}
-          style={{ background: 'transparent' }}
+          style={{ background: copied ? undefined : 'transparent' }}
+          title="Copy code"
         >
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? (
+            <>
+              <svg className="w-3 h-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Copied!</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span>Copy</span>
+            </>
+          )}
         </button>
       </div>
       {/* Syntax-highlighted code */}
-      <SyntaxHighlighter
-        language={language}
-        style={isDarkMode ? vs2015 : vs}
-        customStyle={{
-          margin: 0,
-          padding: '12px',
-          border: 'none',
-          borderRadius: 0,
-          fontSize: '14px',
-          lineHeight: '1.6',
-          overflowWrap: 'break-word',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all',
-          ...(isDarkMode ? {} : { background: 'rgba(0,0,0,0.02)' }),
-        }}
-        codeTagProps={{
-          className: 'before:content-none after:content-none',
-          style: {
-            fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-          },
-        }}
-      >
-        {codeContent}
-      </SyntaxHighlighter>
+      <div className="overflow-x-auto select-text selection:bg-[var(--obsidian-accent-dim)]">
+        <SyntaxHighlighter
+          language={language}
+          style={isDarkMode ? vs2015 : vs}
+          customStyle={{
+            margin: 0,
+            padding: '14px 16px',
+            border: 'none',
+            borderRadius: 0,
+            fontSize: '13px',
+            lineHeight: '1.6',
+            backgroundColor: 'transparent',
+            userSelect: 'text'
+          }}
+          codeTagProps={{
+            className: 'before:content-none after:content-none select-text',
+            style: {
+              fontFamily: 'JetBrains Mono, Monaco, "Courier New", monospace',
+              whiteSpace: 'pre',
+              wordBreak: 'normal',
+              userSelect: 'text'
+            },
+          }}
+        >
+          {codeContent}
+        </SyntaxHighlighter>
+      </div>
     </div>
   )
 }
