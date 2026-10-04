@@ -36,6 +36,7 @@ import { headingFoldExtension } from '../headingFold'
 import { codeLanguages } from '../languageConfig'
 import { createLivePreviewImages } from '../livePreviewImages'
 import { markdownLivePreview } from '../markdownLivePreview'
+import { katexLivePreview } from '../katexLivePreview'
 import { markdownMarkupColors } from '../markdownMarkupColors'
 import { quoteLineStyling } from '../quoteLineStyling'
 import { githubAlertStyling } from '../githubAlertStyling'
@@ -530,6 +531,7 @@ export function useEditorLifecycle({
       tripleBacktickExtension,
       markdownMarkupColors,
       markdownLivePreview,
+      katexLivePreview,
       ...headingFoldExtension,
       EditorView.contentAttributes.of({
         spellcheck: 'true',

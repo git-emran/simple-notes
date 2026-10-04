@@ -24,6 +24,7 @@ import {
 import { gruvboxDark, gruvboxLight } from '../../../themes/gruvbox'
 import { catppuccinDark, catppuccinLight } from '../../../themes/catppuccin'
 import type { LanguageSupport } from '@codemirror/language'
+import { katexThemeEffect } from '../katexLivePreview'
 
 import type { ViewRef } from './types'
 
@@ -105,7 +106,8 @@ export function useEditorCompartments({
         livePreviewImagesCompartment.reconfigure(
           createLivePreviewImages(selectedNotePath, rootDir || undefined)
         ),
-        languageSupportCompartment.reconfigure([])
+        languageSupportCompartment.reconfigure([]),
+        katexThemeEffect.of(isDarkMode)
       ]
     })
   }, [

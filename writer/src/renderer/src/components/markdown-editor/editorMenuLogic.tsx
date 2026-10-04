@@ -15,7 +15,7 @@ import {
   FaKeyboard
 } from 'react-icons/fa'
 import { MdHorizontalRule } from 'react-icons/md'
-import { VscSparkle } from 'react-icons/vsc'
+import { VscSparkle, VscSymbolOperator } from 'react-icons/vsc'
 import { EditorView } from '@codemirror/view'
 import * as commands from './editorCommands'
 
@@ -215,5 +215,24 @@ export const getEditorMenuEntries = (openAiModal: () => void): EditorMenuEntry[]
     shortcut: '> [!CAUTION]',
     keywords: ['github', 'alert', 'caution', 'danger', 'error', 'cautionalert'],
     run: (view) => commands.insertGithubAlert(view, 'CAUTION')
+  },
+  { type: 'separator', id: 'sep-6' },
+  {
+    type: 'item',
+    id: 'math-inline',
+    label: 'Inline Math',
+    icon: <VscSymbolOperator className="h-3 w-3 opacity-60" />,
+    shortcut: '$...$',
+    keywords: ['math', 'latex', 'katex', 'formula', 'equation', 'inlinemath'],
+    run: (view) => commands.insertInlineMath(view)
+  },
+  {
+    type: 'item',
+    id: 'math-block',
+    label: 'Math Block',
+    icon: <VscSymbolOperator className="h-3 w-3 opacity-60" />,
+    shortcut: '$$...$$',
+    keywords: ['math', 'latex', 'katex', 'formula', 'equation', 'display', 'mathblock'],
+    run: (view) => commands.insertBlockMath(view)
   }
 ]

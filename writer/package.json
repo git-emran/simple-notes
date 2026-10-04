@@ -60,6 +60,7 @@
     "@radix-ui/themes": "^3.2.1",
     "@replit/codemirror-indentation-markers": "^6.5.3",
     "@replit/codemirror-vim": "^6.3.0",
+    "@types/katex": "^0.16.8",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@univerjs/core": "^0.25.1",
     "@univerjs/design": "^0.25.1",
@@ -77,12 +78,15 @@
     "electron-updater": "^6.8.3",
     "fs-extra": "^11.2.0",
     "jotai": "^2.13.1",
+    "katex": "^0.19.0",
     "mermaid": "^11.11.0",
     "motion": "^12.40.0",
     "node-pty": "^1.1.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.6",
-    "remark-gfm": "^4.0.1"
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^1.0.1",
