@@ -32,7 +32,6 @@ export const UpdateManager: React.FC = () => {
 
     // Listen to updater status channel
     const unsubscribe = window.context.onUpdaterStatus(({ event, payload }) => {
-      console.log('[Updater Event]', event, payload)
       switch (event) {
         case 'checking':
           setStatus('checking')
@@ -47,12 +46,14 @@ export const UpdateManager: React.FC = () => {
         case 'downloading':
           setStatus('downloading')
           break
-        case 'progress':
+        case 'progress': {
           setStatus('downloading')
-          if (payload && typeof (payload as any).percent === 'number') {
-            setProgress(Math.round((payload as any).percent))
+          const progressPayload = payload as { percent?: number } | undefined
+          if (typeof progressPayload?.percent === 'number') {
+            setProgress(Math.round(progressPayload.percent))
           }
           break
+        }
         case 'downloaded':
           setStatus('downloaded')
           if (payload) {
@@ -65,7 +66,6 @@ export const UpdateManager: React.FC = () => {
           break
         case 'error':
           setStatus('error')
-          console.error('[Updater Error]', payload)
           break
         default:
           break
@@ -101,8 +101,8 @@ export const UpdateManager: React.FC = () => {
           }
         }
       }
-    } catch (e) {
-      console.warn('Welcome note lookup failed:', e)
+    } catch {
+      // Ignore welcome note lookup failures
     }
   }
 
