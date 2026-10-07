@@ -83,7 +83,10 @@ const PreviewCodeBlock = ({ language, codeContent, isDarkMode }: PreviewCodeBloc
   }, [])
 
   return (
-    <div className="preview-code-block group relative my-4 rounded-lg overflow-hidden border border-obsidian-border bg-[var(--obsidian-surface)] shadow-sm">
+    <div
+      className="preview-code-block group relative my-4 rounded-lg overflow-hidden border border-obsidian-border bg-[var(--obsidian-surface)] shadow-sm"
+      spellCheck={false}
+    >
       <div
         className="flex items-center justify-between px-3 py-1.5 text-[11px] select-none bg-[var(--obsidian-pane)] border-b border-obsidian-border text-[var(--obsidian-text-muted)]"
       >
@@ -554,6 +557,7 @@ export const MarkdownPreview = memo(
                 return isInline ? (
                   <code
                     className="px-1.5 py-0.5 bg-[var(--obsidian-inline-code-bg)] text-[var(--obsidian-inline-code-text)] rounded text-sm font-mono font-medium before:content-none after:content-none"
+                    spellCheck={false}
                     {...rest}
                   >
                     {children}
