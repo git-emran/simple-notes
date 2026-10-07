@@ -4,7 +4,13 @@ import { Decoration, ViewPlugin, ViewUpdate, EditorView } from '@codemirror/view
 
 const getCodeBlockLineDecoration = (className: string) =>
   Decoration.line({
-    attributes: { class: className }
+    attributes: {
+      class: className,
+      spellcheck: 'false',
+      autocorrect: 'off',
+      autocapitalize: 'off',
+      'data-gramm': 'false'
+    }
   })
 
 const firstCodeBlockLineDecoration = getCodeBlockLineDecoration(

@@ -146,6 +146,7 @@ class CodeBlockHeaderWidget extends WidgetType {
   toDOM(view: EditorView) {
     const wrap = document.createElement('div')
     wrap.className = 'cm-codeblock-header'
+    wrap.spellcheck = false
 
     const left = document.createElement('div')
     left.className = 'cm-codeblock-header-left'
@@ -513,10 +514,42 @@ const codeBlockHeaderPlugin = ViewPlugin.fromClass(
 
 /* ─── Plugin 2: Line Styling Plugin ──────────────────────────────────────── */
 
-const lineDecoFirst = Decoration.line({ attributes: { class: 'cm-codeblock-line cm-codeblock-line-first' } })
-const lineDecoMiddle = Decoration.line({ attributes: { class: 'cm-codeblock-line' } })
-const lineDecoLast = Decoration.line({ attributes: { class: 'cm-codeblock-line cm-codeblock-line-last' } })
-const lineDecoSingle = Decoration.line({ attributes: { class: 'cm-codeblock-line cm-codeblock-line-first cm-codeblock-line-last' } })
+const lineDecoFirst = Decoration.line({
+  attributes: {
+    class: 'cm-codeblock-line cm-codeblock-line-first',
+    spellcheck: 'false',
+    autocorrect: 'off',
+    autocapitalize: 'off',
+    'data-gramm': 'false'
+  }
+})
+const lineDecoMiddle = Decoration.line({
+  attributes: {
+    class: 'cm-codeblock-line',
+    spellcheck: 'false',
+    autocorrect: 'off',
+    autocapitalize: 'off',
+    'data-gramm': 'false'
+  }
+})
+const lineDecoLast = Decoration.line({
+  attributes: {
+    class: 'cm-codeblock-line cm-codeblock-line-last',
+    spellcheck: 'false',
+    autocorrect: 'off',
+    autocapitalize: 'off',
+    'data-gramm': 'false'
+  }
+})
+const lineDecoSingle = Decoration.line({
+  attributes: {
+    class: 'cm-codeblock-line cm-codeblock-line-first cm-codeblock-line-last',
+    spellcheck: 'false',
+    autocorrect: 'off',
+    autocapitalize: 'off',
+    'data-gramm': 'false'
+  }
+})
 
 const codeBlockLinePlugin = ViewPlugin.fromClass(
   class {
