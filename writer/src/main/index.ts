@@ -159,22 +159,32 @@ const configureSpellChecker = (mainWindow: BrowserWindow) => {
 }
 
 function createWindow(): void {
+  const isMac = process.platform === 'darwin'
+
   /* Create the browser window. */
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
+    minWidth: 400,
+    minHeight: 300,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     center: true,
     title: 'Writer',
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    vibrancy: 'under-window',
-    visualEffectState: 'active',
-    titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 15, y: 10 },
+    transparent: isMac,
+    backgroundColor: isMac ? '#00000000' : '#1e1e1e',
+    ...(isMac
+      ? {
+          vibrancy: 'under-window',
+          visualEffectState: 'active',
+          titleBarStyle: 'hidden',
+          trafficLightPosition: { x: 15, y: 10 }
+        }
+      : {
+          titleBarStyle: 'hidden'
+        }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
