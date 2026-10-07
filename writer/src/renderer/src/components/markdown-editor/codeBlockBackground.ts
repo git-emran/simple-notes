@@ -1,6 +1,6 @@
 import { syntaxTree } from '@codemirror/language'
 import { RangeSetBuilder } from '@codemirror/state'
-import { Decoration, ViewPlugin, ViewUpdate, EditorView } from '@codemirror/view'
+import { Decoration, DecorationSet, ViewPlugin, ViewUpdate, EditorView } from '@codemirror/view'
 
 const getCodeBlockLineDecoration = (className: string) =>
   Decoration.line({
@@ -26,7 +26,7 @@ const singleCodeBlockLineDecoration = getCodeBlockLineDecoration(
 
 export const codeBlockBackground = ViewPlugin.fromClass(
   class {
-    decorations: any
+    decorations: DecorationSet
 
     constructor(view: EditorView) {
       this.decorations = this.getDecorations(view)
