@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     './index.html', // Your main HTML file
     /* Crucially, point to your renderer's source files */
@@ -18,3 +19,4 @@ export default {
   },
   plugins: [require('@tailwindcss/typography')]
 }
+

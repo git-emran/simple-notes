@@ -3,30 +3,28 @@ import { EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view'
 export const statusBarExtension = ViewPlugin.fromClass(
   class {
     dom: HTMLDivElement
-    darkMode: boolean
 
     constructor(view: EditorView) {
-      const getIsDarkMode = () => {
-        if (document.documentElement.classList.contains('dark')) return true
-        if (document.documentElement.classList.contains('light')) return false
-        return window.matchMedia('(prefers-color-scheme: dark)').matches
-      }
-
       this.dom = document.createElement('div')
+      this.dom.className = 'cm-status-bar'
       this.dom.style.cssText = `
         position: absolute;
         bottom: 0;
         left: 0;
         width: 100%;
-        padding: 2px 8px;
-        font-size: 0.65rem;
-        font-family: sans-serif;
+        padding: 3px 10px;
+        font-size: 0.68rem;
+        font-family: inherit;
         pointer-events: none;
         z-index: 10;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         text-align: right;
         box-sizing: border-box;
+        background-color: var(--obsidian-pane);
+        color: var(--obsidian-text-muted);
+        border-top: 1px solid var(--obsidian-border);
+        transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
       `
 
       const parent = view.dom.parentElement
@@ -44,36 +42,7 @@ export const statusBarExtension = ViewPlugin.fromClass(
         })
       }
 
-      /* initial dark mode check */
-      this.darkMode = getIsDarkMode()
-
-      this.applyColors()
       this.updateStatus(view)
-
-      /* Observe changes to html class */
-      const observer = new MutationObserver(() => {
-        const isDark = getIsDarkMode()
-        if (isDark !== this.darkMode) {
-          this.darkMode = isDark
-          this.applyColors()
-        }
-      })
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-      this.observer = observer
-    }
-
-    observer: MutationObserver
-
-    applyColors() {
-      if (this.darkMode) {
-        this.dom.style.background = 'rgba(74, 74, 79, 0.6)' // dark gray @ 60%
-        this.dom.style.color = '#d1d5db' // light gray text
-        this.dom.style.borderTop = '1px solid #374151'
-      } else {
-        this.dom.style.background = 'rgba(222, 222, 222, 0.6)' // light gray @ 60%
-        this.dom.style.color = '#919191' // dark gray text
-        this.dom.style.borderTop = '1px solid #d1d5db'
-      }
     }
 
     update(update: ViewUpdate) {
@@ -95,7 +64,7 @@ export const statusBarExtension = ViewPlugin.fromClass(
       if (this.dom.parentElement) {
         this.dom.parentElement.removeChild(this.dom)
       }
-      this.observer.disconnect()
     }
   }
 )
+

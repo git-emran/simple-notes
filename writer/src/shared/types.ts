@@ -109,3 +109,16 @@ export type GetTerminalSnapshot = (sessionId: string) => Promise<TerminalSnapsho
 export type CloseTerminalSession = (sessionId: string) => Promise<void>
 export type WriteTerminalInput = (sessionId: string, data: string) => void
 export type ResizeTerminalSession = (sessionId: string, cols: number, rows: number) => void
+
+export type NativeThemeSource = 'system' | 'light' | 'dark'
+
+export type SystemThemeInfo = {
+  shouldUseDarkColors: boolean
+  themeSource: NativeThemeSource
+  shouldUseHighContrastColors?: boolean
+  shouldUseInvertedColorScheme?: boolean
+}
+
+export type SetThemeSource = (source: NativeThemeSource) => Promise<boolean>
+export type GetSystemThemeInfo = () => Promise<SystemThemeInfo>
+

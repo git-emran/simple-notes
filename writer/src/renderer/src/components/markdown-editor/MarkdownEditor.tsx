@@ -138,12 +138,14 @@ export const MarkdownEditor = ({ path, tabId: _tabId, isActive }: { path: string
     viewRef,
     compartments,
     isDarkMode: editorSettings.isDarkMode,
+    themeMode: editorSettings.themeMode,
     vimModeEnabled: editorSettings.vimModeEnabled,
     relativeLineNumbersEnabled: editorSettings.relativeLineNumbersEnabled,
     lineWrappingEnabled: editorSettings.lineWrappingEnabled,
     tabIndentUnit: editorSettings.tabIndentUnit,
     rootDir,
     reconfigureLanguage,
+
     commandPaletteItems: palette.slashCommandItems,
     onOpenTemplatePalette: useCallback(
       () => setIsTemplatePaletteOpen(true),
