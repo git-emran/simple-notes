@@ -23,6 +23,8 @@ import {
   type EditorFontOption,
   type ThemeMode,
 } from '@renderer/store'
+import { THEME_OPTIONS } from '@renderer/themes/themeManager'
+
 
 const ACCENT_PRESETS = [
   { label: 'Blue',    value: '#3b82f6' },
@@ -153,18 +155,9 @@ export const SettingsPanel = () => {
     }
   }
 
-  const themeOptions: Array<{ label: string; value: ThemeMode }> = [
-    { label: 'System', value: 'system' },
-    { label: 'Light', value: 'light' },
-    { label: 'Dark', value: 'dark' },
-  ]
+  const baseThemeOptions = THEME_OPTIONS.filter((opt) => opt.group === 'Base')
+  const customThemeOptions = THEME_OPTIONS.filter((opt) => opt.group === 'Color Schemes')
 
-  const customThemeOptions: Array<{ label: string; value: ThemeMode }> = [
-    { label: 'Gruvbox Dark', value: 'gruvbox-dark' },
-    { label: 'Gruvbox Light', value: 'gruvbox-light' },
-    { label: 'Catppuccin Dark (Mocha)', value: 'catppuccin-dark' },
-    { label: 'Catppuccin Light (Latte)', value: 'catppuccin-light' },
-  ]
 
   return (
     <div className="flex h-full flex-col bg-[var(--obsidian-base)]">
@@ -289,7 +282,7 @@ export const SettingsPanel = () => {
                   className="app-select"
                 >
                   <optgroup label="Base">
-                    {themeOptions.map((opt) => (
+                    {baseThemeOptions.map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {opt.label}
                       </option>

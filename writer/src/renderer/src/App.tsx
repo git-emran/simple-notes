@@ -93,26 +93,8 @@ const getEditorFontStack = (font: EditorFontOption) => {
   return [font, 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier', 'monospace']
 }
 
-const DARK_THEMES = new Set(['dark', 'gruvbox-dark', 'catppuccin-dark'])
-const THEME_CLASS_MAP: Record<string, string> = {
-  'gruvbox-dark': 'theme-gruvbox-dark',
-  'gruvbox-light': 'theme-gruvbox-light',
-  'catppuccin-dark': 'theme-catppuccin-dark',
-  'catppuccin-light': 'theme-catppuccin-light'
-}
-const ALL_THEME_CLASSES = Object.values(THEME_CLASS_MAP)
+import { applyThemeToDocument } from './themes/themeManager'
 
-const applyTheme = (resolvedMode: string) => {
-  const isDark = DARK_THEMES.has(resolvedMode)
-  // base dark / light class
-  document.documentElement.classList.toggle('dark', isDark && !THEME_CLASS_MAP[resolvedMode])
-  document.documentElement.classList.toggle('light', !isDark && !THEME_CLASS_MAP[resolvedMode])
-  // remove all custom theme classes, then apply the right one
-  ALL_THEME_CLASSES.forEach((cls) => document.documentElement.classList.remove(cls))
-  if (THEME_CLASS_MAP[resolvedMode]) {
-    document.documentElement.classList.add(THEME_CLASS_MAP[resolvedMode])
-  }
-}
 
 const App = () => {
   const contentContainerRef = useRef<HTMLDivElement>(null)
@@ -259,22 +241,50 @@ const App = () => {
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const applyCurrentTheme = () => {
-      const resolvedMode =
-        themeMode === 'system' ? (mediaQuery.matches ? 'dark' : 'light') : themeMode
-      applyTheme(resolvedMode)
-      setIsDarkMode(DARK_THEMES.has(resolvedMode))
+
+    const syncTheme = (systemDark?: boolean) => {
+      const isSystemDark =
+        typeof systemDark === 'boolean' ? systemDark : mediaQuery.matches
+      const { isDark } = applyThemeToDocument(themeMode, isSystemDark)
+      setIsDarkMode(isDark)
     }
 
-    applyCurrentTheme()
-    if (themeMode === 'system') {
-      mediaQuery.addEventListener('change', applyCurrentTheme)
+    // Initial sync
+    syncTheme()
+
+    // If native system info is available, ensure we reflect it immediately
+    if (window.context?.getSystemThemeInfo) {
+      window.context
+        .getSystemThemeInfo()
+        .then((info) => {
+          if (info && typeof info.shouldUseDarkColors === 'boolean') {
+            syncTheme(info.shouldUseDarkColors)
+          }
+        })
+        .catch(() => {})
+    }
+
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      syncTheme(e.matches)
+    }
+
+    mediaQuery.addEventListener('change', handleMediaChange)
+
+    let unsubNativeTheme: (() => void) | undefined
+    if (window.context?.onSystemThemeUpdated) {
+      unsubNativeTheme = window.context.onSystemThemeUpdated((info) => {
+        syncTheme(info.shouldUseDarkColors)
+      })
     }
 
     return () => {
-      mediaQuery.removeEventListener('change', applyCurrentTheme)
+      mediaQuery.removeEventListener('change', handleMediaChange)
+      if (unsubNativeTheme) {
+        unsubNativeTheme()
+      }
     }
   }, [themeMode, setIsDarkMode])
+
 
   useEffect(() => {
     const root = document.documentElement

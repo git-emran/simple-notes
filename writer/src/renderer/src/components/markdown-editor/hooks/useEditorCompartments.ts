@@ -5,6 +5,7 @@ import {
   tabIndentUnitAtom,
   vimModeEnabledAtom,
   themeModeAtom,
+  type ThemeMode
 } from '@renderer/store'
 import { syntaxHighlighting } from '@codemirror/language'
 import { Compartment } from '@codemirror/state'
@@ -32,6 +33,34 @@ interface UseEditorCompartmentsParams {
   viewRef: ViewRef
   selectedNotePath: string | undefined
   rootDir: string
+}
+
+export const getResolvedEditorTheme = (themeMode: ThemeMode, isDarkMode: boolean) => {
+  const baseTheme = getEditorTheme(isDarkMode)
+  switch (themeMode) {
+    case 'gruvbox-dark':
+      return [baseTheme, gruvboxDark]
+    case 'gruvbox-light':
+      return [baseTheme, gruvboxLight]
+    case 'catppuccin-dark':
+      return [baseTheme, catppuccinDark]
+    case 'catppuccin-light':
+      return [baseTheme, catppuccinLight]
+    default:
+      return baseTheme
+  }
+}
+
+export const getResolvedHighlightExtension = (themeMode: ThemeMode, isDarkMode: boolean) => {
+  switch (themeMode) {
+    case 'gruvbox-dark':
+    case 'gruvbox-light':
+    case 'catppuccin-dark':
+    case 'catppuccin-light':
+      return []
+    default:
+      return syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
+  }
 }
 
 export function useEditorCompartments({
@@ -70,28 +99,8 @@ export function useEditorCompartments({
     const view = viewRef.current
     if (!view) return
 
-    const resolvedThemeExtension = (() => {
-      const baseTheme = getEditorTheme(isDarkMode)
-      switch (themeMode) {
-        case 'gruvbox-dark':    return [baseTheme, gruvboxDark]
-        case 'gruvbox-light':   return [baseTheme, gruvboxLight]
-        case 'catppuccin-dark': return [baseTheme, catppuccinDark]
-        case 'catppuccin-light':return [baseTheme, catppuccinLight]
-        default: return baseTheme
-      }
-    })()
-
-    const resolvedHighlightExtension = (() => {
-      switch (themeMode) {
-        case 'gruvbox-dark':
-        case 'gruvbox-light':
-        case 'catppuccin-dark':
-        case 'catppuccin-light':
-          return [] as const
-        default:
-          return syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
-      }
-    })()
+    const resolvedThemeExtension = getResolvedEditorTheme(themeMode, isDarkMode)
+    const resolvedHighlightExtension = getResolvedHighlightExtension(themeMode, isDarkMode)
 
     view.dispatch({
       effects: [
@@ -152,9 +161,11 @@ export function useEditorCompartments({
     reconfigureLanguage,
     // expose individual setting values so useEditorLifecycle can read them
     isDarkMode,
+    themeMode,
     vimModeEnabled,
     relativeLineNumbersEnabled,
     lineWrappingEnabled,
     tabIndentUnit,
   }
 }
+

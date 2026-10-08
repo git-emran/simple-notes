@@ -30,7 +30,10 @@ import {
   GetTerminalSnapshot,
   CloseTerminalSession,
   TerminalDataEvent,
-  TerminalExitEvent
+  TerminalExitEvent,
+  SetThemeSource,
+  GetSystemThemeInfo,
+  SystemThemeInfo
 } from '@shared/types'
 
 declare global {
@@ -80,8 +83,12 @@ declare global {
       onNativeSpellcheckMenu: (callback: () => void) => () => void
       onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
       isFullscreen: () => Promise<boolean>
+      setThemeSource: SetThemeSource
+      getSystemThemeInfo: GetSystemThemeInfo
+      onSystemThemeUpdated: (callback: (data: SystemThemeInfo) => void) => () => void
     }
   }
 }
 
 export {}
+

@@ -11,7 +11,9 @@ import {
   selectVaultDirectoryAtom,
   resetVaultDirectoryAtom,
   vaultRootDirAtom,
-  selectedNodeAtom
+  selectedNodeAtom,
+  themeModeAtom,
+  isDarkModeAtom
 } from '@renderer/store'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { useMemo, useCallback } from 'react'
@@ -24,10 +26,13 @@ import {
   VscFolderOpened,
   VscRefresh,
   VscCalendar,
-  VscSettingsGear
+  VscSettingsGear,
+  VscColorMode
 } from 'react-icons/vsc'
 import { CommandPaletteModal, type CommandPaletteItem } from './markdown-editor/CommandPaletteModal'
 import { FileNode } from '@shared/models'
+import { THEME_OPTIONS } from '@renderer/themes/themeManager'
+
 
 const flattenFiles = (nodes: FileNode[]): FileNode[] => {
   const output: FileNode[] = []
@@ -151,6 +156,29 @@ export const GlobalCommandPalette = () => {
     ]
   )
 
+  const [themeMode, setThemeMode] = useAtom(themeModeAtom)
+  const isDarkMode = useAtomValue(isDarkModeAtom)
+
+  const themeCommandItems: CommandPaletteItem[] = useMemo(() => {
+    const toggleItem: CommandPaletteItem = {
+      id: 'theme-toggle',
+      label: `Theme: Switch to ${isDarkMode ? 'Light' : 'Dark'} Mode`,
+      icon: <VscColorMode />,
+      keywords: ['theme', 'mode', 'dark', 'light', 'toggle', 'switch'],
+      run: () => setThemeMode(isDarkMode ? 'light' : 'dark')
+    }
+
+    const modeItems: CommandPaletteItem[] = THEME_OPTIONS.map((opt) => ({
+      id: `theme-set-${opt.value}`,
+      label: `Theme: ${opt.label}${themeMode === opt.value ? ' (Active)' : ''}`,
+      icon: <VscColorMode />,
+      keywords: ['theme', 'mode', 'color', opt.label.toLowerCase(), opt.value],
+      run: () => setThemeMode(opt.value)
+    }))
+
+    return [toggleItem, ...modeItems]
+  }, [themeMode, isDarkMode, setThemeMode])
+
   const searchNoteItems: CommandPaletteItem[] = useMemo(() => {
     const files = flattenFiles(fileTree ?? [])
     return files.map((file) => ({
@@ -163,9 +191,10 @@ export const GlobalCommandPalette = () => {
   }, [fileTree, openTab])
 
   const commandPaletteItems: CommandPaletteItem[] = useMemo(
-    () => [...panelCommandItems, ...searchNoteItems],
-    [panelCommandItems, searchNoteItems]
+    () => [...panelCommandItems, ...themeCommandItems, ...searchNoteItems],
+    [panelCommandItems, themeCommandItems, searchNoteItems]
   )
+
 
   return (
     <CommandPaletteModal

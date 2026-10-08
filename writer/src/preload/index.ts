@@ -141,5 +141,18 @@ contextBridge.exposeInMainWorld('context', {
     ipcRenderer.on('window:fullscreen-changed', listener)
     return () => ipcRenderer.removeListener('window:fullscreen-changed', listener)
   },
-  isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen')
+  isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen'),
+  setThemeSource: (source: 'system' | 'light' | 'dark') => ipcRenderer.invoke('theme:set-source', source),
+  getSystemThemeInfo: () => ipcRenderer.invoke('theme:get-system-info'),
+  onSystemThemeUpdated: (
+    callback: (data: { shouldUseDarkColors: boolean; themeSource: string }) => void
+  ) => {
+    const listener = (
+      _event: IpcRendererEvent,
+      data: { shouldUseDarkColors: boolean; themeSource: string }
+    ) => callback(data)
+    ipcRenderer.on('theme:system-updated', listener)
+    return () => ipcRenderer.removeListener('theme:system-updated', listener)
+  }
 })
+

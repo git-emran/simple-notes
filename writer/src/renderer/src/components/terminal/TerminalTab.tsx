@@ -13,9 +13,11 @@ import {
   notesRootDirAtom,
   setTerminalSessionIdAtom,
   themeModeAtom,
+  isDarkModeAtom,
   type EditorTab,
   type EditorFontOption,
 } from '@renderer/store'
+import { getTerminalTheme } from '@renderer/themes/terminalThemes'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect, useRef, useState } from 'react'
 import { VscTerminal } from 'react-icons/vsc'
@@ -31,60 +33,6 @@ const WRITE_BATCH_SIZE = 32_768
 const MAX_PENDING_PRE_SNAPSHOT_EVENTS = 2_000
 const SNAPSHOT_FALLBACK_MS = 1_200
 
-const getTerminalTheme = (isDarkMode: boolean) => {
-  if (isDarkMode) {
-    return {
-      background: '#16181f',
-      foreground: '#d7dde8',
-      cursor: '#8fb8ff',
-      cursorAccent: '#16181f',
-      black: '#20232b',
-      red: '#ff7b72',
-      green: '#7ee787',
-      yellow: '#f2cc60',
-      blue: '#79c0ff',
-      magenta: '#d2a8ff',
-      cyan: '#76e3ea',
-      white: '#c9d1d9',
-      brightBlack: '#6e7681',
-      brightRed: '#ffa198',
-      brightGreen: '#56d364',
-      brightYellow: '#e3b341',
-      brightBlue: '#58a6ff',
-      brightMagenta: '#bc8cff',
-      brightCyan: '#39c5cf',
-      brightWhite: '#f0f6fc',
-      selectionBackground: 'rgba(88, 166, 255, 0.28)',
-      selectionInactiveBackground: 'rgba(88, 166, 255, 0.18)',
-    }
-  }
-
-  return {
-    background: '#fcfcfd',
-    foreground: '#1f2937',
-    cursor: '#2563eb',
-    cursorAccent: '#fcfcfd',
-    black: '#1f2937',
-    red: '#dc2626',
-    green: '#15803d',
-    yellow: '#b45309',
-    blue: '#2563eb',
-    magenta: '#9333ea',
-    cyan: '#0f766e',
-    white: '#6b7280',
-    brightBlack: '#4b5563',
-    brightRed: '#ef4444',
-    brightGreen: '#16a34a',
-    brightYellow: '#d97706',
-    brightBlue: '#3b82f6',
-    brightMagenta: '#a855f7',
-    brightCyan: '#14b8a6',
-    brightWhite: '#111827',
-    selectionBackground: 'rgba(37, 99, 235, 0.18)',
-    selectionInactiveBackground: 'rgba(37, 99, 235, 0.12)',
-  }
-}
-
 const getTerminalBaseFont = (font: EditorFontOption) => (font === 'SF Pro' ? 'SFMono-Regular' : font)
 
 const getTerminalFontFamily = (font: EditorFontOption) =>
@@ -98,6 +46,7 @@ const getShellLabel = (shellPath: string) => {
 
 export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
   const themeMode = useAtomValue(themeModeAtom)
+  const isDarkMode = useAtomValue(isDarkModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
   const notesRootDir = useAtomValue(notesRootDirAtom)
@@ -123,21 +72,17 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
   const [sessionId, setSessionId] = useState<string | null>(tab.terminalSessionId ?? null)
   const [shellLabel, setShellLabel] = useState('shell')
   const [cwdLabel, setCwdLabel] = useState(notesRootDir ?? '')
-  const [isDarkMode, setIsDarkMode] = useState(false)
   const [statusText, setStatusText] = useState('Starting shell...')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
+  // Dynamically update theme on active terminal instance
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const syncTheme = () => {
-      setIsDarkMode(themeMode === 'dark' || (themeMode === 'system' && mediaQuery.matches))
+    if (terminalRef.current) {
+      terminalRef.current.options.theme = getTerminalTheme(themeMode, isDarkMode)
     }
+  }, [themeMode, isDarkMode])
 
-    syncTheme()
-    mediaQuery.addEventListener('change', syncTheme)
-    return () => mediaQuery.removeEventListener('change', syncTheme)
-  }, [themeMode])
 
   useEffect(() => {
     let cancelled = false
@@ -205,13 +150,13 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
     const term = terminalRef.current
     if (!term) return
 
-    term.options.theme = getTerminalTheme(isDarkMode)
+    term.options.theme = getTerminalTheme(themeMode, isDarkMode)
     term.options.fontFamily = getTerminalFontFamily(editorFont)
     term.options.fontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, editorFontSize))
     window.requestAnimationFrame(() => {
       scheduleFitRef.current?.()
     })
-  }, [editorFont, editorFontSize, isDarkMode])
+  }, [editorFont, editorFontSize, themeMode, isDarkMode])
 
   // When this terminal tab becomes visible again (after being hidden via CSS display:none),
   // xterm's internal size may be stale — trigger a fit to recalculate.
@@ -248,8 +193,9 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
       minimumContrastRatio: 1,
       scrollback: 10000,
       smoothScrollDuration: 0,
-      theme: getTerminalTheme(isDarkMode),
+      theme: getTerminalTheme(themeMode, isDarkMode),
     })
+
     const fitAddon = new FitAddon()
     const linksAddon = new WebLinksAddon((_event, uri) => {
       window.open(uri, '_blank', 'noopener,noreferrer')

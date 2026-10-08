@@ -31,6 +31,12 @@ import {
   markdownHighlightStyle,
   markdownHighlightStyleDark
 } from '../editorTheme'
+import {
+  getResolvedEditorTheme,
+  getResolvedHighlightExtension
+} from './useEditorCompartments'
+import type { ThemeMode } from '@renderer/store/settingsStore'
+
 import { markdownTableEnhancement } from '../extendTableEditing'
 import { headingFoldExtension } from '../headingFold'
 import { codeLanguages } from '../languageConfig'
@@ -65,6 +71,7 @@ interface UseEditorLifecycleParams {
   viewRef: ViewRef
   compartments: Compartments
   isDarkMode: boolean
+  themeMode?: ThemeMode
   vimModeEnabled: boolean
   relativeLineNumbersEnabled: boolean
   lineWrappingEnabled: boolean
@@ -112,6 +119,7 @@ export function useEditorLifecycle({
   viewRef,
   compartments,
   isDarkMode,
+  themeMode = 'system',
   vimModeEnabled,
   relativeLineNumbersEnabled,
   lineWrappingEnabled,
@@ -121,6 +129,7 @@ export function useEditorLifecycle({
   commandPaletteItems,
   onOpenTemplatePalette
 }: UseEditorLifecycleParams) {
+
   const saveNote = useSetAtom(saveNoteAtom)
   const setEditorSaveStateByPath = useSetAtom(editorSaveStateByPathAtom)
 
@@ -616,13 +625,12 @@ export function useEditorLifecycle({
         extensions: [
           ...baseExtensions,
           compartments.vim.of(vimModeEnabled ? vim() : []),
-          compartments.theme.of(getEditorTheme(isDarkMode)),
-          compartments.highlight.of(
-            syntaxHighlighting(isDarkMode ? markdownHighlightStyleDark : markdownHighlightStyle)
-          ),
+          compartments.theme.of(getResolvedEditorTheme(themeMode, isDarkMode)),
+          compartments.highlight.of(getResolvedHighlightExtension(themeMode, isDarkMode)),
           compartments.relativeLineNumbers.of(
             relativeLineNumbersEnabled ? relativeLineNumbers() : []
           ),
+
           compartments.lineWrapping.of(lineWrappingEnabled ? EditorView.lineWrapping : []),
           compartments.tabIndent.of(tabAsSpaces(tabIndentUnit)),
           compartments.livePreviewImages.of(

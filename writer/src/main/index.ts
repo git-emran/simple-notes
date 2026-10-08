@@ -5,6 +5,7 @@ import {
   ipcMain,
   protocol,
   Menu,
+  nativeTheme,
   type MenuItemConstructorOptions
 } from 'electron'
 import { join } from 'path'
@@ -12,6 +13,7 @@ import path from 'path'
 import { promises as fs } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+
 import {
   createNote,
   deleteNote,
@@ -232,19 +234,18 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  initializeUpdater(mainWindow).catch((err) => {
+    console.warn('Failed to initialize updater:', err)
+  })
+
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
-
-  // Defer updater initialization so startup is not blocked by auto-update network/disk checks
-  setTimeout(() => {
-    if (!mainWindow.isDestroyed()) {
-      initializeUpdater(mainWindow)
-    }
-  }, 3000)
 }
+
 
 const configureApplicationMenu = () => {
   // Work around macOS log spam:
@@ -334,6 +335,30 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('setVaultDirectory', (_, ...args: Parameters<SetVaultDirectory>) => setVaultDirectory(...args))
   ipcMain.handle('resetVaultDirectory', (_, ...args: Parameters<ResetVaultDirectory>) => resetVaultDirectory(...args))
+  ipcMain.handle('theme:set-source', (_, source: 'system' | 'light' | 'dark') => {
+
+    nativeTheme.themeSource = source
+    return nativeTheme.shouldUseDarkColors
+  })
+  ipcMain.handle('theme:get-system-info', () => ({
+    shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+    themeSource: nativeTheme.themeSource,
+    shouldUseHighContrastColors: nativeTheme.shouldUseHighContrastColors,
+    shouldUseInvertedColorScheme: nativeTheme.shouldUseInvertedColorScheme
+  }))
+
+  nativeTheme.on('updated', () => {
+    const payload = {
+      shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+      themeSource: nativeTheme.themeSource
+    }
+    BrowserWindow.getAllWindows().forEach((win) => {
+      if (!win.isDestroyed()) {
+        win.webContents.send('theme:system-updated', payload)
+      }
+    })
+  })
+
   ipcMain.handle('window:is-fullscreen', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     return win?.isFullScreen() ?? false

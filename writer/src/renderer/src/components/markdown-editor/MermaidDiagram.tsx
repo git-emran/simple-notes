@@ -11,18 +11,53 @@ import {
 } from 'react'
 import { VscChromeClose, VscRefresh, VscScreenFull, VscZoomIn, VscZoomOut } from 'react-icons/vsc'
 
+import { isDarkModeAtom } from '@renderer/store'
+import { useAtomValue } from 'jotai'
+
 let mermaidInstance: typeof import('mermaid').default | null = null
-const getMermaid = async () => {
+const getMermaid = async (isDark: boolean) => {
   if (!mermaidInstance) {
     mermaidInstance = (await import('mermaid')).default
-    mermaidInstance.initialize({
-      startOnLoad: false,
-      securityLevel: 'strict',
-      suppressErrorRendering: true
-    })
   }
+  mermaidInstance.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    suppressErrorRendering: true,
+    theme: isDark ? 'dark' : 'default',
+    themeVariables: isDark
+      ? {
+          darkMode: true,
+          background: 'transparent',
+          mainBkg: '#1c1f26',
+          primaryColor: '#282c37',
+          primaryTextColor: '#e5e7eb',
+          primaryBorderColor: 'rgba(255, 255, 255, 0.18)',
+          lineColor: '#7c9efb',
+          textColor: '#e5e7eb',
+          nodeBorder: '#7c9efb',
+          clusterBkg: '#16181f',
+          clusterBorder: 'rgba(255, 255, 255, 0.15)',
+          titleColor: '#e5e7eb',
+          edgeLabelBackground: '#1c1f26'
+        }
+      : {
+          darkMode: false,
+          background: 'transparent',
+          primaryColor: '#f3f4f6',
+          primaryTextColor: '#111827',
+          primaryBorderColor: 'rgba(0, 0, 0, 0.15)',
+          lineColor: '#3b82f6',
+          textColor: '#111827',
+          nodeBorder: '#3b82f6',
+          clusterBkg: '#f9fafb',
+          clusterBorder: 'rgba(0, 0, 0, 0.12)',
+          titleColor: '#111827',
+          edgeLabelBackground: '#ffffff'
+        }
+  })
   return mermaidInstance
 }
+
 
 const sanitizeSvg = (svgMarkup: string): string => {
   const parser = new DOMParser()
@@ -222,7 +257,16 @@ const MermaidToolbar = ({
   </div>
 )
 
-export const MermaidDiagram = ({ chart }: { chart: string, }) => {
+export const MermaidDiagram = ({
+  chart,
+  isDarkMode: propIsDarkMode
+}: {
+  chart: string
+  isDarkMode?: boolean
+}) => {
+  const atomIsDarkMode = useAtomValue(isDarkModeAtom)
+  const isDark = propIsDarkMode !== undefined ? propIsDarkMode : atomIsDarkMode
+
   const [svg, setSvg] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -269,7 +313,7 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
 
     const renderMermaid = async () => {
       try {
-        const mermaid = await getMermaid()
+        const mermaid = await getMermaid(isDark)
         const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
         const { svg: renderedSvg } = await mermaid.render(id, chart)
 
@@ -291,13 +335,14 @@ export const MermaidDiagram = ({ chart }: { chart: string, }) => {
 
     const timer = setTimeout(() => {
       void renderMermaid()
-    }, 300)
+    }, 150)
 
     return () => {
       isMounted = false
       clearTimeout(timer)
     }
-  }, [chart])
+  }, [chart, isDark])
+
 
   useEffect(() => {
     if (!isFullscreen) return

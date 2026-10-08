@@ -540,8 +540,9 @@ export const MarkdownPreview = memo(
                 if (language === 'mermaid') {
                   return (
                     <Suspense fallback={<div className="p-3 text-xs text-[var(--obsidian-text-muted)] animate-pulse border border-[var(--obsidian-border)] rounded-lg">Loading diagram...</div>}>
-                      <MermaidDiagram chart={codeContent} />
+                      <MermaidDiagram chart={codeContent} isDarkMode={isDarkMode} />
                     </Suspense>
+
                   )
                 }
 
