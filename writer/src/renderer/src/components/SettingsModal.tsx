@@ -1,6 +1,19 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { useState, useEffect } from 'react'
-import { VscFolderOpened, VscFolder, VscCopy, VscCheck, VscRefresh, VscCloudDownload, VscSync } from 'react-icons/vsc'
+import { useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import {
+  VscFolderOpened,
+  VscFolder,
+  VscCopy,
+  VscCheck,
+  VscRefresh,
+  VscCloudDownload,
+  VscSync,
+  VscSparkle,
+  VscChevronDown,
+  VscChevronUp,
+  VscInfo
+} from 'react-icons/vsc'
 import {
   aiApiKeyAtom,
   editorFontAtom,
@@ -20,8 +33,9 @@ import {
   defaultVaultRootDirAtom,
   selectVaultDirectoryAtom,
   resetVaultDirectoryAtom,
+  useUpdater,
   type EditorFontOption,
-  type ThemeMode,
+  type ThemeMode
 } from '@renderer/store'
 import { THEME_OPTIONS } from '@renderer/themes/themeManager'
 
@@ -59,13 +73,21 @@ export const SettingsPanel = () => {
   const [transparentBg, setTransparentBg] = useAtom(transparentBgAtom)
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useAtom(autoUpdateEnabledAtom)
 
-  const [appVersion, setAppVersion] = useState<string>('')
-  const [updateCheckStatus, setUpdateCheckStatus] = useState<
-    'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'downloaded' | 'error' | 'dev-bypass'
-  >('idle')
-  const [downloadProgress, setDownloadProgress] = useState<number>(0)
-  const [availableVersion, setAvailableVersion] = useState<string>('')
-  const [updateError, setUpdateError] = useState<string>('')
+  const {
+    status: updateCheckStatus,
+    updateInfo,
+    progress: downloadProgress,
+    error: updateError,
+    appVersion,
+    hasUpdateAvailable,
+    isCheckingOrDownloading,
+    checkForUpdates,
+    downloadUpdate,
+    restartAndInstall
+  } = useUpdater()
+
+  const [showReleaseNotes, setShowReleaseNotes] = useState(false)
+  const availableVersion = updateInfo?.version || ''
 
   const [relativeLineNumbers, setRelativeLineNumbers] = useAtom(relativeLineNumbersEnabledAtom)
   const [lineWrapping, setLineWrapping] = useAtom(lineWrappingEnabledAtom)
@@ -78,67 +100,6 @@ export const SettingsPanel = () => {
   const selectVaultDirectory = useSetAtom(selectVaultDirectoryAtom)
   const resetVaultDirectory = useSetAtom(resetVaultDirectoryAtom)
   const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!window.context) return
-    window.context.getAppVersion?.().then((v) => {
-      if (v) setAppVersion(v)
-    })
-
-    if (window.context.onUpdaterStatus) {
-      const unsub = window.context.onUpdaterStatus(({ event, payload }) => {
-        const p = payload as Record<string, unknown> | null | undefined
-        if (event === 'checking') {
-          setUpdateCheckStatus('checking')
-          setUpdateError('')
-        } else if (event === 'available') {
-          setUpdateCheckStatus('available')
-          if (p && typeof p.version === 'string') {
-            setAvailableVersion(p.version)
-          }
-        } else if (event === 'not-available') {
-          setUpdateCheckStatus('up-to-date')
-        } else if (event === 'downloading') {
-          setUpdateCheckStatus('downloading')
-        } else if (event === 'progress') {
-          setUpdateCheckStatus('downloading')
-          if (p && typeof p.percent === 'number') {
-            setDownloadProgress(Math.round(p.percent))
-          }
-        } else if (event === 'downloaded') {
-          setUpdateCheckStatus('downloaded')
-          if (p && typeof p.version === 'string') {
-            setAvailableVersion(p.version)
-          }
-        } else if (event === 'error') {
-          setUpdateCheckStatus('error')
-          setUpdateError(typeof payload === 'string' ? payload : 'Failed to check for updates.')
-        }
-      })
-      return unsub
-    }
-  }, [])
-
-  const handleCheckForUpdates = async () => {
-    if (!window.context?.checkForUpdates) return
-    setUpdateCheckStatus('checking')
-    setUpdateError('')
-    try {
-      const res = await window.context.checkForUpdates(true)
-      if (res?.status === 'dev-bypass') {
-        setUpdateCheckStatus('dev-bypass')
-      }
-    } catch (e: unknown) {
-      setUpdateCheckStatus('error')
-      setUpdateError(e instanceof Error ? e.message : 'Failed to check for updates.')
-    }
-  }
-
-  const handleRestartAndInstall = () => {
-    if (window.context?.restartAndInstall) {
-      window.context.restartAndInstall()
-    }
-  }
 
   const isCustomVault = Boolean(vaultRootDir && defaultVaultRootDir && vaultRootDir !== defaultVaultRootDir)
 
@@ -174,6 +135,109 @@ export const SettingsPanel = () => {
 
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <div className="mx-auto w-full max-w-4xl space-y-6">
+          {/* Top New Update Available Banner */}
+          {hasUpdateAvailable && (
+            <div className="relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-r from-blue-600/15 via-[var(--obsidian-pane)] to-purple-600/10 p-5 shadow-lg backdrop-blur-md animate-fade-in text-[var(--obsidian-text)]">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400 shadow-inner">
+                    <VscSparkle className="h-5 w-5 animate-pulse" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-md">
+                        New Update Available
+                      </span>
+                      <span className="text-xs font-semibold text-[var(--obsidian-text)]">
+                        {appVersion ? `v${appVersion} → ` : ''}v{availableVersion || 'latest'}
+                      </span>
+                      {updateInfo?.releaseDate && (
+                        <span className="text-[11px] text-[var(--obsidian-text-muted)]">
+                          • {new Date(updateInfo.releaseDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[var(--obsidian-text-muted)] leading-relaxed">
+                      {updateCheckStatus === 'downloaded'
+                        ? `Version ${availableVersion} has been downloaded and is ready to install!`
+                        : updateCheckStatus === 'downloading'
+                        ? `Downloading update (${downloadProgress}%)... Writer will notify you when ready.`
+                        : `A new version of Writer (v${availableVersion}) is available. Update now for the latest features and improvements.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {updateCheckStatus === 'downloaded' ? (
+                    <button
+                      type="button"
+                      onClick={restartAndInstall}
+                      className="app-btn-primary flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white shadow-md shadow-green-950/20 transition-all hover:scale-[1.02]"
+                    >
+                      <VscSync className="h-4 w-4 animate-spin" style={{ animationDuration: '3s' }} />
+                      <span>Install & Restart Now</span>
+                    </button>
+                  ) : updateCheckStatus === 'downloading' ? (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400 font-medium">
+                      <VscSync className="h-4 w-4 animate-spin" />
+                      <span>Downloading ({downloadProgress}%)</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={downloadUpdate}
+                      className="app-btn-primary flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-950/20 transition-all hover:scale-[1.02]"
+                    >
+                      <VscCloudDownload className="h-4 w-4" />
+                      <span>Download & Install Update</span>
+                    </button>
+                  )}
+
+                  {updateInfo?.releaseNotes && (
+                    <button
+                      type="button"
+                      onClick={() => setShowReleaseNotes((prev) => !prev)}
+                      className="app-btn-secondary flex items-center gap-1.5 px-3 py-2 text-xs"
+                      title="Toggle Release Notes"
+                    >
+                      <span>What's New</span>
+                      {showReleaseNotes ? <VscChevronUp className="h-3.5 w-3.5" /> : <VscChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Live Download Progress Bar */}
+              {updateCheckStatus === 'downloading' && (
+                <div className="mt-4 space-y-1.5">
+                  <div className="flex justify-between text-[11px] text-[var(--obsidian-text-muted)] font-medium">
+                    <span>Transferring update package...</span>
+                    <span>{downloadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-[var(--obsidian-hover)] h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-300 rounded-full"
+                      style={{ width: `${downloadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Expandable Release Notes */}
+              {showReleaseNotes && updateInfo?.releaseNotes && (
+                <div className="mt-4 pt-4 border-t border-obsidian-border-soft animate-fade-in">
+                  <div className="text-xs font-semibold text-[var(--obsidian-text)] mb-2 flex items-center gap-1.5">
+                    <VscInfo className="h-3.5 w-3.5 text-blue-400" />
+                    <span>Release Notes for v{availableVersion}:</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar p-3.5 rounded-lg bg-[var(--obsidian-workspace)] border border-obsidian-border text-xs leading-relaxed text-[var(--obsidian-text)]">
+                    <ReactMarkdown>{updateInfo.releaseNotes}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className={sectionTitleClass}>VAULT / NOTES DIRECTORY</div>
             <div className={cardClass}>
@@ -550,20 +614,29 @@ export const SettingsPanel = () => {
                       {updateCheckStatus === 'downloaded' ? (
                         <button
                           type="button"
-                          onClick={handleRestartAndInstall}
-                          className="app-btn-primary flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white"
+                          onClick={restartAndInstall}
+                          className="app-btn-primary flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white shadow-sm transition-all hover:scale-[1.02]"
                         >
-                          <VscSync className="h-3.5 w-3.5" />
+                          <VscSync className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: '3s' }} />
                           <span>Restart & Install</span>
+                        </button>
+                      ) : updateCheckStatus === 'available' || updateCheckStatus === 'gated' ? (
+                        <button
+                          type="button"
+                          onClick={downloadUpdate}
+                          className="app-btn-primary flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition-all hover:scale-[1.02]"
+                        >
+                          <VscCloudDownload className="h-3.5 w-3.5" />
+                          <span>Download Update</span>
                         </button>
                       ) : (
                         <button
                           type="button"
-                          onClick={handleCheckForUpdates}
-                          disabled={updateCheckStatus === 'checking' || updateCheckStatus === 'downloading'}
-                          className="app-btn-secondary flex items-center gap-1.5 px-3 py-1.5 text-xs"
+                          onClick={() => checkForUpdates(true)}
+                          disabled={isCheckingOrDownloading}
+                          className="app-btn-secondary flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium"
                         >
-                          {updateCheckStatus === 'checking' || updateCheckStatus === 'downloading' ? (
+                          {isCheckingOrDownloading ? (
                             <VscSync className="h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <VscCloudDownload className="h-3.5 w-3.5" />
@@ -581,23 +654,33 @@ export const SettingsPanel = () => {
                   </div>
 
                   {/* Status Badges & Banners */}
-                  {updateCheckStatus === 'up-to-date' && (
+                  {updateCheckStatus === 'not-available' && (
                     <div className="flex items-center gap-2 rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-2 text-xs text-green-400">
                       <VscCheck className="h-4 w-4 shrink-0 text-green-500" />
-                      <span>You are running the latest version of Writer.</span>
+                      <span>You are running the latest version of Writer (v{appVersion}).</span>
                     </div>
                   )}
 
                   {updateCheckStatus === 'dev-bypass' && (
                     <div className="flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-400">
-                      <span>Development build — update checks are bypassed in dev mode.</span>
+                      <VscInfo className="h-4 w-4 shrink-0" />
+                      <span>Development build{appVersion ? ` (v${appVersion})` : ''} — update checks are simulated in dev mode.</span>
                     </div>
                   )}
 
-                  {updateCheckStatus === 'available' && (
-                    <div className="flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-400">
-                      <VscCloudDownload className="h-4 w-4 shrink-0" />
-                      <span>A new version ({availableVersion ? `v${availableVersion}` : 'latest'}) is available and downloading...</span>
+                  {(updateCheckStatus === 'available' || updateCheckStatus === 'gated') && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-400">
+                      <div className="flex items-center gap-2">
+                        <VscSparkle className="h-4 w-4 shrink-0 text-blue-400" />
+                        <span>A new version ({availableVersion ? `v${availableVersion}` : 'latest'}) is available!</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={downloadUpdate}
+                        className="text-xs font-semibold text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                      >
+                        Download & Install
+                      </button>
                     </div>
                   )}
 
@@ -619,15 +702,29 @@ export const SettingsPanel = () => {
                   {updateCheckStatus === 'downloaded' && (
                     <div className="flex items-center justify-between gap-2 rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-2 text-xs text-green-400">
                       <div className="flex items-center gap-2">
-                        <VscCheck className="h-4 w-4 shrink-0" />
+                        <VscCheck className="h-4 w-4 shrink-0 text-green-500" />
                         <span>Version {availableVersion ? `v${availableVersion}` : ''} has been downloaded and is ready to install!</span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={restartAndInstall}
+                        className="text-xs font-semibold text-green-400 hover:text-green-300 underline underline-offset-2"
+                      >
+                        Restart & Install
+                      </button>
                     </div>
                   )}
 
                   {updateCheckStatus === 'error' && (
-                    <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
+                    <div className="flex items-center justify-between gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
                       <span>{updateError || 'Check failed. Please check your internet connection.'}</span>
+                      <button
+                        type="button"
+                        onClick={() => checkForUpdates(true)}
+                        className="text-xs font-semibold text-red-400 hover:text-red-300 underline underline-offset-2 shrink-0"
+                      >
+                        Retry
+                      </button>
                     </div>
                   )}
                 </div>
