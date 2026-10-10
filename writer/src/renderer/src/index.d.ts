@@ -72,7 +72,9 @@ declare global {
       onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void
       onTerminalExit: (callback: (event: TerminalExitEvent) => void) => () => void
       checkForUpdates: (force?: boolean) => Promise<{ status: string; error?: string }>
+      downloadUpdate: () => Promise<{ status: string; error?: string }>
       restartAndInstall: () => Promise<void>
+      getUpdaterStatus: () => Promise<{ event: string; payload?: unknown }>
       getUpdateConfig: () => Promise<{ uuid: string; bucket: number; lastPromptedVersion?: string }>
       getAppVersion: () => Promise<string>
       dismissWelcome: (version: string) => Promise<boolean>

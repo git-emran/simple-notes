@@ -95,6 +95,8 @@ async function checkRolloutEligibility(targetVersion: string, forceCheck = false
   return true // Default to enabled if parsing or network fails
 }
 
+let lastStatus: { event: string; payload?: any } = { event: 'idle' }
+
 /**
  * Configure and register the auto-update lifecycle
  */
@@ -104,7 +106,9 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
 
   // Prevent "Attempted to register a second handler" errors by removing existing handlers
   ipcMain.removeHandler('updater:check')
+  ipcMain.removeHandler('updater:download')
   ipcMain.removeHandler('updater:restart-and-install')
+  ipcMain.removeHandler('updater:get-status')
   ipcMain.removeHandler('updater:get-config')
   ipcMain.removeHandler('updater:get-version')
   ipcMain.removeHandler('updater:dismiss-welcome')
@@ -115,6 +119,7 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
 
   // Notify renderer process on events
   const sendStatus = (event: string, payload?: any) => {
+    lastStatus = { event, payload }
     if (!mainWindow.isDestroyed()) {
       mainWindow.webContents.send('updater:status', { event, payload })
     }
@@ -134,10 +139,14 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
     // Gated check: download package only if user is eligible or forced check
     const isEligible = await checkRolloutEligibility(info.version, false)
     if (isEligible) {
-      sendStatus('downloading')
+      sendStatus('downloading', { version: info.version })
       autoUpdater.downloadUpdate()
     } else {
-      sendStatus('gated', { version: info.version })
+      sendStatus('gated', {
+        version: info.version,
+        releaseNotes: info.releaseNotes,
+        releaseDate: info.releaseDate
+      })
     }
   })
 
@@ -146,7 +155,8 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
   })
 
   autoUpdater.on('error', (err) => {
-    sendStatus('error', err == null ? 'unknown' : (err.stack || err).toString())
+    const errorMsg = err == null ? 'unknown' : (err.stack || err).toString()
+    sendStatus('error', errorMsg)
   })
 
   autoUpdater.on('download-progress', (progressObj) => {
@@ -156,7 +166,8 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
   autoUpdater.on('update-downloaded', (info) => {
     sendStatus('downloaded', {
       version: info.version,
-      releaseNotes: info.releaseNotes
+      releaseNotes: info.releaseNotes,
+      releaseDate: info.releaseDate
     })
   })
 
@@ -164,14 +175,16 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
   ipcMain.handle('updater:check', async (_, args: { force?: boolean } = {}) => {
     if (!app.isPackaged) {
       // Bypassed in development mode
+      sendStatus('dev-bypass')
       return { status: 'dev-bypass' }
     }
     try {
+      sendStatus('checking')
       if (args.force) {
-        // Force check: bypass rollout gating entirely by temporarily hooking update-available
+        // Force check: bypass rollout gating entirely by checking and downloading if available
         const eligible = await autoUpdater.checkForUpdates()
         if (eligible && eligible.updateInfo) {
-          sendStatus('downloading')
+          sendStatus('downloading', { version: eligible.updateInfo.version })
           autoUpdater.downloadUpdate()
         }
         return { status: 'checking' }
@@ -180,8 +193,27 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
         return { status: 'checking' }
       }
     } catch (e) {
+      const errMsg = e instanceof Error ? e.message : String(e)
       console.error('Update check failed:', e)
-      return { status: 'error', error: String(e) }
+      sendStatus('error', errMsg)
+      return { status: 'error', error: errMsg }
+    }
+  })
+
+  ipcMain.handle('updater:download', async () => {
+    if (!app.isPackaged) {
+      sendStatus('dev-bypass')
+      return { status: 'dev-bypass' }
+    }
+    try {
+      sendStatus('downloading')
+      await autoUpdater.downloadUpdate()
+      return { status: 'downloading' }
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : String(e)
+      console.error('Download update failed:', e)
+      sendStatus('error', errMsg)
+      return { status: 'error', error: errMsg }
     }
   })
 
@@ -189,6 +221,10 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
     if (app.isPackaged) {
       autoUpdater.quitAndInstall()
     }
+  })
+
+  ipcMain.handle('updater:get-status', () => {
+    return lastStatus
   })
 
   ipcMain.handle('updater:get-config', async () => {

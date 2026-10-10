@@ -1,122 +1,72 @@
 import React, { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { VscClose, VscCloudDownload, VscSparkle, VscSync } from 'react-icons/vsc'
-import { useAtomValue } from 'jotai'
-import { autoUpdateEnabledAtom } from '@renderer/store'
-
-interface UpdateInfo {
-  version: string
-  releaseNotes?: string
-  releaseDate?: string
-}
+import { useUpdater } from '@renderer/store'
 
 export const UpdateManager: React.FC = () => {
-  const autoUpdateEnabled = useAtomValue(autoUpdateEnabledAtom)
-  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'gated' | 'error'>('idle')
-  const [progress, setProgress] = useState(0)
-  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const {
+    status,
+    setStatus,
+    updateInfo,
+    progress,
+    appVersion,
+    autoUpdateEnabled,
+    restartAndInstall
+  } = useUpdater()
+
   const [showPromptModal, setShowPromptModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
-  const [currentVersion, setCurrentVersion] = useState<string>('')
   const [welcomeReleaseNotes, setWelcomeReleaseNotes] = useState<string>('')
 
-  // 1. Hook up Electron auto-updater listeners
+  // Silent background check 5s after start only if auto-update is enabled
   useEffect(() => {
-    if (!window.context || !window.context.onUpdaterStatus) return
-
-    // Get current version
-    window.context.getAppVersion().then((v) => {
-      setCurrentVersion(v)
-      checkFirstLaunchAfterUpdate(v)
-    })
-
-    // Listen to updater status channel
-    const unsubscribe = window.context.onUpdaterStatus(({ event, payload }) => {
-      switch (event) {
-        case 'checking':
-          setStatus('checking')
-          break
-        case 'available':
-          setStatus('available')
-          setUpdateInfo(payload as UpdateInfo)
-          break
-        case 'not-available':
-          setStatus('idle')
-          break
-        case 'downloading':
-          setStatus('downloading')
-          break
-        case 'progress': {
-          setStatus('downloading')
-          const progressPayload = payload as { percent?: number } | undefined
-          if (typeof progressPayload?.percent === 'number') {
-            setProgress(Math.round(progressPayload.percent))
-          }
-          break
-        }
-        case 'downloaded':
-          setStatus('downloaded')
-          if (payload) {
-            setUpdateInfo(payload as UpdateInfo)
-          }
-          break
-        case 'gated':
-          setStatus('gated')
-          if (payload) setUpdateInfo(payload as UpdateInfo)
-          break
-        case 'error':
-          setStatus('error')
-          break
-        default:
-          break
-      }
-    })
-
-    // Silent background check 5s after start only if auto-update is enabled
     let timer: ReturnType<typeof setTimeout> | null = null
-    if (autoUpdateEnabled) {
+    if (autoUpdateEnabled && window.context?.checkForUpdates) {
       timer = setTimeout(() => {
-        window.context.checkForUpdates()
+        window.context.checkForUpdates(false)
       }, 5000)
     }
 
     return () => {
-      unsubscribe()
       if (timer) clearTimeout(timer)
     }
   }, [autoUpdateEnabled])
 
-  // 2. Check for post-update first launch
-  const checkFirstLaunchAfterUpdate = async (v: string) => {
-    try {
-      const config = await window.context.getUpdateConfig()
-      if (config && config.lastPromptedVersion !== v) {
-        // Fetch release notes from GitHub dynamically for the current version
-        const response = await fetch('https://api.github.com/repos/git-emran/simple-notes/releases/latest')
-        if (response.ok) {
-          const data = await response.json()
-          if (data && data.tag_name && (data.tag_name.includes(v) || v.includes(data.tag_name.replace('v', '')))) {
-            setWelcomeReleaseNotes(data.body || 'No release notes available.')
-            setShowWelcomeModal(true)
+  // Check for post-update first launch
+  useEffect(() => {
+    if (!appVersion || !window.context?.getUpdateConfig) return
+
+    const checkFirstLaunchAfterUpdate = async (v: string) => {
+      try {
+        const config = await window.context.getUpdateConfig()
+        if (config && config.lastPromptedVersion !== v) {
+          // Fetch release notes from GitHub dynamically for the current version
+          const response = await fetch('https://api.github.com/repos/git-emran/simple-notes/releases/latest')
+          if (response.ok) {
+            const data = await response.json()
+            if (data && data.tag_name && (data.tag_name.includes(v) || v.includes(data.tag_name.replace('v', '')))) {
+              setWelcomeReleaseNotes(data.body || 'No release notes available.')
+              setShowWelcomeModal(true)
+            }
           }
         }
+      } catch {
+        // Ignore welcome note lookup failures
       }
-    } catch {
-      // Ignore welcome note lookup failures
     }
-  }
+
+    checkFirstLaunchAfterUpdate(appVersion)
+  }, [appVersion])
 
   const handleDismissWelcome = async () => {
     if (window.context && window.context.dismissWelcome) {
-      await window.context.dismissWelcome(currentVersion)
+      await window.context.dismissWelcome(appVersion)
     }
     setShowWelcomeModal(false)
   }
 
   const triggerRestart = () => {
-    if (window.context && window.context.restartAndInstall) {
-      window.context.restartAndInstall()
-    }
+    restartAndInstall()
   }
 
   return (
@@ -255,7 +205,7 @@ export const UpdateManager: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-black tracking-wide text-[var(--obsidian-text)]">Writer Successfully Updated!</h3>
-                  <p className="text-xs text-[var(--obsidian-text-muted)]">Welcome to version {currentVersion}</p>
+                  <p className="text-xs text-[var(--obsidian-text-muted)]">Welcome to version {appVersion}</p>
                 </div>
               </div>
               <button 

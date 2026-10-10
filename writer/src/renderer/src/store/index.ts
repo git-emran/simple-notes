@@ -3,6 +3,7 @@ import { atom, type Getter, type Setter } from 'jotai'
 import { atomWithStorage, unwrap, atomFamily } from 'jotai/utils'
 import { NoteStatus } from '@renderer/constants/noteStatus'
 export * from './settingsStore'
+export * from './updaterStore'
 export * from './kanbanStore'
 export * from './spreadsheetStore'
 

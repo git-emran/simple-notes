@@ -122,7 +122,9 @@ contextBridge.exposeInMainWorld('context', {
     return () => ipcRenderer.removeListener('terminal:exit', listener)
   },
   checkForUpdates: (force?: boolean) => ipcRenderer.invoke('updater:check', { force }),
+  downloadUpdate: () => ipcRenderer.invoke('updater:download'),
   restartAndInstall: () => ipcRenderer.invoke('updater:restart-and-install'),
+  getUpdaterStatus: () => ipcRenderer.invoke('updater:get-status'),
   getUpdateConfig: () => ipcRenderer.invoke('updater:get-config'),
   getAppVersion: () => ipcRenderer.invoke('updater:get-version'),
   dismissWelcome: (version: string) => ipcRenderer.invoke('updater:dismiss-welcome', version),
