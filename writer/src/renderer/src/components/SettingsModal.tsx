@@ -664,7 +664,7 @@ export const SettingsPanel = () => {
                   {updateCheckStatus === 'dev-bypass' && (
                     <div className="flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-400">
                       <VscInfo className="h-4 w-4 shrink-0" />
-                      <span>Development build (v{appVersion || '3.1.0'}) — update checks are simulated in dev mode.</span>
+                      <span>Development build{appVersion ? ` (v${appVersion})` : ''} — update checks are simulated in dev mode.</span>
                     </div>
                   )}
 

@@ -90,6 +90,13 @@ export const useUpdater = () => {
           if (p && typeof p.percent === 'number') {
             setProgress(Math.round(p.percent))
           }
+          if (p && typeof p.version === 'string' && p.version) {
+            setUpdateInfo((prev) => ({
+              version: p.version as string,
+              releaseNotes: prev?.releaseNotes || null,
+              releaseDate: prev?.releaseDate || null
+            }))
+          }
           break
         }
         case 'downloaded': {

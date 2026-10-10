@@ -96,6 +96,7 @@ async function checkRolloutEligibility(targetVersion: string, forceCheck = false
 }
 
 let lastStatus: { event: string; payload?: any } = { event: 'idle' }
+let lastKnownVersion: string | null = null
 
 /**
  * Configure and register the auto-update lifecycle
@@ -126,10 +127,12 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
   }
 
   autoUpdater.on('checking-for-update', () => {
+    lastKnownVersion = null
     sendStatus('checking')
   })
 
   autoUpdater.on('update-available', async (info) => {
+    lastKnownVersion = info.version
     sendStatus('available', {
       version: info.version,
       releaseNotes: info.releaseNotes,
@@ -160,7 +163,7 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
   })
 
   autoUpdater.on('download-progress', (progressObj) => {
-    sendStatus('progress', progressObj)
+    sendStatus('progress', { ...progressObj, version: lastKnownVersion })
   })
 
   autoUpdater.on('update-downloaded', (info) => {
@@ -206,7 +209,7 @@ export async function initializeUpdater(mainWindow: BrowserWindow) {
       return { status: 'dev-bypass' }
     }
     try {
-      sendStatus('downloading')
+      sendStatus('downloading', { version: lastKnownVersion })
       await autoUpdater.downloadUpdate()
       return { status: 'downloading' }
     } catch (e) {
