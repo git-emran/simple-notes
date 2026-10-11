@@ -141,28 +141,33 @@ export const useUpdater = () => {
   useEffect(() => {
     if (!window.context) return
 
+    let hasReceivedLiveEvent = false
+    let unsubscribe: (() => void) | undefined
+
     // Fetch current app version
     window.context.getAppVersion?.().then((v) => {
       if (v) setAppVersion(v)
     })
 
-    // Fetch initial status from main process if available
+    // Register live listener FIRST so no events are missed
+    if (window.context.onUpdaterStatus) {
+      unsubscribe = window.context.onUpdaterStatus(({ event, payload }) => {
+        hasReceivedLiveEvent = true
+        handleStatusEvent(event, payload)
+      })
+    }
+
+    // Then fetch the snapshot — skip it if a live event already superseded it
     window.context.getUpdaterStatus?.().then((statusObj) => {
+      if (hasReceivedLiveEvent) return
       if (statusObj && statusObj.event && statusObj.event !== 'idle') {
         handleStatusEvent(statusObj.event, statusObj.payload)
       }
     })
 
-    // Listen for live updates
-    if (window.context.onUpdaterStatus) {
-      const unsubscribe = window.context.onUpdaterStatus(({ event, payload }) => {
-        handleStatusEvent(event, payload)
-      })
-      return () => {
-        unsubscribe()
-      }
+    return () => {
+      unsubscribe?.()
     }
-    return undefined
   }, [handleStatusEvent, setAppVersion])
 
   const checkForUpdates = useCallback(
