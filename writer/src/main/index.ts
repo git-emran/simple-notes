@@ -49,6 +49,7 @@ import {
   disposeTerminalSessionsForSender,
   getTerminalSnapshot,
   resizeTerminalSession,
+  transferTerminalSession,
   writeTerminalInput,
 } from '@/lib/terminal'
 import { initializeUpdater } from './lib/updater'
@@ -246,6 +247,92 @@ function createWindow(): void {
   }
 }
 
+function createTerminalWindow(params?: { sessionId?: string; cwd?: string }): BrowserWindow {
+  const isMac = process.platform === 'darwin'
+
+  const terminalWindow = new BrowserWindow({
+    width: 850,
+    height: 520,
+    minWidth: 400,
+    minHeight: 250,
+    show: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    center: true,
+    title: 'Terminal',
+    frame: false,
+    transparent: isMac,
+    backgroundColor: isMac ? '#00000000' : '#1e1e1e',
+    ...(isMac
+      ? {
+          vibrancy: 'under-window',
+          visualEffectState: 'active',
+          titleBarStyle: 'hidden',
+          trafficLightPosition: { x: 15, y: 10 }
+        }
+      : {
+          titleBarStyle: 'hidden'
+        }),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: true,
+      contextIsolation: true,
+      spellcheck: false
+    }
+  })
+
+  if (params?.sessionId) {
+    transferTerminalSession(params.sessionId, terminalWindow.webContents)
+  }
+
+  terminalWindow.on('ready-to-show', () => {
+    terminalWindow.show()
+  })
+
+  const notifyFullscreen = () => {
+    if (!terminalWindow.isDestroyed()) {
+      terminalWindow.webContents.send('window:fullscreen-changed', terminalWindow.isFullScreen())
+    }
+  }
+
+  terminalWindow.on('enter-full-screen', () => notifyFullscreen())
+  terminalWindow.on('leave-full-screen', () => notifyFullscreen())
+  terminalWindow.on('enter-html-full-screen', () => notifyFullscreen())
+  terminalWindow.on('leave-html-full-screen', () => notifyFullscreen())
+  terminalWindow.on('resize', () => notifyFullscreen())
+  terminalWindow.on('focus', () => notifyFullscreen())
+  terminalWindow.webContents.on('did-finish-load', () => notifyFullscreen())
+
+  terminalWindow.webContents.once('destroyed', () => {
+    disposeTerminalSessionsForSender(terminalWindow.webContents)
+  })
+
+  terminalWindow.webContents.setWindowOpenHandler((details) => {
+    try {
+      const url = new URL(details.url)
+      if (url.protocol === 'https:' || url.protocol === 'http:') {
+        shell.openExternal(details.url)
+      }
+    } catch {
+      /* ignore invalid URLs */
+    }
+    return { action: 'deny' }
+  })
+
+  const query: Record<string, string> = { window: 'terminal' }
+  if (params?.sessionId) query['sessionId'] = params.sessionId
+  if (params?.cwd) query['cwd'] = params.cwd
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    const search = new URLSearchParams(query).toString()
+    terminalWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}?${search}#terminal`)
+  } else {
+    terminalWindow.loadFile(join(__dirname, '../renderer/index.html'), { query, hash: 'terminal' })
+  }
+
+  return terminalWindow
+}
+
 
 const configureApplicationMenu = () => {
   // Work around macOS log spam:
@@ -421,6 +508,27 @@ app.whenReady().then(() => {
   })
   ipcMain.on('terminal:resize', (event, payload: { sessionId: string; cols: number; rows: number }) => {
     resizeTerminalSession(event.sender, payload.sessionId, payload.cols, payload.rows)
+  })
+  ipcMain.handle('terminal:open-window', (_event, params?: { sessionId?: string; cwd?: string }) => {
+    createTerminalWindow(params)
+    return true
+  })
+  ipcMain.handle('window:minimize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    win?.minimize()
+  })
+  ipcMain.handle('window:maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    if (win.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win.maximize()
+    }
+  })
+  ipcMain.handle('window:close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    win?.close()
   })
   
   protocol.handle('local-file', async (request) => {

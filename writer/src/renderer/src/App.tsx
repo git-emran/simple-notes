@@ -48,7 +48,10 @@ import {
   accentColorAtom,
   transparentBgAtom,
   isCommandPaletteOpenAtom,
-  type EditorFontOption
+  type EditorFontOption,
+  type EditorTab,
+  toCssFontFamily,
+  getEditorFontStack
 } from '@renderer/store'
 import {
   VscFiles,
@@ -61,37 +64,6 @@ import {
   VscTerminal,
   VscSettingsGear
 } from 'react-icons/vsc'
-
-const toCssFontFamily = (family: string) => {
-  if (
-    family === 'monospace' ||
-    family === 'sans-serif' ||
-    family === 'serif' ||
-    family === 'system-ui' ||
-    family === '-apple-system' ||
-    family === 'BlinkMacSystemFont'
-  ) {
-    return family
-  }
-  return family.includes(' ') ? `"${family}"` : `"${family}"`
-}
-
-const getEditorFontStack = (font: EditorFontOption) => {
-  if (font === 'SF Pro') {
-    return [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      'system-ui',
-      'SF Pro Text',
-      'SF Pro Display',
-      'Segoe UI',
-      'Inter',
-      'sans-serif'
-    ]
-  }
-
-  return [font, 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier', 'monospace']
-}
 
 import { applyThemeToDocument } from './themes/themeManager'
 
@@ -739,29 +711,35 @@ const App = () => {
                 )
               })()}
 
-              {/* Terminal — mounted once the tab has been opened; receives
-                  isActive so xterm re-fits when revealed */}
-              {(() => {
-                const termTab = tabs.find((t) => t.kind === 'terminal')
-                if (!termTab) return null
-                const isTermActive = activeTab?.kind === 'terminal'
-                return (
-                  <div
-                    className="h-full w-full"
-                    style={{
-                      display: isTermActive ? 'flex' : 'none',
-                      flexDirection: 'column'
-                    }}
-                  >
-                    <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">Loading Terminal...</div>}>
-                      <TerminalTab
-                        tab={termTab as typeof termTab & { kind: 'terminal' }}
-                        isActive={isTermActive}
-                      />
-                    </Suspense>
-                  </div>
-                )
-              })()}
+              {/* Terminal tabs — kept mounted once opened to preserve shell state */}
+              {tabs
+                .filter((t): t is EditorTab & { kind: 'terminal' } => t.kind === 'terminal')
+                .map((termTab) => {
+                  const isTermActive = activeTab?.id === termTab.id
+                  return (
+                    <div
+                      key={termTab.id}
+                      className="h-full w-full"
+                      style={{
+                        display: isTermActive ? 'flex' : 'none',
+                        flexDirection: 'column'
+                      }}
+                    >
+                      <Suspense
+                        fallback={
+                          <div className="h-full w-full flex items-center justify-center text-[var(--obsidian-text-muted)] text-sm">
+                            Loading Terminal...
+                          </div>
+                        }
+                      >
+                        <TerminalTab
+                          tab={termTab}
+                          isActive={isTermActive}
+                        />
+                      </Suspense>
+                    </div>
+                  )
+                })}
 
               {/* Settings — mounted once the tab has been opened */}
               {(() => {

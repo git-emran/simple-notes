@@ -408,19 +408,29 @@ export const createTerminalSession = (
   terminalProcess.onData((data) => {
     appendToBuffer(session, data)
     session.sequence += 1
-    if (!sender.isDestroyed()) {
-      sender.send('terminal:data', { sessionId: id, data, sequence: session.sequence })
+    if (!session.webContents.isDestroyed()) {
+      session.webContents.send('terminal:data', { sessionId: id, data, sequence: session.sequence })
     }
   })
 
   terminalProcess.onExit(({ exitCode, signal }) => {
     sessions.delete(id)
-    if (!sender.isDestroyed()) {
-      sender.send('terminal:exit', { sessionId: id, exitCode, signal })
+    if (!session.webContents.isDestroyed()) {
+      session.webContents.send('terminal:exit', { sessionId: id, exitCode, signal })
     }
   })
 
   return { sessionId: id, cwd, shell }
+}
+
+export const transferTerminalSession = (
+  sessionId: string,
+  newSender: WebContents
+): boolean => {
+  const session = sessions.get(sessionId)
+  if (!session) return false
+  session.webContents = newSender
+  return true
 }
 
 export const getTerminalSnapshot = (

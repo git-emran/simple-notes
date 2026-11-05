@@ -417,7 +417,55 @@ export const createKanbanTabAtom = atom(null, (get, set) => {
 })
 
 export const createTerminalTabAtom = atom(null, (get, set) => {
-  openSpecialTab(get, set, 'terminal', 'Terminal', { terminalSessionId: null })
+  const tabs = get(tabsAtom)
+  const terminalTabs = tabs.filter((t) => t.kind === 'terminal')
+  let name = 'Terminal'
+  if (terminalTabs.length > 0) {
+    const existingNums = terminalTabs
+      .map((t) => {
+        const match = t.name.match(/^Terminal(?: (\d+))?$/)
+        return match ? (match[1] ? parseInt(match[1], 10) : 1) : null
+      })
+      .filter((n): n is number => n !== null)
+    let nextNum = 2
+    while (existingNums.includes(nextNum)) {
+      nextNum++
+    }
+    name = `Terminal ${nextNum}`
+  }
+
+  const nextTab: EditorTab = {
+    id: generateTabId(),
+    kind: 'terminal',
+    path: null,
+    name,
+    terminalSessionId: null
+  }
+  set(tabsAtom, [...tabs, nextTab])
+  set(activeTabIdAtom, nextTab.id)
+})
+
+export const detachTabAtom = atom(null, (get, set, tabId: string) => {
+  const tabs = get(tabsAtom)
+  const activeId = get(activeTabIdAtom)
+  const detachingTab = tabs.find((t) => t.id === tabId)
+  if (!detachingTab) return
+
+  const nextTabs = tabs.filter((t) => t.id !== tabId)
+  if (nextTabs.length === 0) {
+    set(tabsAtom, [{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
+    set(activeTabIdAtom, 'tab-1')
+    return
+  }
+
+  set(tabsAtom, nextTabs)
+  if (activeId !== tabId) return
+
+  const nextActive = nextTabs[Math.max(0, nextTabs.length - 1)]
+  set(activeTabIdAtom, nextActive.id)
+  if (nextActive.path) {
+    set(selectedNodeAtom, createFileNodeFromPath(nextActive.path))
+  }
 })
 
 export const createSpreadsheetTabAtom = atom(null, (get, set) => {
