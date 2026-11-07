@@ -6,6 +6,7 @@ import {
   protocol,
   Menu,
   nativeTheme,
+  screen,
   type MenuItemConstructorOptions
 } from 'electron'
 import { join } from 'path'
@@ -247,19 +248,45 @@ function createWindow(): void {
   }
 }
 
-function createTerminalWindow(params?: { sessionId?: string; cwd?: string }): BrowserWindow {
+interface SeparatedWindowParams {
+  tab?: any
+  sessionId?: string
+  cwd?: string
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+}
+
+function createSeparatedWindow(params?: SeparatedWindowParams): BrowserWindow {
   const isMac = process.platform === 'darwin'
 
-  const terminalWindow = new BrowserWindow({
-    width: 850,
-    height: 520,
+  let x = params?.x !== undefined ? Math.round(params.x) : undefined
+  let y = params?.y !== undefined ? Math.round(params.y) : undefined
+  const width = Math.max(400, params?.width ?? 850)
+  const height = Math.max(250, params?.height ?? 540)
+
+  if (typeof x === 'number' && typeof y === 'number') {
+    try {
+      const nearestDisplay = screen.getDisplayNearestPoint({ x, y })
+      const { bounds } = nearestDisplay
+      x = Math.max(bounds.x, Math.min(x, bounds.x + bounds.width - 200))
+      y = Math.max(bounds.y, Math.min(y, bounds.y + bounds.height - 100))
+    } catch {
+      // fallback to default positioning
+    }
+  }
+
+  const separatedWindow = new BrowserWindow({
+    width,
+    height,
+    ...(typeof x === 'number' && typeof y === 'number' ? { x, y } : { center: true }),
     minWidth: 400,
     minHeight: 250,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
-    center: true,
-    title: 'Terminal',
+    title: params?.tab?.name || 'Writer',
     frame: false,
     transparent: isMac,
     backgroundColor: isMac ? '#00000000' : '#1e1e1e',
@@ -281,33 +308,44 @@ function createTerminalWindow(params?: { sessionId?: string; cwd?: string }): Br
     }
   })
 
-  if (params?.sessionId) {
-    transferTerminalSession(params.sessionId, terminalWindow.webContents)
+  const effectiveSessionId = params?.sessionId || params?.tab?.terminalSessionId
+  if (effectiveSessionId) {
+    transferTerminalSession(effectiveSessionId, separatedWindow.webContents)
   }
 
-  terminalWindow.on('ready-to-show', () => {
-    terminalWindow.show()
+  separatedWindow.on('ready-to-show', () => {
+    separatedWindow.show()
+  })
+
+  const showFallbackTimer = setTimeout(() => {
+    if (!separatedWindow.isDestroyed() && !separatedWindow.isVisible()) {
+      separatedWindow.show()
+    }
+  }, 600)
+
+  separatedWindow.once('show', () => {
+    clearTimeout(showFallbackTimer)
   })
 
   const notifyFullscreen = () => {
-    if (!terminalWindow.isDestroyed()) {
-      terminalWindow.webContents.send('window:fullscreen-changed', terminalWindow.isFullScreen())
+    if (!separatedWindow.isDestroyed()) {
+      separatedWindow.webContents.send('window:fullscreen-changed', separatedWindow.isFullScreen())
     }
   }
 
-  terminalWindow.on('enter-full-screen', () => notifyFullscreen())
-  terminalWindow.on('leave-full-screen', () => notifyFullscreen())
-  terminalWindow.on('enter-html-full-screen', () => notifyFullscreen())
-  terminalWindow.on('leave-html-full-screen', () => notifyFullscreen())
-  terminalWindow.on('resize', () => notifyFullscreen())
-  terminalWindow.on('focus', () => notifyFullscreen())
-  terminalWindow.webContents.on('did-finish-load', () => notifyFullscreen())
+  separatedWindow.on('enter-full-screen', () => notifyFullscreen())
+  separatedWindow.on('leave-full-screen', () => notifyFullscreen())
+  separatedWindow.on('enter-html-full-screen', () => notifyFullscreen())
+  separatedWindow.on('leave-html-full-screen', () => notifyFullscreen())
+  separatedWindow.on('resize', () => notifyFullscreen())
+  separatedWindow.on('focus', () => notifyFullscreen())
+  separatedWindow.webContents.on('did-finish-load', () => notifyFullscreen())
 
-  terminalWindow.webContents.once('destroyed', () => {
-    disposeTerminalSessionsForSender(terminalWindow.webContents)
+  separatedWindow.webContents.once('destroyed', () => {
+    disposeTerminalSessionsForSender(separatedWindow.webContents)
   })
 
-  terminalWindow.webContents.setWindowOpenHandler((details) => {
+  separatedWindow.webContents.setWindowOpenHandler((details) => {
     try {
       const url = new URL(details.url)
       if (url.protocol === 'https:' || url.protocol === 'http:') {
@@ -319,18 +357,25 @@ function createTerminalWindow(params?: { sessionId?: string; cwd?: string }): Br
     return { action: 'deny' }
   })
 
-  const query: Record<string, string> = { window: 'terminal' }
-  if (params?.sessionId) query['sessionId'] = params.sessionId
+  const query: Record<string, string> = { window: 'separated' }
+  if (effectiveSessionId) query['sessionId'] = effectiveSessionId
   if (params?.cwd) query['cwd'] = params.cwd
+  if (params?.tab) {
+    query['tab'] = typeof params.tab === 'string' ? params.tab : JSON.stringify(params.tab)
+  }
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     const search = new URLSearchParams(query).toString()
-    terminalWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}?${search}#terminal`)
+    separatedWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}?${search}#separated`)
   } else {
-    terminalWindow.loadFile(join(__dirname, '../renderer/index.html'), { query, hash: 'terminal' })
+    separatedWindow.loadFile(join(__dirname, '../renderer/index.html'), { query, hash: 'separated' })
   }
 
-  return terminalWindow
+  return separatedWindow
+}
+
+function createTerminalWindow(params?: { sessionId?: string; cwd?: string; tab?: unknown; x?: number; y?: number }): BrowserWindow {
+  return createSeparatedWindow(params)
 }
 
 
@@ -509,9 +554,27 @@ app.whenReady().then(() => {
   ipcMain.on('terminal:resize', (event, payload: { sessionId: string; cols: number; rows: number }) => {
     resizeTerminalSession(event.sender, payload.sessionId, payload.cols, payload.rows)
   })
-  ipcMain.handle('terminal:open-window', (_event, params?: { sessionId?: string; cwd?: string }) => {
+  ipcMain.handle('terminal:open-window', (_event, params?: SeparatedWindowParams) => {
     createTerminalWindow(params)
     return true
+  })
+  ipcMain.handle('window:open-separated', (_event, params?: SeparatedWindowParams) => {
+    createSeparatedWindow(params)
+    return true
+  })
+  ipcMain.handle('terminal:transfer', (event, { sessionId }: { sessionId: string }) => {
+    if (sessionId) {
+      transferTerminalSession(sessionId, event.sender)
+      return true
+    }
+    return false
+  })
+  ipcMain.on('tab:docked', (event, payload: { tabId: string; sourceWindowId?: number }) => {
+    BrowserWindow.getAllWindows().forEach((win) => {
+      if (win.webContents.id !== event.sender.id && !win.isDestroyed()) {
+        win.webContents.send('tab:docked', payload)
+      }
+    })
   })
   ipcMain.handle('window:minimize', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)

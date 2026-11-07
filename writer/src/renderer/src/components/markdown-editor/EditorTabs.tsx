@@ -6,6 +6,8 @@ import {
   reorderTabsAtom,
   setActiveTabAtom,
   tabsAtom,
+  detachTabAtom,
+  joinTabAtom,
   navigationHistoryAtom,
   navigationIndexAtom,
   navigateBackAtom,
@@ -13,7 +15,7 @@ import {
 } from '@renderer/store'
 import { VscAdd, VscClose, VscProject, VscSettingsGear, VscTable, VscTerminal, VscChevronLeft, VscChevronRight } from 'react-icons/vsc'
 import { twMerge } from 'tailwind-merge'
-import { type CSSProperties, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 
 export const EditorTabs = () => {
   const tabs = useAtomValue(tabsAtom)
@@ -22,6 +24,8 @@ export const EditorTabs = () => {
   const closeTab = useSetAtom(closeTabAtom)
   const createNewTab = useSetAtom(createNewTabAtom)
   const reorderTabs = useSetAtom(reorderTabsAtom)
+  const detachTab = useSetAtom(detachTabAtom)
+  const joinTab = useSetAtom(joinTabAtom)
   
   const history = useAtomValue(navigationHistoryAtom)
   const index = useAtomValue(navigationIndexAtom)
@@ -31,11 +35,26 @@ export const EditorTabs = () => {
   const canGoBack = index > 0
   const canGoForward = index < history.length - 1
 
+  const containerRef = useRef<HTMLDivElement>(null)
   const draggedTabIdRef = useRef<string | null>(null)
+  const isDraggingOffRef = useRef(false)
+  const lastDragPosRef = useRef<{ screenX: number; screenY: number; clientX: number; clientY: number } | null>(null)
   const [dropIndicator, setDropIndicator] = useState<{ tabId: string; position: 'before' | 'after' } | null>(null)
+  const [rejoinedTabId, setRejoinedTabId] = useState<string | null>(null)
+
+  // Listen for tab docked events from other windows to remove local copy
+  useEffect(() => {
+    if (window.context?.onTabDocked) {
+      return window.context.onTabDocked(({ tabId }) => {
+        detachTab(tabId)
+      })
+    }
+    return undefined
+  }, [detachTab])
 
   return (
     <div 
+      ref={containerRef}
       className="flex h-full min-w-0 items-center gap-1 overflow-x-auto no-scrollbar bg-transparent px-1.5"
       style={{ 
           fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
@@ -79,6 +98,7 @@ export const EditorTabs = () => {
 
       {tabs.map((tab) => {
         const isActive = activeTabId === tab.id
+        const isRejoined = rejoinedTabId === tab.id
         return (
           <div
             key={tab.id}
@@ -86,16 +106,82 @@ export const EditorTabs = () => {
             draggable
             onDragStart={(e) => {
               draggedTabIdRef.current = tab.id
+              isDraggingOffRef.current = false
+              lastDragPosRef.current = {
+                screenX: e.screenX,
+                screenY: e.screenY,
+                clientX: e.clientX,
+                clientY: e.clientY
+              }
               e.dataTransfer.setData('application/x-writr-tab-id', tab.id)
+              e.dataTransfer.setData('application/x-writr-tab', JSON.stringify(tab))
+              e.dataTransfer.setData('text/plain', tab.id)
               e.dataTransfer.effectAllowed = 'move'
             }}
-            onDragEnd={() => {
+            onDrag={(e) => {
+              if (e.screenX !== 0 || e.screenY !== 0) {
+                lastDragPosRef.current = {
+                  screenX: e.screenX,
+                  screenY: e.screenY,
+                  clientX: e.clientX,
+                  clientY: e.clientY
+                }
+              }
+            }}
+            onDragEnd={(e) => {
+              const draggedId = draggedTabIdRef.current
               draggedTabIdRef.current = null
               setDropIndicator(null)
+
+              if (!draggedId) return
+
+              const dropEffect = e.dataTransfer.dropEffect
+              const lastPos = lastDragPosRef.current
+              const screenX = e.screenX !== 0 ? e.screenX : (lastPos?.screenX ?? 0)
+              const screenY = e.screenY !== 0 ? e.screenY : (lastPos?.screenY ?? 0)
+              const clientX = e.clientX !== 0 ? e.clientX : (lastPos?.clientX ?? 0)
+              const clientY = e.clientY !== 0 ? e.clientY : (lastPos?.clientY ?? 0)
+
+              const winX = window.screenX
+              const winY = window.screenY
+              const winW = window.outerWidth
+              const winH = window.outerHeight
+
+              const isOutsideWindow =
+                screenX < winX || screenX > winX + winW || screenY < winY || screenY > winY + winH
+
+              const stripRect = containerRef.current?.getBoundingClientRect()
+              const isOffStrip = stripRect
+                ? clientY > stripRect.bottom + 30 ||
+                  clientY < stripRect.top - 15 ||
+                  clientX < stripRect.left - 30 ||
+                  clientX > stripRect.right + 30
+                : true
+
+              const isTornOff =
+                (dropEffect === 'none' && (isOutsideWindow || isOffStrip)) ||
+                (e.clientX === 0 && e.clientY === 0 && isOutsideWindow)
+
+              if (isTornOff && !isDraggingOffRef.current) {
+                isDraggingOffRef.current = true
+                const targetX = Math.round(screenX - 120)
+                const targetY = Math.round(screenY - 20)
+
+                window.context?.openSeparatedWindow?.({
+                  tab,
+                  sessionId: tab.terminalSessionId ?? undefined,
+                  x: targetX,
+                  y: targetY
+                }).then(() => {
+                  detachTab(draggedId)
+                }).catch((err) => {
+                  console.error('Failed to tear off tab into window:', err)
+                })
+              }
             }}
             onDragOver={(e) => {
               const dragged = draggedTabIdRef.current
-              if (!dragged || dragged === tab.id) return
+              if (dragged === tab.id) return
               e.preventDefault()
 
               const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
@@ -110,18 +196,44 @@ export const EditorTabs = () => {
             }}
             onDrop={(e) => {
               e.preventDefault()
+              const position = dropIndicator?.position ?? 'after'
+              setDropIndicator(null)
+
+              const tabDataStr = e.dataTransfer.getData('application/x-writr-tab')
               const source =
                 draggedTabIdRef.current ?? e.dataTransfer.getData('application/x-writr-tab-id') ?? e.dataTransfer.getData('text/plain')
-              if (!source || source === tab.id || !dropIndicator) return
-              reorderTabs({ sourceTabId: source, targetTabId: tab.id, position: dropIndicator.position })
-              setDropIndicator(null)
+
+              // Check if tab is from another window
+              if (tabDataStr) {
+                try {
+                  const incomingTab = JSON.parse(tabDataStr)
+                  if (incomingTab && incomingTab.id && !tabs.some((t) => t.id === incomingTab.id)) {
+                    if (incomingTab.terminalSessionId && window.context?.transferTerminalSession) {
+                      void window.context.transferTerminalSession(incomingTab.terminalSessionId)
+                    }
+                    joinTab({
+                      tab: incomingTab,
+                      targetTabId: tab.id,
+                      position
+                    })
+                    window.context?.notifyTabDocked?.(incomingTab.id)
+                    setRejoinedTabId(incomingTab.id)
+                    setTimeout(() => setRejoinedTabId(null), 1000)
+                    return
+                  }
+                } catch {}
+              }
+
+              if (!source || source === tab.id) return
+              reorderTabs({ sourceTabId: source, targetTabId: tab.id, position })
             }}
             style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
             className={twMerge(
               'group relative flex h-8 flex-1 shrink min-w-[60px] max-w-[220px] items-center rounded-md border border-transparent px-2.5 cursor-pointer select-none transition-[background-color,border-color,color,box-shadow]',
               isActive
                 ? 'bg-[var(--obsidian-workspace)] border-obsidian-border-soft text-[var(--obsidian-text)] shadow-[0_1px_2px_rgba(0,0,0,0.05)] z-10'
-                : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]'
+                : 'text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)]',
+              isRejoined && 'animate-tab-rejoin'
             )}
           >
             {dropIndicator?.tabId === tab.id && dropIndicator.position === 'before' && (
@@ -173,8 +285,33 @@ export const EditorTabs = () => {
       >
         <VscAdd className="w-4 h-4" />
       </button>
-      {/* Fill remaining space */}
-      <div className="h-full flex-1" />
+      {/* Fill remaining space & accept tab drops at the end of the bar */}
+      <div 
+        className="h-full flex-1 min-w-[30px]" 
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes('application/x-writr-tab') || draggedTabIdRef.current) {
+            e.preventDefault()
+          }
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          const tabDataStr = e.dataTransfer.getData('application/x-writr-tab')
+          if (tabDataStr) {
+            try {
+              const incomingTab = JSON.parse(tabDataStr)
+              if (incomingTab && incomingTab.id && !tabs.some((t) => t.id === incomingTab.id)) {
+                if (incomingTab.terminalSessionId && window.context?.transferTerminalSession) {
+                  void window.context.transferTerminalSession(incomingTab.terminalSessionId)
+                }
+                joinTab({ tab: incomingTab })
+                window.context?.notifyTabDocked?.(incomingTab.id)
+                setRejoinedTabId(incomingTab.id)
+                setTimeout(() => setRejoinedTabId(null), 1000)
+              }
+            } catch {}
+          }
+        }}
+      />
     </div>
   )
 }

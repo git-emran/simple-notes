@@ -70,7 +70,11 @@ declare global {
       createTerminalSession: CreateTerminalSession
       getTerminalSnapshot: GetTerminalSnapshot
       closeTerminalSession: CloseTerminalSession
-      openTerminalWindow: (params?: { sessionId?: string; cwd?: string }) => Promise<boolean>
+      openTerminalWindow: (params?: { sessionId?: string; cwd?: string; tab?: unknown; x?: number; y?: number; width?: number; height?: number }) => Promise<boolean>
+      openSeparatedWindow: (params?: { sessionId?: string; cwd?: string; tab?: unknown; x?: number; y?: number; width?: number; height?: number }) => Promise<boolean>
+      transferTerminalSession: (sessionId: string) => Promise<boolean>
+      notifyTabDocked: (tabId: string) => void
+      onTabDocked: (callback: (payload: { tabId: string }) => void) => () => void
       minimizeWindow: () => Promise<void>
       maximizeWindow: () => Promise<void>
       closeWindow: () => Promise<void>

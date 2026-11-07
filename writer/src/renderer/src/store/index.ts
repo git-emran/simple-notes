@@ -160,7 +160,7 @@ const getNameFromPath = (filePath: string) => {
   return normalized.substring(normalized.lastIndexOf('/') + 1)
 }
 
-const createEmptyTab = (): EditorTab => ({
+export const createEmptyTab = (): EditorTab => ({
   id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
   kind: 'empty',
   path: null,
@@ -453,8 +453,10 @@ export const detachTabAtom = atom(null, (get, set, tabId: string) => {
 
   const nextTabs = tabs.filter((t) => t.id !== tabId)
   if (nextTabs.length === 0) {
-    set(tabsAtom, [{ id: 'tab-1', kind: 'empty', path: null, name: 'New Tab' }])
-    set(activeTabIdAtom, 'tab-1')
+    const emptyTab = createEmptyTab()
+    set(tabsAtom, [emptyTab])
+    set(activeTabIdAtom, emptyTab.id)
+    set(selectedNodeAtom, null)
     return
   }
 
@@ -465,8 +467,63 @@ export const detachTabAtom = atom(null, (get, set, tabId: string) => {
   set(activeTabIdAtom, nextActive.id)
   if (nextActive.path) {
     set(selectedNodeAtom, createFileNodeFromPath(nextActive.path))
+  } else {
+    set(selectedNodeAtom, null)
   }
 })
+
+export const joinTabAtom = atom(
+  null,
+  (
+    get,
+    set,
+    payload: {
+      tab: EditorTab
+      targetTabId?: string
+      position?: 'before' | 'after'
+    }
+  ) => {
+    const tabs = get(tabsAtom)
+    const { tab, targetTabId, position } = payload
+
+    const existingIndex = tabs.findIndex((t) => t.id === tab.id)
+    if (existingIndex !== -1) {
+      set(activeTabIdAtom, tab.id)
+      return
+    }
+
+    // If the window currently only has a single placeholder empty tab, replace it
+    if (tabs.length === 1 && tabs[0].kind === 'empty') {
+      set(tabsAtom, [tab])
+      set(activeTabIdAtom, tab.id)
+      if (tab.path) {
+        set(selectedNodeAtom, createFileNodeFromPath(tab.path))
+      }
+      return
+    }
+
+    const nextTabs = [...tabs]
+    if (targetTabId) {
+      const targetIndex = nextTabs.findIndex((t) => t.id === targetTabId)
+      if (targetIndex !== -1) {
+        const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex
+        nextTabs.splice(insertIndex, 0, tab)
+      } else {
+        nextTabs.push(tab)
+      }
+    } else {
+      nextTabs.push(tab)
+    }
+
+    set(tabsAtom, nextTabs)
+    set(activeTabIdAtom, tab.id)
+    if (tab.path) {
+      set(selectedNodeAtom, createFileNodeFromPath(tab.path))
+    }
+  }
+)
+
+export const joinTerminalTabAtom = joinTabAtom
 
 export const createSpreadsheetTabAtom = atom(null, (get, set) => {
   openSpecialTab(get, set, 'spreadsheet', 'Spreadsheet')

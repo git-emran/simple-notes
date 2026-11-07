@@ -108,8 +108,17 @@ contextBridge.exposeInMainWorld('context', {
     ipcRenderer.invoke('terminal:create', ...args),
   getTerminalSnapshot: (...args: Parameters<GetTerminalSnapshot>) => ipcRenderer.invoke('terminal:snapshot', ...args),
   closeTerminalSession: (...args: Parameters<CloseTerminalSession>) => ipcRenderer.invoke('terminal:close', ...args),
-  openTerminalWindow: (params?: { sessionId?: string; cwd?: string }) =>
+  openTerminalWindow: (params?: { sessionId?: string; cwd?: string; tab?: unknown; x?: number; y?: number; width?: number; height?: number }) =>
     ipcRenderer.invoke('terminal:open-window', params),
+  openSeparatedWindow: (params?: { sessionId?: string; cwd?: string; tab?: unknown; x?: number; y?: number; width?: number; height?: number }) =>
+    ipcRenderer.invoke('window:open-separated', params),
+  transferTerminalSession: (sessionId: string) => ipcRenderer.invoke('terminal:transfer', { sessionId }),
+  notifyTabDocked: (tabId: string) => ipcRenderer.send('tab:docked', { tabId }),
+  onTabDocked: (callback: (payload: { tabId: string }) => void) => {
+    const listener = (_event: IpcRendererEvent, payload: { tabId: string }) => callback(payload)
+    ipcRenderer.on('tab:docked', listener)
+    return () => ipcRenderer.removeListener('tab:docked', listener)
+  },
   minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
   maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
   closeWindow: () => ipcRenderer.invoke('window:close'),

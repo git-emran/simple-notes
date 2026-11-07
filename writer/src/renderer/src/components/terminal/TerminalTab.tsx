@@ -27,7 +27,7 @@ import { VscLinkExternal, VscTerminal } from 'react-icons/vsc'
 type TerminalTabProps = {
   tab: {
     id: string
-    kind?: 'terminal'
+    kind?: string
     terminalSessionId?: string | null
     name?: string
   }
@@ -544,6 +544,12 @@ export const TerminalTab = ({
   const handleSeparateToWindow = async () => {
     try {
       await window.context.openTerminalWindow({
+        tab: {
+          id: tab.id,
+          name: tab.name || 'Terminal',
+          kind: 'terminal',
+          terminalSessionId: sessionId ?? undefined
+        },
         sessionId: sessionId ?? undefined,
         cwd: cwdLabel || notesRootDir || undefined
       })
