@@ -70,6 +70,10 @@ declare global {
       createTerminalSession: CreateTerminalSession
       getTerminalSnapshot: GetTerminalSnapshot
       closeTerminalSession: CloseTerminalSession
+      openTerminalWindow: (params?: { sessionId?: string; cwd?: string }) => Promise<boolean>
+      minimizeWindow: () => Promise<void>
+      maximizeWindow: () => Promise<void>
+      closeWindow: () => Promise<void>
       writeTerminalInput: (sessionId: string, data: string) => void
       resizeTerminalSession: (sessionId: string, cols: number, rows: number) => void
       onTerminalData: (callback: (event: TerminalDataEvent) => void) => () => void

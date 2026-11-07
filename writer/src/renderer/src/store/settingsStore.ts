@@ -30,6 +30,30 @@ export type EditorFontOption =
   | 'JetBrains Mono'
   | 'Martian Mono'
 
+export const toCssFontFamily = (family: string) => {
+  if (family.startsWith('"') || family.startsWith("'")) {
+    return family
+  }
+  return family.includes(' ') ? `"${family}"` : `"${family}"`
+}
+
+export const getEditorFontStack = (font: EditorFontOption) => {
+  if (font === 'SF Pro') {
+    return [
+      '-apple-system',
+      'BlinkMacSystemFont',
+      'system-ui',
+      'SF Pro Text',
+      'SF Pro Display',
+      'Segoe UI',
+      'Inter',
+      'sans-serif'
+    ]
+  }
+
+  return [font, 'SFMono-Regular', 'Menlo', 'JetBrains Mono', 'Courier', 'monospace']
+}
+
 export const editorFontAtom = atomWithStorage<EditorFontOption>(
   'writr-editor-font',
   'SFMono-Regular'

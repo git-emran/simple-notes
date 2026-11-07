@@ -8,6 +8,7 @@ import { Terminal } from '@xterm/xterm'
 import type { TerminalDataEvent } from '@shared/types'
 import {
   closeTabAtom,
+  detachTabAtom,
   editorFontAtom,
   editorFontSizeAtom,
   notesRootDirAtom,
@@ -17,14 +18,24 @@ import {
   type EditorTab,
   type EditorFontOption,
 } from '@renderer/store'
+import { Tooltip } from '@renderer/components/Tooltip'
 import { getTerminalTheme } from '@renderer/themes/terminalThemes'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect, useRef, useState } from 'react'
-import { VscTerminal } from 'react-icons/vsc'
+import { VscLinkExternal, VscTerminal } from 'react-icons/vsc'
 
 type TerminalTabProps = {
-  tab: EditorTab & { kind: 'terminal' }
+  tab: {
+    id: string
+    kind?: 'terminal'
+    terminalSessionId?: string | null
+    name?: string
+  }
   isActive?: boolean
+  showSeparateButton?: boolean
+  onSeparate?: () => void
+  onClose?: () => void
+  onSessionIdChange?: (sessionId: string | null) => void
 }
 
 const MIN_FONT_SIZE = 12
@@ -44,7 +55,14 @@ const getShellLabel = (shellPath: string) => {
   return lastSlash === -1 ? normalized : normalized.slice(lastSlash + 1)
 }
 
-export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
+export const TerminalTab = ({
+  tab,
+  isActive,
+  showSeparateButton = true,
+  onSeparate,
+  onClose,
+  onSessionIdChange
+}: TerminalTabProps) => {
   const themeMode = useAtomValue(themeModeAtom)
   const isDarkMode = useAtomValue(isDarkModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
@@ -52,6 +70,7 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
   const notesRootDir = useAtomValue(notesRootDirAtom)
   const setTerminalSessionId = useSetAtom(setTerminalSessionIdAtom)
   const closeTab = useSetAtom(closeTabAtom)
+  const detachTab = useSetAtom(detachTabAtom)
   const containerRef = useRef<HTMLDivElement>(null)
   const terminalRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -102,7 +121,11 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
 
         if (!snapshot) {
           if (cancelled || initRunRef.current !== runId) return
-          setTerminalSessionId({ tabId: tab.id, sessionId: null })
+          if (onSessionIdChange) {
+            onSessionIdChange(null)
+          } else {
+            setTerminalSessionId({ tabId: tab.id, sessionId: null })
+          }
           setSessionId(null)
         } else if (!cancelled && initRunRef.current === runId) {
           setSessionId(snapshot.sessionId)
@@ -132,7 +155,11 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
         return
       }
 
-      setTerminalSessionId({ tabId: tab.id, sessionId: session.sessionId })
+      if (onSessionIdChange) {
+        onSessionIdChange(session.sessionId)
+      } else {
+        setTerminalSessionId({ tabId: tab.id, sessionId: session.sessionId })
+      }
       setSessionId(session.sessionId)
       setShellLabel(getShellLabel(session.shell))
       setCwdLabel(session.cwd)
@@ -144,7 +171,7 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
     return () => {
       cancelled = true
     }
-  }, [notesRootDir, retryCount, setTerminalSessionId, tab.id, tab.terminalSessionId])
+  }, [notesRootDir, onSessionIdChange, retryCount, setTerminalSessionId, tab.id, tab.terminalSessionId])
 
   useEffect(() => {
     const term = terminalRef.current
@@ -395,9 +422,17 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
     const unsubscribeExit = window.context.onTerminalExit((event) => {
       if (event.sessionId !== sessionId) return
       setStatusText(`Exited (${event.exitCode})`)
-      setTerminalSessionId({ tabId: tab.id, sessionId: null })
+      if (onSessionIdChange) {
+        onSessionIdChange(null)
+      } else {
+        setTerminalSessionId({ tabId: tab.id, sessionId: null })
+      }
       window.setTimeout(() => {
-        closeTab(tab.id)
+        if (onClose) {
+          onClose()
+        } else {
+          closeTab(tab.id)
+        }
       }, 0)
     })
 
@@ -504,7 +539,23 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
       pendingEventsRef.current = []
       lastSequenceRef.current = 0
     }
-  }, [closeTab, sessionId, setTerminalSessionId, tab.id, editorFont, editorFontSize, isDarkMode])
+  }, [closeTab, onClose, onSessionIdChange, sessionId, setTerminalSessionId, tab.id, editorFont, editorFontSize, isDarkMode])
+
+  const handleSeparateToWindow = async () => {
+    try {
+      await window.context.openTerminalWindow({
+        sessionId: sessionId ?? undefined,
+        cwd: cwdLabel || notesRootDir || undefined
+      })
+      if (onSeparate) {
+        onSeparate()
+      } else {
+        detachTab(tab.id)
+      }
+    } catch (err) {
+      console.error('Failed to open dedicated terminal window:', err)
+    }
+  }
 
   return (
     <div className="flex h-full flex-col bg-[var(--obsidian-workspace)]">
@@ -514,8 +565,22 @@ export const TerminalTab = ({ tab, isActive }: TerminalTabProps) => {
           <span className="font-medium">{shellLabel}</span>
         </div>
         <span className="min-w-0 flex-1 truncate">{cwdLabel}</span>
-        <div className="ml-auto shrink-0 whitespace-nowrap text-[10px] uppercase tracking-[0.18em]">
-          {statusText}
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.18em]">
+            {statusText}
+          </span>
+          {showSeparateButton && (
+            <Tooltip content="Separate to dedicated window" position="bottom">
+              <button
+                type="button"
+                onClick={handleSeparateToWindow}
+                className="flex h-6 w-6 items-center justify-center rounded text-[var(--obsidian-text-muted)] hover:text-[var(--obsidian-text)] hover:bg-[var(--obsidian-hover-soft)] transition-colors"
+                aria-label="Separate to dedicated window"
+              >
+                <VscLinkExternal className="h-3.5 w-3.5" />
+              </button>
+            </Tooltip>
+          )}
         </div>
       </div>
       <div className="terminal-host relative min-h-0 flex-1">

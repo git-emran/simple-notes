@@ -108,6 +108,11 @@ contextBridge.exposeInMainWorld('context', {
     ipcRenderer.invoke('terminal:create', ...args),
   getTerminalSnapshot: (...args: Parameters<GetTerminalSnapshot>) => ipcRenderer.invoke('terminal:snapshot', ...args),
   closeTerminalSession: (...args: Parameters<CloseTerminalSession>) => ipcRenderer.invoke('terminal:close', ...args),
+  openTerminalWindow: (params?: { sessionId?: string; cwd?: string }) =>
+    ipcRenderer.invoke('terminal:open-window', params),
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
+  closeWindow: () => ipcRenderer.invoke('window:close'),
   writeTerminalInput: (sessionId: string, data: string) => ipcRenderer.send('terminal:input', { sessionId, data }),
   resizeTerminalSession: (sessionId: string, cols: number, rows: number) =>
     ipcRenderer.send('terminal:resize', { sessionId, cols, rows }),

@@ -109,6 +109,11 @@ export type GetTerminalSnapshot = (sessionId: string) => Promise<TerminalSnapsho
 export type CloseTerminalSession = (sessionId: string) => Promise<void>
 export type WriteTerminalInput = (sessionId: string, data: string) => void
 export type ResizeTerminalSession = (sessionId: string, cols: number, rows: number) => void
+export type OpenTerminalWindowParams = {
+  sessionId?: string
+  cwd?: string
+}
+export type OpenTerminalWindow = (params?: OpenTerminalWindowParams) => Promise<boolean>
 
 export type NativeThemeSource = 'system' | 'light' | 'dark'
 
