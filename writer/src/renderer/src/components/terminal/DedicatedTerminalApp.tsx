@@ -1,5 +1,5 @@
-import { type CSSProperties, Suspense, lazy, useEffect, useRef, useState } from 'react'
-import { useAtom, useAtomValue } from 'jotai'
+import { type CSSProperties, Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
+import { useAtomValue, useSetAtom } from 'jotai'
 import {
   themeModeAtom,
   isDarkModeAtom,
@@ -85,7 +85,7 @@ const getInitialParams = () => {
 
 export const DedicatedTerminalApp = () => {
   const themeMode = useAtomValue(themeModeAtom)
-  const [isDarkMode, setIsDarkMode] = useAtom(isDarkModeAtom)
+  const setIsDarkMode = useSetAtom(isDarkModeAtom)
   const editorFont = useAtomValue(editorFontAtom)
   const editorFontSize = useAtomValue(editorFontSizeAtom)
   const accentColor = useAtomValue(accentColorAtom)
@@ -132,16 +132,6 @@ export const DedicatedTerminalApp = () => {
     }
     return undefined
   }, [])
-
-  /* Listen for tab docked events from other windows */
-  useEffect(() => {
-    if (window.context?.onTabDocked) {
-      return window.context.onTabDocked(({ tabId }) => {
-        handleRemoveDockedTab(tabId)
-      })
-    }
-    return undefined
-  }, [tabs, activeTabId])
 
   /* Sync Theme */
   useEffect(() => {
@@ -212,34 +202,35 @@ export const DedicatedTerminalApp = () => {
   }, [transparentBg])
 
   /* Handle Tab Operations */
-  const handleNewTab = () => {
-    const activeTab = tabs.find((t) => t.id === activeTabId)
-    const isTerminalFocused = activeTab?.kind === 'terminal' || (!activeTab?.kind && tabs.every(t => t.kind === 'terminal' || !t.kind))
+  const handleNewTab = useCallback(() => {
+    setTabs((prev) => {
+      const activeTab = prev.find((t) => t.id === activeTabId)
+      const isTerminalFocused = activeTab?.kind === 'terminal' || (!activeTab?.kind && prev.every(t => t.kind === 'terminal' || !t.kind))
 
-    if (isTerminalFocused) {
-      const existingNums = tabs
-        .filter((t) => t.kind === 'terminal' || !t.kind)
-        .map((t) => {
-          const match = t.name.match(/^Terminal(?: (\d+))?$/)
-          return match ? (match[1] ? parseInt(match[1], 10) : 1) : null
-        })
-        .filter((n): n is number => n !== null)
+      if (isTerminalFocused) {
+        const existingNums = prev
+          .filter((t) => t.kind === 'terminal' || !t.kind)
+          .map((t) => {
+            const match = t.name.match(/^Terminal(?: (\d+))?$/)
+            return match ? (match[1] ? parseInt(match[1], 10) : 1) : null
+          })
+          .filter((n): n is number => n !== null)
 
-      let nextNum = 1
-      while (existingNums.includes(nextNum)) {
-        nextNum++
+        let nextNum = 1
+        while (existingNums.includes(nextNum)) {
+          nextNum++
+        }
+
+        const newTab: DedicatedTab = {
+          id: `term-tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          name: nextNum === 1 ? 'Terminal' : `Terminal ${nextNum}`,
+          kind: 'terminal',
+          terminalSessionId: null
+        }
+        setActiveTabId(newTab.id)
+        return [...prev, newTab]
       }
 
-      const newTab: DedicatedTab = {
-        id: `term-tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        name: nextNum === 1 ? 'Terminal' : `Terminal ${nextNum}`,
-        kind: 'terminal',
-        terminalSessionId: null
-      }
-
-      setTabs((prev) => [...prev, newTab])
-      setActiveTabId(newTab.id)
-    } else {
       const newTab: DedicatedTab = {
         id: `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         name: 'New Tab',
@@ -247,35 +238,40 @@ export const DedicatedTerminalApp = () => {
         path: null,
         terminalSessionId: null
       }
-
-      setTabs((prev) => [...prev, newTab])
       setActiveTabId(newTab.id)
-    }
-  }
+      return [...prev, newTab]
+    })
+  }, [activeTabId])
 
-  const handleCloseTab = (tabId: string) => {
-    const closing = tabs.find((t) => t.id === tabId)
-    if (closing?.terminalSessionId && window.context?.closeTerminalSession) {
-      void window.context.closeTerminalSession(closing.terminalSessionId)
-    }
-
-    const nextTabs = tabs.filter((t) => t.id !== tabId)
-    if (nextTabs.length === 0) {
-      if (window.context?.closeWindow) {
-        void window.context.closeWindow()
-      } else {
-        window.close()
+  const handleCloseTab = useCallback((tabId: string) => {
+    setTabs((prev) => {
+      const closing = prev.find((t) => t.id === tabId)
+      if (closing?.terminalSessionId && window.context?.closeTerminalSession) {
+        void window.context.closeTerminalSession(closing.terminalSessionId)
       }
-      return
-    }
 
-    setTabs(nextTabs)
-    if (activeTabId === tabId) {
-      setActiveTabId(nextTabs[nextTabs.length - 1].id)
-    }
-  }
+      const nextTabs = prev.filter((t) => t.id !== tabId)
+      if (nextTabs.length === 0) {
+        if (window.context?.closeWindow) {
+          void window.context.closeWindow()
+        } else {
+          window.close()
+        }
+        return []
+      }
 
-  const handleRemoveDockedTab = (tabId: string) => {
+      setActiveTabId((currentActive) => {
+        if (currentActive === tabId) {
+          return nextTabs[nextTabs.length - 1].id
+        }
+        return currentActive
+      })
+
+      return nextTabs
+    })
+  }, [])
+
+  const handleRemoveDockedTab = useCallback((tabId: string) => {
     setTabs((prev) => {
       const remaining = prev.filter((t) => t.id !== tabId)
       if (remaining.length === 0) {
@@ -288,12 +284,25 @@ export const DedicatedTerminalApp = () => {
         }, 50)
         return []
       }
-      if (activeTabId === tabId) {
-        setActiveTabId(remaining[remaining.length - 1].id)
-      }
+      setActiveTabId((currentActive) => {
+        if (currentActive === tabId) {
+          return remaining[remaining.length - 1].id
+        }
+        return currentActive
+      })
       return remaining
     })
-  }
+  }, [])
+
+  /* Listen for tab docked events from other windows */
+  useEffect(() => {
+    if (window.context?.onTabDocked) {
+      return window.context.onTabDocked(({ tabId }) => {
+        handleRemoveDockedTab(tabId)
+      })
+    }
+    return undefined
+  }, [handleRemoveDockedTab])
 
   /* Keyboard shortcuts */
   useEffect(() => {
@@ -312,7 +321,7 @@ export const DedicatedTerminalApp = () => {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeTabId, tabs])
+  }, [activeTabId, handleCloseTab, handleNewTab])
 
   return (
     <div className="animate-window-bloom flex h-screen w-screen flex-col overflow-hidden bg-[var(--obsidian-workspace)] text-[var(--obsidian-text)] select-none">
@@ -405,8 +414,8 @@ export const DedicatedTerminalApp = () => {
                       y: targetY
                     }).then(() => {
                       handleRemoveDockedTab(draggedId)
-                    }).catch((err) => {
-                      console.error('Failed to tear off tab into window:', err)
+                    }).catch(() => {
+                      // Ignore window opening failures
                     })
                   }
                 }}
@@ -453,7 +462,9 @@ export const DedicatedTerminalApp = () => {
                         setTimeout(() => setRejoinedTabId(null), 1000)
                         return
                       }
-                    } catch {}
+                    } catch {
+                      // Ignore invalid or malformed tab transfer payload
+                    }
                   }
 
                   if (!source || source === tab.id) return
@@ -544,7 +555,9 @@ export const DedicatedTerminalApp = () => {
                     setRejoinedTabId(incomingTab.id)
                     setTimeout(() => setRejoinedTabId(null), 1000)
                   }
-                } catch {}
+                } catch {
+                  // Ignore invalid or malformed tab transfer payload
+                }
               }
             }}
           />

@@ -105,7 +105,7 @@ export const CommandPaletteModal = ({
     >
       <div
         className={twMerge(
-          'absolute inset-0 bg-black/45 transition-opacity duration-[160ms]',
+          'absolute inset-0 bg-black/45 backdrop-blur-sm transition-opacity duration-[160ms]',
           easingClass,
           isShown ? 'opacity-100' : 'opacity-0'
         )}
@@ -113,7 +113,7 @@ export const CommandPaletteModal = ({
       />
       <div
         className={twMerge(
-          'app-modal-dialog max-w-xl transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
+          'app-modal-dialog max-w-xl backdrop-blur-xl transition-[opacity,transform] duration-[160ms] will-change-[opacity,transform]',
           easingClass,
           isShown ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-1 scale-[0.98] opacity-0'
         )}

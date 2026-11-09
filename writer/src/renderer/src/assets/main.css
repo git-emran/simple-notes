@@ -448,7 +448,9 @@
   }
 
   .app-modal-dialog {
-    @apply relative z-10 flex flex-col w-full overflow-hidden rounded-xl border border-obsidian-border bg-[var(--obsidian-pane)] shadow-2xl text-[var(--obsidian-text)];
+    @apply relative z-10 flex flex-col w-full overflow-hidden rounded-xl border border-obsidian-border bg-[var(--obsidian-pane)] shadow-2xl text-[var(--obsidian-text)] backdrop-blur-xl;
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
   }
 
   .app-modal-header {
@@ -1125,7 +1127,9 @@ header.draggable-top-bar,
 /* Strip glassmorphism when the user turns off transparent backgrounds */
 .no-transparency .mermaid-toolbar,
 .no-transparency .writr-markdown-toolbar-pill,
-.no-transparency .context-menu-glass {
+.no-transparency .context-menu-glass,
+.no-transparency .app-modal-dialog,
+.no-transparency .app-modal-backdrop {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }

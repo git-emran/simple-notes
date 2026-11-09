@@ -174,8 +174,8 @@ export const EditorTabs = () => {
                   y: targetY
                 }).then(() => {
                   detachTab(draggedId)
-                }).catch((err) => {
-                  console.error('Failed to tear off tab into window:', err)
+                }).catch(() => {
+                  // Ignore window opening failures
                 })
               }
             }}
@@ -221,7 +221,9 @@ export const EditorTabs = () => {
                     setTimeout(() => setRejoinedTabId(null), 1000)
                     return
                   }
-                } catch {}
+                } catch {
+                  // Ignore invalid or malformed tab transfer payload
+                }
               }
 
               if (!source || source === tab.id) return
@@ -308,7 +310,9 @@ export const EditorTabs = () => {
                 setRejoinedTabId(incomingTab.id)
                 setTimeout(() => setRejoinedTabId(null), 1000)
               }
-            } catch {}
+            } catch {
+              // Ignore invalid or malformed tab transfer payload
+            }
           }
         }}
       />
