@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-11-11
+
+### Added
+- **Multi-Window Tab Dragging (Auxiliary Windows)**: Dragging any tab (`Markdown`, `Canvas`, `Kanban`, `Spreadsheet`, `Terminal`, or `Settings`) away from the tab strip tears it off into a dedicated auxiliary window positioned seamlessly under the cursor.
+- **Two-Way Tab Rejoining & Docking**: Tabs can be dragged between windows or back into the main application tab strip with live transfer of state. Auxiliary windows automatically close when all of their tabs are moved out or closed.
+- **Terminal PTY Session Transfer**: Live terminal sessions transfer between windows without interrupting or restarting background shells.
+- **Single-Tab Fallback**: Tearing off the sole open tab in the main window automatically spawns a fresh tab in place so the main window stays active.
+- **Window & Tab Transition Animations**: Added smooth bloom animation (`animate-window-bloom`) on new window spawn and organic landing animation (`animate-tab-rejoin`) when redocking tabs.
+- **Command Palette & Modal Glassmorphism**: Added backdrop blur to the Global Command Palette and modal dialogs when transparent background settings are enabled, with clean fallback to solid colors when transparency is disabled.
+
+### Fixed
+- **Chromium Drag-and-Drop Coordinates**: Solved Chromium's `0, 0` cursor position behavior during desktop drops by tracking continuous screen coordinates.
+- **Code Cleanups & Linting**: Resolved ESLint and TypeScript compiler warnings across window and tab lifecycle management.
+
+---
+
 ## [3.1.1] - 2026-10-11
 
 ### Added
