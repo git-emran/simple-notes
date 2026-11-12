@@ -12,7 +12,8 @@ import {
   VscSparkle,
   VscChevronDown,
   VscChevronUp,
-  VscInfo
+  VscInfo,
+  VscWarning
 } from 'react-icons/vsc'
 import {
   aiApiKeyAtom,
@@ -716,15 +717,34 @@ export const SettingsPanel = () => {
                   )}
 
                   {updateCheckStatus === 'error' && (
-                    <div className="flex items-center justify-between gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
-                      <span>{updateError || 'Check failed. Please check your internet connection.'}</span>
-                      <button
-                        type="button"
-                        onClick={() => checkForUpdates(true)}
-                        className="text-xs font-semibold text-red-400 hover:text-red-300 underline underline-offset-2 shrink-0"
-                      >
-                        Retry
-                      </button>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-xs text-red-400">
+                      <div className="flex items-start gap-2 max-w-[75%]">
+                        <VscWarning className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+                        <span className="leading-relaxed">{updateError || 'Check failed. Please check your internet connection.'}</span>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = 'https://github.com/git-emran/simple-notes/releases'
+                            if (window.context?.openExternalUrl) {
+                              window.context.openExternalUrl(url)
+                            } else {
+                              window.open(url, '_blank')
+                            }
+                          }}
+                          className="text-xs font-semibold text-red-400 hover:text-red-300 underline underline-offset-2"
+                        >
+                          Open Releases
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => checkForUpdates(true)}
+                          className="text-xs font-semibold text-red-400 hover:text-red-300 underline underline-offset-2"
+                        >
+                          Retry
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

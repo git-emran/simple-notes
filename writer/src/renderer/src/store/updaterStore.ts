@@ -1,4 +1,4 @@
-import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { atom, useAtom, useAtomValue } from 'jotai'
 import { useEffect, useCallback } from 'react'
 import { autoUpdateEnabledAtom } from './settingsStore'
 
@@ -179,10 +179,14 @@ export const useUpdater = () => {
         const res = await window.context.checkForUpdates(force)
         if (res?.status === 'dev-bypass') {
           setStatus('dev-bypass')
+        } else if (res?.status === 'error' && res.error) {
+          setStatus('error')
+          setError(res.error)
         }
       } catch (err: unknown) {
         setStatus('error')
-        setError(err instanceof Error ? err.message : 'Failed to check for updates.')
+        const raw = err instanceof Error ? err.message : 'Failed to check for updates.'
+        setError(raw.replace(/^Error:\s*Error invoking remote method '[^']+':\s*/i, ''))
       }
     },
     [setError, setStatus]
@@ -196,10 +200,14 @@ export const useUpdater = () => {
       const res = await window.context.downloadUpdate()
       if (res?.status === 'dev-bypass') {
         setStatus('dev-bypass')
+      } else if (res?.status === 'error' && res.error) {
+        setStatus('error')
+        setError(res.error)
       }
     } catch (err: unknown) {
       setStatus('error')
-      setError(err instanceof Error ? err.message : 'Failed to download update.')
+      const raw = err instanceof Error ? err.message : 'Failed to download update.'
+      setError(raw.replace(/^Error:\s*Error invoking remote method '[^']+':\s*/i, ''))
     }
   }, [setError, setStatus])
 
