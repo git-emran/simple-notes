@@ -593,6 +593,18 @@ app.whenReady().then(() => {
     const win = BrowserWindow.fromWebContents(event.sender)
     win?.close()
   })
+  ipcMain.handle('open-external', (_, url: string) => {
+    try {
+      const parsed = new URL(url)
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        shell.openExternal(url)
+        return true
+      }
+    } catch {
+      // ignore
+    }
+    return false
+  })
   
   protocol.handle('local-file', async (request) => {
     try {

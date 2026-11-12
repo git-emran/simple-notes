@@ -123,6 +123,11 @@
   "build": {
     "appId": "com.git-emran.writer",
     "productName": "Writer",
+    "publish": {
+      "provider": "github",
+      "owner": "git-emran",
+      "repo": "simple-notes"
+    },
     "directories": {
       "output": "dist"
     },

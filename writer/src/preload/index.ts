@@ -142,6 +142,7 @@ contextBridge.exposeInMainWorld('context', {
   getUpdateConfig: () => ipcRenderer.invoke('updater:get-config'),
   getAppVersion: () => ipcRenderer.invoke('updater:get-version'),
   dismissWelcome: (version: string) => ipcRenderer.invoke('updater:dismiss-welcome', version),
+  openExternalUrl: (url: string) => ipcRenderer.invoke('open-external', url),
   onUpdaterStatus: (callback: (data: { event: string; payload?: unknown }) => void) => {
     const listener = (_event: IpcRendererEvent, data: { event: string; payload?: unknown }) => callback(data)
     ipcRenderer.on('updater:status', listener)

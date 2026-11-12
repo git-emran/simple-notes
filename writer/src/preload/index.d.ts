@@ -89,6 +89,7 @@ declare global {
       getUpdateConfig: () => Promise<{ uuid: string; bucket: number; lastPromptedVersion?: string }>
       getAppVersion: () => Promise<string>
       dismissWelcome: (version: string) => Promise<boolean>
+      openExternalUrl: (url: string) => Promise<boolean>
       onUpdaterStatus: (callback: (data: { event: string; payload?: unknown }) => void) => () => void
       onNativeSpellcheckMenu: (callback: () => void) => () => void
       onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
