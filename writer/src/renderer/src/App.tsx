@@ -48,7 +48,6 @@ import {
   accentColorAtom,
   transparentBgAtom,
   isCommandPaletteOpenAtom,
-  type EditorFontOption,
   type EditorTab,
   toCssFontFamily,
   getEditorFontStack
